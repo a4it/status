@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Component Management - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    Status Monitor Admin
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">A</span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div>Admin</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-dashboard"></i>
+                                    </span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/platforms">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-server"></i>
+                                    </span>
+                                    <span class="nav-link-title">Platforms</span>
+                                </a>
+                            </li>
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/admin/components">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-puzzle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Components</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/issues">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-alert-circle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Issues</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Component Management</h2>
+                        </div>
+                        <div class="col-auto">
+                            <div class="d-flex gap-2">
+                                <select class="form-select" id="platformFilter" onchange="filterByPlatform()">
+                                    <option value="">All Platforms</option>
+                                </select>
+                                <button class="btn btn-primary" onclick="openAddComponentModal()">
+                                    <i class="ti ti-plus"></i> Add Component
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Platform</th>
+                                        <th>Group</th>
+                                        <th>Status</th>
+                                        <th>Health Check</th>
+                                        <th>Position</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="componentsTable">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">
+                                    Powered by <a href="/" class="link-secondary" th:text="${applicationName}">status</a>
+                                </li>
+                                <li class="list-inline-item">
+                                    &copy; <span th:text="${copyright}">Automatize BV</span>
+                                </li>
+                                <li class="list-inline-item">
+                                    Build <span th:text="${buildNumber}">0</span> - <span th:text="${buildDate}">unknown</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Component Create/Edit Modal -->
+    <div class="modal" id="componentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Component</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="componentForm">
+                        <input type="hidden" id="componentId">
+                        <div class="mb-3">
+                            <label class="form-label required">Platform</label>
+                            <select class="form-select" id="componentAppId" required>
+                                <option value="">Select platform...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label required">Name</label>
+                            <input type="text" class="form-control" id="componentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="componentDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Group Name</label>
+                                <input type="text" class="form-control" id="componentGroupName" placeholder="e.g., Infrastructure, API, etc.">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Position</label>
+                                <input type="number" class="form-control" id="componentPosition" value="0" min="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="componentStatus">
+                                <option value="OPERATIONAL">Operational</option>
+                                <option value="DEGRADED_PERFORMANCE">Degraded Performance</option>
+                                <option value="PARTIAL_OUTAGE">Partial Outage</option>
+                                <option value="MAJOR_OUTAGE">Major Outage</option>
+                                <option value="UNDER_MAINTENANCE">Under Maintenance</option>
+                            </select>
+                        </div>
+
+                        <!-- Health Check Configuration -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <a class="text-decoration-none" data-bs-toggle="collapse" href="#componentHealthCheckSection">
+                                        <i class="ti ti-heartbeat me-2"></i>Health Check Configuration
+                                    </a>
+                                </h4>
+                            </div>
+                            <div class="collapse" id="componentHealthCheckSection">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="componentCheckInheritFromApp" checked onchange="toggleComponentCheckInherit()">
+                                            <span class="form-check-label">Inherit health check settings from platform</span>
+                                        </label>
+                                    </div>
+                                    <div id="componentHealthCheckFields" style="display: none;">
+                                        <div class="mb-3">
+                                            <label class="form-check">
+                                                <input type="checkbox" class="form-check-input" id="componentCheckEnabled">
+                                                <span class="form-check-label">Enable Health Checking</span>
+                                            </label>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Check Type</label>
+                                            <select class="form-select" id="componentCheckType" onchange="toggleComponentCheckFields()">
+                                                <option value="NONE">None (Manual)</option>
+                                                <option value="PING">Ping</option>
+                                                <option value="HTTP_GET">HTTP GET</option>
+                                                <option value="SPRING_BOOT_HEALTH">Spring Boot Health</option>
+                                                <option value="TCP_PORT">TCP Port</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Check URL / Host</label>
+                                            <input type="text" class="form-control" id="componentCheckUrl" placeholder="https://example.com or host:port">
+                                            <small class="text-muted" id="componentCheckUrlHelp">Enter URL for HTTP/Health checks, hostname for Ping, host:port for TCP</small>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Check Interval (seconds)</label>
+                                                <input type="number" class="form-control" id="componentCheckInterval" value="60" min="10">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Timeout (seconds)</label>
+                                                <input type="number" class="form-control" id="componentCheckTimeout" value="10" min="1" max="60">
+                                            </div>
+                                        </div>
+                                        <div class="row" id="componentHttpStatusRow">
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Expected HTTP Status</label>
+                                                <input type="number" class="form-control" id="componentCheckExpectedStatus" value="200">
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">Failure Threshold</label>
+                                                <input type="number" class="form-control" id="componentCheckFailureThreshold" value="3" min="1">
+                                                <small class="text-muted">Number of consecutive failures before status change</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveComponent()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal modal-blur" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body text-center py-4">
+                    <i class="ti ti-alert-triangle text-danger mb-2" style="font-size: 3rem;"></i>
+                    <h3>Are you sure?</h3>
+                    <p class="text-muted" id="deleteMessage">Do you really want to delete this component? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <div class="w-100">
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn w-100" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-danger w-100" id="confirmDeleteBtn">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/admin/components/components.js"></script>
+</body>
+</html>

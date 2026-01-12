@@ -1,0 +1,614 @@
+/* Public Status Page Styles */
+
+/* ========================================
+   Shared Design Elements (matching login)
+   ======================================== */
+
+/* Border Top */
+.border-top-wide {
+    border-top: 3px solid !important;
+}
+
+/* Card Styling */
+.card {
+    border: none;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Navbar Styling */
+.navbar-dark-custom {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+}
+
+.navbar-dark-custom .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-dark-custom .nav-link:hover {
+    color: #ffffff !important;
+}
+
+.navbar-dark-custom .nav-item.active .nav-link {
+    color: #ffffff !important;
+}
+
+.navbar-dark-custom .navbar-toggler-icon {
+    filter: invert(1);
+}
+
+/* Button Styling */
+.btn-dark {
+    background-color: #222;
+    border-color: #222;
+    transition: all 0.2s ease;
+}
+
+.btn-dark:hover {
+    background-color: #000;
+    border-color: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn-dark:active {
+    transform: translateY(0);
+}
+
+.btn-outline-light {
+    transition: all 0.2s ease;
+}
+
+.btn-outline-light:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+}
+
+/* Link Styling */
+a {
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Form Styling */
+.form-control, .form-select {
+    background-color: #fff9db;
+    border-color: #f5f0d3;
+    transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: #fffef5;
+    border-color: #333;
+    box-shadow: 0 0 0 0.25rem rgba(51, 51, 51, 0.1);
+}
+
+/* Icon Styling */
+.icon-lg {
+    width: 48px;
+    height: 48px;
+}
+
+/* ========================================
+   Status-specific Styles
+   ======================================== */
+
+.status-operational {
+    background-color: #2fb344;
+    color: white;
+}
+
+.status-degraded {
+    background-color: #f76707;
+    color: white;
+}
+
+.status-partial-outage {
+    background-color: #f59f00;
+    color: white;
+}
+
+.status-major-outage {
+    background-color: #d63939;
+    color: white;
+}
+
+.status-maintenance {
+    background-color: #4299e1;
+    color: white;
+}
+
+/* Component status indicators */
+.component-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.component-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.component-status-dot.operational {
+    background-color: #2fb344;
+}
+
+.component-status-dot.degraded {
+    background-color: #f76707;
+}
+
+.component-status-dot.partial-outage {
+    background-color: #f59f00;
+}
+
+.component-status-dot.major-outage {
+    background-color: #d63939;
+}
+
+.component-status-dot.maintenance {
+    background-color: #4299e1;
+}
+
+/* Uptime bar */
+.uptime-bar {
+    display: flex;
+    gap: 2px;
+    height: 30px;
+}
+
+.uptime-bar-day {
+    flex: 1;
+    min-width: 3px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.uptime-bar-day:hover {
+    transform: scaleY(1.1);
+}
+
+.uptime-bar-day.operational {
+    background-color: #2fb344;
+}
+
+.uptime-bar-day.degraded {
+    background-color: #f76707;
+}
+
+.uptime-bar-day.partial-outage {
+    background-color: #f59f00;
+}
+
+.uptime-bar-day.major-outage {
+    background-color: #d63939;
+}
+
+.uptime-bar-day.maintenance {
+    background-color: #4299e1;
+}
+
+.uptime-bar-day.no-data {
+    background-color: #e9ecef;
+}
+
+/* Incident timeline */
+.incident-update {
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.incident-update::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #206bc4;
+}
+
+.incident-update::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% - 1rem);
+    background-color: #e9ecef;
+}
+
+.incident-update:last-child::after {
+    display: none;
+}
+
+/* Badge colors for impact levels */
+.badge-minor {
+    background-color: #f59f00;
+    color: white;
+}
+
+.badge-major {
+    background-color: #f76707;
+    color: white;
+}
+
+.badge-critical {
+    background-color: #d63939;
+    color: white;
+}
+
+/* Overall status card backgrounds */
+#overall-status-card.all-operational {
+    background: linear-gradient(135deg, #2fb344 0%, #1a8a2a 100%);
+    color: white;
+}
+
+#overall-status-card.has-issues {
+    background: linear-gradient(135deg, #f76707 0%, #e05a00 100%);
+    color: white;
+}
+
+#overall-status-card.major-issues {
+    background: linear-gradient(135deg, #d63939 0%, #b82d2d 100%);
+    color: white;
+}
+
+#overall-status-card .text-muted {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Status icon sizing */
+.status-icon-lg {
+    width: 64px;
+    height: 64px;
+}
+
+/* Platform list items */
+.platform-item {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.platform-item:hover {
+    background-color: #f8f9fa;
+}
+
+.platform-chevron {
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.components-container {
+    border-left: 3px solid #e9ecef;
+    margin-left: 12px;
+}
+
+.components-container .list-group-item {
+    background-color: #f8f9fa;
+}
+
+/* Collapse animation */
+.collapse {
+    transition: none;
+}
+
+.collapse.show {
+    display: block;
+}
+
+/* ========================================
+   Uptime Chart Styles (90-day visualization)
+   ======================================== */
+
+.uptime-container {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.uptime-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.uptime-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #333;
+}
+
+.uptime-percentage {
+    font-family: 'JetBrains Mono', monospace, SFMono-Regular, Consolas;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2fb344;
+}
+
+.uptime-percentage.degraded {
+    color: #f76707;
+}
+
+.uptime-percentage.outage {
+    color: #d63939;
+}
+
+.uptime-bars {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 0.75rem;
+}
+
+.uptime-bar {
+    flex: 1;
+    height: 32px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
+    min-width: 2px;
+}
+
+.uptime-bar:hover {
+    transform: scaleY(1.15);
+    z-index: 10;
+}
+
+.uptime-bar.operational {
+    background-color: #2fb344;
+}
+
+.uptime-bar.degraded {
+    background-color: #f76707;
+}
+
+.uptime-bar.partial-outage {
+    background-color: #f59f00;
+}
+
+.uptime-bar.outage,
+.uptime-bar.major-outage {
+    background-color: #d63939;
+}
+
+.uptime-bar.maintenance {
+    background-color: #4299e1;
+}
+
+.uptime-bar.no-data {
+    background-color: #dee2e6;
+}
+
+.uptime-bar.has-incident::before {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #6c757d;
+}
+
+/* Tooltip for uptime bars */
+.uptime-bar[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    margin-bottom: 8px;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.uptime-bar[data-tooltip]:hover::after {
+    opacity: 1;
+}
+
+.uptime-legend {
+    display: flex;
+    justify-content: space-between;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace, SFMono-Regular, Consolas;
+}
+
+/* Component uptime section */
+.component-uptime {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+}
+
+.component-uptime .uptime-header {
+    margin-bottom: 0.75rem;
+}
+
+.component-uptime .uptime-title {
+    font-size: 0.85rem;
+}
+
+.component-uptime .uptime-percentage {
+    font-size: 1rem;
+}
+
+.component-uptime .uptime-bars {
+    margin-bottom: 0.5rem;
+}
+
+.component-uptime .uptime-bar {
+    height: 24px;
+}
+
+/* Uptime detail modal */
+.uptime-detail-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.uptime-detail-modal.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.uptime-detail-content {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.uptime-detail-modal.show .uptime-detail-content {
+    transform: translateY(0);
+}
+
+.uptime-detail-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.uptime-detail-date {
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.uptime-detail-close {
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.uptime-detail-close:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.uptime-detail-body {
+    padding: 1.5rem;
+}
+
+.uptime-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.uptime-stat {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.uptime-stat-label {
+    font-size: 0.75rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+}
+
+.uptime-stat-value {
+    font-family: 'JetBrains Mono', monospace, SFMono-Regular, Consolas;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.uptime-stat-value.operational {
+    color: #2fb344;
+}
+
+.uptime-stat-value.degraded {
+    color: #f76707;
+}
+
+.uptime-stat-value.outage {
+    color: #d63939;
+}
+
+/* Platform uptime card */
+.platform-uptime-card {
+    transition: box-shadow 0.2s ease;
+}
+
+.platform-uptime-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.platform-uptime-card .uptime-title {
+    font-size: 1.1rem;
+}
+
+/* Component expand button */
+.component-expand-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #206bc4;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.component-expand-btn:hover {
+    color: #1a569d;
+    text-decoration: none;
+}
+
+.component-expand-btn .component-chevron {
+    transition: transform 0.2s ease;
+}
+
+/* Component uptime container */
+.component-uptime-container {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}

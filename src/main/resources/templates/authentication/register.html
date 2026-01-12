@@ -1,0 +1,180 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Sign up - [[${applicationName}]]</title>
+
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link href="/static/css/tabler.min.css" rel="stylesheet"/>
+    <link href="/static/css/login.css" rel="stylesheet"/>
+</head>
+<body class="antialiased border-top-wide border-dark d-flex flex-column">
+    <div class="flash-messages"></div>
+    
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-stretch g-0">
+                <!-- Left Side - Branding -->
+                <div class="col-12 col-lg-6 d-none d-lg-block p-0">
+                    <div class="card h-100 rounded-0 rounded-start bg-dark text-white">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-6">
+                            <h1 class="display-6 fw-bold mb-4">Join Our Platform</h1>
+                            <p class="fs-4 mb-5 opacity-75">Start monitoring your systems with powerful tools and real-time insights.</p>
+                            
+                            <div class="row g-4 w-100">
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center text-start">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-3 flex-shrink-0" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <polyline points="9 11 12 14 20 6" />
+                                            <path d="M20 12v6a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h9" />
+                                        </svg>
+                                        <div>
+                                            <h3 class="h4 mb-1">Easy Setup</h3>
+                                            <p class="text-muted-light mb-0">Get started in minutes with our intuitive interface</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center text-start">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-3 flex-shrink-0" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M3 12h4l3 8l4 -16l3 8h4" />
+                                        </svg>
+                                        <div>
+                                            <h3 class="h4 mb-1">Real-time Monitoring</h3>
+                                            <p class="text-muted-light mb-0">Track your system performance 24/7</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="d-flex align-items-center text-start">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg me-3 flex-shrink-0" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                            <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" />
+                                        </svg>
+                                        <div>
+                                            <h3 class="h4 mb-1">Team Collaboration</h3>
+                                            <p class="text-muted-light mb-0">Work together with your team seamlessly</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-5 pt-5">
+                                <p class="mb-2">Already have an account?</p>
+                                <a href="/login" class="btn btn-outline-light">
+                                    Sign in instead
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side - Registration Form -->
+                <div class="col-12 col-lg-6 p-0">
+                    <div class="card card-md h-100 rounded-0 rounded-end">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div class="mb-4 text-center">
+                                <a href="/" class="navbar-brand navbar-brand-autodark">
+                                    <img src="/static/logo.svg" height="36" alt="[[${applicationName}]]">
+                                </a>
+                            </div>
+                            
+                            <h2 class="h2 text-center mb-4">Create your account</h2>
+                            <p class="text-muted text-center mb-4">Enter your details to get started</p>
+                            
+                            <form method="post" autocomplete="off" novalidate id="registerForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">First name</label>
+                                        <input type="text" id="firstName" name="firstName" class="form-control" placeholder="John" required>
+                                        <div class="invalid-feedback">First name is required</div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Last name</label>
+                                        <input type="text" id="lastName" name="lastName" class="form-control" placeholder="Doe" required>
+                                        <div class="invalid-feedback">Last name is required</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Email address</label>
+                                    <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="off" required>
+                                    <div class="invalid-feedback">Please provide a valid email address</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Password</label>
+                                    <div class="input-group input-group-flat">
+                                        <input type="password" id="password" name="password" class="form-control" placeholder="Create a strong password" autocomplete="new-password" required>
+                                        <span class="input-group-text">
+                                            <a href="#" class="link-secondary" id="togglePassword" title="Show password">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                    <circle cx="12" cy="12" r="2" />
+                                                    <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+                                                </svg>
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <small class="form-hint">Password must be at least 8 characters long</small>
+                                    <div class="invalid-feedback">Password must be at least 8 characters</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Confirm password</label>
+                                    <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Confirm your password" autocomplete="new-password" required>
+                                    <div class="invalid-feedback">Passwords do not match</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="agreeTerms" required/>
+                                        <span class="form-check-label">I agree to the <a href="/terms" target="_blank" tabindex="-1">Terms & Conditions</a></span>
+                                    </label>
+                                    <div class="invalid-feedback">You must agree to the terms</div>
+                                </div>
+                                
+                                <div class="form-footer">
+                                    <button type="submit" class="btn btn-dark w-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M9 7h-3a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-3" />
+                                            <path d="M9 15h3l8.5 -8.5a1.5 1.5 0 0 0 -3 -3l-8.5 8.5v3" />
+                                            <line x1="16" y1="5" x2="19" y2="8" />
+                                        </svg>
+                                        Create account
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center text-muted mt-4">
+                                Already have an account? <a href="/login" tabindex="-1">Sign in</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+        const config = {
+            applicationName: [[${applicationName}]],
+            serverPort: [[${serverPort}]]
+        };
+    </script>
+    
+    <script src="/static/js/vendor/tabler.min.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/notifications.js"></script>
+    <script src="/static/js/authentication/register/register.js"></script>
+</body>
+</html>

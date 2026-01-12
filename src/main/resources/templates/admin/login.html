@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Login - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+    <style>
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            margin: 1rem;
+        }
+        .brand-logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #206bc4;
+        }
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="card">
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="brand-logo mb-2">
+                        <i class="ti ti-activity-heartbeat"></i>
+                    </div>
+                    <h2 class="card-title">Status Monitor</h2>
+                    <p class="text-muted">Sign in to admin panel</p>
+                </div>
+                <div class="alert alert-danger d-none" id="errorAlert">
+                    <i class="ti ti-alert-circle me-2"></i>
+                    <span id="errorMessage"></span>
+                </div>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="ti ti-user"></i>
+                            </span>
+                            <input type="text" class="form-control" id="username" placeholder="Enter username" required autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="ti ti-lock"></i>
+                            </span>
+                            <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <span class="form-check-label">Remember me</span>
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="loginBtn">
+                            <i class="ti ti-login me-2"></i>Sign in
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="text-center mt-3 text-white">
+            <small>Status Monitor Admin Panel</small>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/vendor/tabler.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/admin/login/login.js"></script>
+</body>
+</html>

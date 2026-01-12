@@ -1,0 +1,190 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Dashboard - [[${applicationName}]]</title>
+
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link href="/static/css/tabler.min.css" rel="stylesheet"/>
+    <link href="/static/css/tabler-icons.min.css" rel="stylesheet"/>
+    <link href="/static/css/public.css" rel="stylesheet"/>
+    <link href="/static/css/custom.css" rel="stylesheet"/>
+</head>
+<body class="layout-fluid">
+    <div class="page">
+        <!-- Navbar -->
+        <header class="navbar navbar-expand-md navbar-dark navbar-overlap d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    <a href="/dashboard">
+                        <img src="/static/logo.svg" width="110" height="32" alt="[[${applicationName}]]" class="navbar-brand-image">
+                    </a>
+                </h1>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar-menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0" data-bs-toggle="dropdown" aria-label="Open user menu">
+                            <span class="avatar avatar-sm" id="user-avatar">U</span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div id="user-name">User</div>
+                                <div class="mt-1 small text-muted" id="user-role">Administrator</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <a href="/profile" class="dropdown-item">Profile</a>
+                            <a href="/settings" class="dropdown-item">Settings</a>
+                            <div class="dropdown-divider"></div>
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Admin Navigation Menu -->
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/dashboard">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-dashboard"></i>
+                                    </span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/platforms">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-server"></i>
+                                    </span>
+                                    <span class="nav-link-title">Platforms</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/components">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-puzzle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Components</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/issues">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-alert-circle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Issues</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page content -->
+        <div class="page-wrapper">
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row g-2 align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">
+                                Dashboard
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-body">
+                <div class="container-xl">
+                    <!-- Overall Status Banner -->
+                    <div class="card mb-4" id="overall-status-card">
+                        <div class="card-body text-center py-4">
+                            <div id="overall-status-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading status...</p>
+                            </div>
+                            <div id="overall-status-content" style="display: none;">
+                                <div id="status-icon" class="mb-3"></div>
+                                <h2 id="status-title" class="mb-2"></h2>
+                                <p id="status-description" class="text-muted mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Incidents -->
+                    <div id="active-incidents-section" style="display: none;">
+                        <h3 class="mb-3">Active Incidents</h3>
+                        <div id="active-incidents-list" class="mb-4"></div>
+                    </div>
+
+                    <!-- Scheduled Maintenance -->
+                    <div id="scheduled-maintenance-section" style="display: none;">
+                        <h3 class="mb-3">Scheduled Maintenance</h3>
+                        <div id="scheduled-maintenance-list" class="mb-4"></div>
+                    </div>
+
+                    <!-- Platforms Status -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Platforms</h3>
+                        </div>
+                        <div class="card-body" id="platforms-loading">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mt-2">Loading platforms...</p>
+                            </div>
+                        </div>
+                        <div class="list-group list-group-flush" id="platforms-list" style="display: none;"></div>
+                        <div class="card-body" id="platforms-empty" style="display: none;">
+                            <p class="text-muted text-center mb-0">No platforms configured.</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Events -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Events</h3>
+                            <div class="card-actions">
+                                <a href="/admin/issues" class="btn btn-link">View all</a>
+                            </div>
+                        </div>
+                        <div class="card-body" id="events-loading">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="list-group list-group-flush" id="events-list" style="display: none;"></div>
+                        <div class="card-body" id="events-empty" style="display: none;">
+                            <p class="text-muted text-center mb-0">No recent events.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/vendor/tabler.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/shared/notifications.js"></script>
+    <script src="/static/js/dashboard/index/index.js"></script>
+</body>
+</html>

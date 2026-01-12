@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Dashboard - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+    <link rel="stylesheet" href="/static/css/public.css">
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    Status Monitor Admin
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">A</span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div>Admin</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/admin">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-dashboard"></i>
+                                    </span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/platforms">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-server"></i>
+                                    </span>
+                                    <span class="nav-link-title">Platforms</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/components">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-puzzle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Components</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/issues">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-alert-circle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Issues</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="row row-cards">
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Total Platforms</div>
+                                    </div>
+                                    <div class="h1 mb-3" id="totalPlatforms">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Operational</div>
+                                    </div>
+                                    <div class="h1 mb-3 text-green" id="onlinePlatforms">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Issues</div>
+                                    </div>
+                                    <div class="h1 mb-3 text-red" id="offlinePlatforms">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6 col-lg-3">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <div class="subheader">Active Incidents</div>
+                                    </div>
+                                    <div class="h1 mb-3 text-orange" id="activeIssues">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Overall Status Banner -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card" id="overall-status-card">
+                                <div class="card-body text-center py-4">
+                                    <div id="overall-status-loading">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="text-muted mt-2">Loading status...</p>
+                                    </div>
+                                    <div id="overall-status-content" style="display: none;">
+                                        <div id="status-icon" class="mb-3"></div>
+                                        <h2 id="status-title" class="mb-2"></h2>
+                                        <p id="status-description" class="text-muted mb-0"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Incidents -->
+                    <div id="active-incidents-section" class="mt-4" style="display: none;">
+                        <h3 class="mb-3">Active Incidents</h3>
+                        <div id="active-incidents-list" class="mb-4"></div>
+                    </div>
+
+                    <!-- Scheduled Maintenance -->
+                    <div id="scheduled-maintenance-section" class="mt-4" style="display: none;">
+                        <h3 class="mb-3">Scheduled Maintenance</h3>
+                        <div id="scheduled-maintenance-list" class="mb-4"></div>
+                    </div>
+
+                    <!-- Platforms Status -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Platforms Status</h3>
+                                </div>
+                                <div class="card-body" id="platforms-loading">
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="text-muted mt-2">Loading platforms...</p>
+                                    </div>
+                                </div>
+                                <div class="list-group list-group-flush" id="platforms-list" style="display: none;"></div>
+                                <div class="card-body" id="platforms-empty" style="display: none;">
+                                    <p class="text-muted text-center mb-0">No platforms configured.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Recent Incidents</h3>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table card-table table-vcenter">
+                                        <thead>
+                                            <tr>
+                                                <th>Platform</th>
+                                                <th>Issue</th>
+                                                <th>Severity</th>
+                                                <th>Time</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="recentIssues">
+                                            <tr>
+                                                <td colspan="5" class="text-center text-muted">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">
+                                    Powered by <a href="/" class="link-secondary" th:text="${applicationName}">status</a>
+                                </li>
+                                <li class="list-inline-item">
+                                    &copy; <span th:text="${copyright}">Automatize BV</span>
+                                </li>
+                                <li class="list-inline-item">
+                                    Build <span th:text="${buildNumber}">0</span> - <span th:text="${buildDate}">unknown</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/admin/dashboard/dashboard.js"></script>
+</body>
+</html>

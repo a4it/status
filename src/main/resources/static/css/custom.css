@@ -1,0 +1,87 @@
+/* Custom styles for Status Monitoring Application */
+
+/* Flash Messages Container */
+.flash-messages {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.flash-messages .alert {
+    margin-bottom: 10px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .15);
+}
+
+/* Login Page Customizations */
+.page-center {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.container-tight {
+    max-width: 30rem;
+    margin: 0 auto;
+}
+
+/* Form Enhancements */
+.form-label-description {
+    font-size: .75rem;
+    font-weight: 400;
+}
+
+/* Loading States */
+.btn:disabled {
+    opacity: .65;
+    cursor: not-allowed;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .flash-messages {
+        left: 10px;
+        right: 10px;
+        min-width: auto;
+    }
+    
+    .container-tight {
+        padding: 0 15px;
+    }
+}
+
+/* Dark Mode Support (if needed) */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode styles can be added here */
+}
+
+/* Custom Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.alert {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Utility Classes */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.no-select {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}

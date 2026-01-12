@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Issue Management - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    Status Monitor Admin
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">A</span>
+                            <div class="d-none d-xl-block ps-2">
+                                <div>Admin</div>
+                            </div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-dashboard"></i>
+                                    </span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/platforms">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-server"></i>
+                                    </span>
+                                    <span class="nav-link-title">Platforms</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/components">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-puzzle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Components</span>
+                                </a>
+                            </li>
+                            <li class="nav-item active">
+                                <a class="nav-link" href="/admin/issues">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-alert-circle"></i>
+                                    </span>
+                                    <span class="nav-link-title">Issues</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Issue Management</h2>
+                        </div>
+                        <div class="col-auto">
+                            <div class="btn-group me-2">
+                                <button class="btn btn-outline-primary active" data-filter="ALL" onclick="filterIssues('ALL', this)">All</button>
+                                <button class="btn btn-outline-primary" data-filter="INVESTIGATING" onclick="filterIssues('INVESTIGATING', this)">Open</button>
+                                <button class="btn btn-outline-primary" data-filter="RESOLVED" onclick="filterIssues('RESOLVED', this)">Resolved</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="openAddIssueModal()">
+                                <i class="ti ti-plus"></i> Report Issue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Platform</th>
+                                        <th>Severity</th>
+                                        <th>Status</th>
+                                        <th>Started</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="issuesTable">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">
+                                    Powered by <a href="/" class="link-secondary" th:text="${applicationName}">status</a>
+                                </li>
+                                <li class="list-inline-item">
+                                    &copy; <span th:text="${copyright}">Automatize BV</span>
+                                </li>
+                                <li class="list-inline-item">
+                                    Build <span th:text="${buildNumber}">0</span> - <span th:text="${buildDate}">unknown</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Issue Create/Edit Modal -->
+    <div class="modal" id="issueModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Report Issue</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="issueForm">
+                        <input type="hidden" id="issueId">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label required">Title</label>
+                                <input type="text" class="form-control" id="issueTitle" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required">Platform</label>
+                                <select class="form-select" id="issueAppId" required>
+                                    <option value="">Select platform...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="issueDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required">Severity</label>
+                                <select class="form-select" id="issueSeverity" required>
+                                    <option value="MINOR">Minor</option>
+                                    <option value="MAJOR">Major</option>
+                                    <option value="CRITICAL">Critical</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required">Status</label>
+                                <select class="form-select" id="issueStatus" required>
+                                    <option value="INVESTIGATING">Investigating</option>
+                                    <option value="IDENTIFIED">Identified</option>
+                                    <option value="MONITORING">Monitoring</option>
+                                    <option value="RESOLVED">Resolved</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label required">Started At</label>
+                                <input type="datetime-local" class="form-control" id="issueStartedAt" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Impact</label>
+                            <textarea class="form-control" id="issueImpact" rows="2" placeholder="Describe the impact on users..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-check">
+                                <input type="checkbox" class="form-check-input" id="issueIsPublic" checked>
+                                <span class="form-check-label">Publicly visible</span>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveIssue()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Details Modal -->
+    <div class="modal" id="issueDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Issue Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="issueDetails">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-warning" id="editIssueBtn">Edit</button>
+                    <button type="button" class="btn btn-success" id="resolveIssueBtn">Mark Resolved</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Update Modal -->
+    <div class="modal" id="addUpdateModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Update</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="updateForm">
+                        <input type="hidden" id="updateIncidentId">
+                        <div class="mb-3">
+                            <label class="form-label required">Message</label>
+                            <textarea class="form-control" id="updateMessage" rows="4" required placeholder="Provide an update about the incident..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Status</label>
+                            <select class="form-select" id="updateStatus">
+                                <option value="">Keep current status</option>
+                                <option value="INVESTIGATING">Investigating</option>
+                                <option value="IDENTIFIED">Identified</option>
+                                <option value="MONITORING">Monitoring</option>
+                                <option value="RESOLVED">Resolved</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUpdate()">Post Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal modal-blur" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body text-center py-4">
+                    <i class="ti ti-alert-triangle text-danger mb-2" style="font-size: 3rem;"></i>
+                    <h3>Are you sure?</h3>
+                    <p class="text-muted" id="deleteMessage">Do you really want to delete this issue? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <div class="w-100">
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn w-100" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-danger w-100" id="confirmDeleteBtn">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/admin/issues/issues.js"></script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Sign in - [[${applicationName}]]</title>
+
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link href="/static/css/tabler.min.css" rel="stylesheet"/>
+    <link href="/static/css/login.css" rel="stylesheet"/>
+</head>
+<body class="antialiased border-top-wide border-dark d-flex flex-column">
+    <div class="flash-messages" th:attr="data-flash-message=${logoutMessage}, data-flash-type=${messageType}"></div>
+    
+    <div class="page page-center">
+        <div class="container container-normal py-4">
+            <div class="row align-items-stretch g-0">
+                <!-- Left Side - Login Form -->
+                <div class="col-12 col-lg-6 p-0">
+                    <div class="card card-md h-100 rounded-0 rounded-start">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <div class="mb-4 text-center">
+                                <a href="/" class="navbar-brand navbar-brand-autodark">
+                                    <img src="/static/logo.svg" height="36" alt="[[${applicationName}]]">
+                                </a>
+                            </div>
+                            
+                            <h2 class="h2 text-center mb-4">Welcome back!</h2>
+                            <p class="text-muted text-center mb-4">Enter your credentials to access your account</p>
+                            
+                            <form method="get" autocomplete="off" novalidate id="loginForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Email address</label>
+                                    <input type="email" id="email" name="email" class="form-control" placeholder="your@email.com" autocomplete="off" required>
+                                    <div class="invalid-feedback">Please provide a valid email address</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Password
+                                        <span class="form-label-description">
+                                            <a href="/forgot-password" tabindex="-1">Forgot password?</a>
+                                        </span>
+                                    </label>
+                                    <div class="input-group input-group-flat">
+                                        <input type="password" id="password" name="password" class="form-control" placeholder="Your password" autocomplete="off" required>
+                                        <span class="input-group-text">
+                                            <a href="#" class="link-secondary" id="togglePassword" title="Show password" data-bs-toggle="tooltip">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                    <circle cx="12" cy="12" r="2" />
+                                                    <path d="M22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7" />
+                                                </svg>
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <div class="invalid-feedback">Password is required</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="rememberMe"/>
+                                        <span class="form-check-label">Remember me on this device</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-footer">
+                                    <button type="submit" class="btn btn-dark w-100">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+                                            <path d="M20 12h-13l3 -3m0 6l-3 -3" />
+                                        </svg>
+                                        Sign in
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="text-center text-muted mt-4">
+                                Don't have an account yet? <a href="/register" tabindex="-1">Sign up</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Side - Branding -->
+                <div class="col-12 col-lg-6 d-none d-lg-block p-0">
+                    <div class="card h-100 rounded-0 rounded-end bg-dark text-white">
+                        <div class="card-body d-flex flex-column justify-content-center align-items-center text-center p-6">
+                            <h1 class="display-6 fw-bold mb-4">Status Monitoring Platform</h1>
+                            <p class="fs-4 mb-5 opacity-75">Monitor your systems, track incidents, and maintain service reliability all in one place.</p>
+                            
+                            <div class="row g-4 w-100 mt-auto">
+                                <div class="col-6">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg mb-3" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <rect x="3" y="4" width="18" height="8" rx="3" />
+                                            <rect x="3" y="12" width="18" height="8" rx="3" />
+                                            <line x1="7" y1="8" x2="7" y2="8.01" />
+                                            <line x1="7" y1="16" x2="7" y2="16.01" />
+                                        </svg>
+                                        <h3 class="h4">Real-time Monitoring</h3>
+                                        <p class="text-muted-light">Track system health 24/7</p>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg mb-3" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                            <path d="M12 9v2m0 4v.01" />
+                                            <path d="M5 19h14a2 2 0 0 0 1.84 -2.75l-7.1 -12.25a2 2 0 0 0 -3.5 0l-7.1 12.25a2 2 0 0 0 1.75 2.75" />
+                                        </svg>
+                                        <h3 class="h4">Incident Management</h3>
+                                        <p class="text-muted-light">Respond quickly to issues</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-5 pt-5">
+                                <a href="/" class="btn btn-outline-light">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <polyline points="5 12 3 12 12 3 21 12 19 12" />
+                                        <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+                                        <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+                                    </svg>
+                                    Go to Homepage
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script th:inline="javascript">
+        const config = {
+            applicationName: [[${applicationName}]],
+            serverPort: [[${serverPort}]]
+        };
+    </script>
+    
+    <script src="/static/js/vendor/tabler.min.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/notifications.js"></script>
+    <script src="/static/js/authentication/login/login.js"></script>
+</body>
+</html>
