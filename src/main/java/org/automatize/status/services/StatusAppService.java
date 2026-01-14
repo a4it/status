@@ -19,28 +19,66 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service responsible for managing status applications.
+ * <p>
+ * Status apps represent monitored applications or services in the status monitoring system.
+ * This service provides CRUD operations for status apps, including tenant and organization
+ * associations, status management, health check configuration, and cascading status updates.
+ * </p>
+ *
+ * @author Status Monitoring Team
+ * @since 1.0
+ */
 @Service
 @Transactional
 public class StatusAppService {
 
+    /**
+     * Repository for status app data access operations.
+     */
     @Autowired
     private StatusAppRepository statusAppRepository;
 
+    /**
+     * Repository for tenant data access operations.
+     */
     @Autowired
     private TenantRepository tenantRepository;
 
+    /**
+     * Repository for organization data access operations.
+     */
     @Autowired
     private OrganizationRepository organizationRepository;
 
+    /**
+     * Repository for status component data access operations.
+     */
     @Autowired
     private StatusComponentRepository statusComponentRepository;
 
+    /**
+     * Repository for status incident data access operations.
+     */
     @Autowired
     private StatusIncidentRepository statusIncidentRepository;
 
+    /**
+     * Repository for status maintenance data access operations.
+     */
     @Autowired
     private StatusMaintenanceRepository statusMaintenanceRepository;
 
+    /**
+     * Retrieves a paginated list of status apps with optional filtering.
+     *
+     * @param tenantId optional tenant ID to filter apps
+     * @param organizationId optional organization ID to filter apps
+     * @param search optional search term for name matching
+     * @param pageable pagination information
+     * @return a page of StatusAppResponse objects matching the criteria
+     */
     @Transactional(readOnly = true)
     public Page<StatusAppResponse> getAllStatusApps(UUID tenantId, UUID organizationId, String search, Pageable pageable) {
         List<StatusApp> apps;
@@ -62,6 +100,13 @@ public class StatusAppService {
         return new PageImpl<>(responses, pageable, responses.size());
     }
 
+    /**
+     * Retrieves a status app by its unique identifier.
+     *
+     * @param id the UUID of the status app
+     * @return the StatusAppResponse for the requested app
+     * @throws RuntimeException if the app is not found
+     */
     @Transactional(readOnly = true)
     public StatusAppResponse getStatusAppById(UUID id) {
         StatusApp app = statusAppRepository.findById(id)
@@ -69,6 +114,12 @@ public class StatusAppService {
         return mapToResponse(app);
     }
 
+    /**
+     * Retrieves all status apps belonging to a specific tenant.
+     *
+     * @param tenantId the UUID of the tenant
+     * @return a list of StatusAppResponse objects for the tenant's apps
+     */
     @Transactional(readOnly = true)
     public List<StatusAppResponse> getStatusAppsByTenant(UUID tenantId) {
         return statusAppRepository.findByTenantId(tenantId).stream()
@@ -76,6 +127,12 @@ public class StatusAppService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all status apps belonging to a specific organization.
+     *
+     * @param organizationId the UUID of the organization
+     * @return a list of StatusAppResponse objects for the organization's apps
+     */
     @Transactional(readOnly = true)
     public List<StatusAppResponse> getStatusAppsByOrganization(UUID organizationId) {
         return statusAppRepository.findByOrganizationId(organizationId).stream()
@@ -83,6 +140,17 @@ public class StatusAppService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Creates a new status app with the provided details.
+     * <p>
+     * Validates that the slug is unique within the tenant before creating.
+     * </p>
+     *
+     * @param request the status app creation request
+     * @return the newly created StatusAppResponse
+     * @throws RuntimeException if the slug already exists in the tenant
+     * @throws RuntimeException if the tenant or organization is not found
+     */
     public StatusAppResponse createStatusApp(StatusAppRequest request) {
         if (request.getTenantId() != null && 
             statusAppRepository.existsByTenantIdAndSlug(request.getTenantId(), request.getSlug())) {
@@ -112,6 +180,15 @@ public class StatusAppService {
         return mapToResponse(savedApp);
     }
 
+    /**
+     * Updates an existing status app with the provided details.
+     *
+     * @param id the UUID of the status app to update
+     * @param request the status app update request
+     * @return the updated StatusAppResponse
+     * @throws RuntimeException if the app is not found
+     * @throws RuntimeException if the new slug conflicts with an existing app
+     */
     public StatusAppResponse updateStatusApp(UUID id, StatusAppRequest request) {
         StatusApp app = statusAppRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
@@ -144,6 +221,18 @@ public class StatusAppService {
         return mapToResponse(savedApp);
     }
 
+    /**
+     * Updates the status of a status app.
+     * <p>
+     * When the status is set to MAJOR_OUTAGE, all components of the app are
+     * automatically updated to MAJOR_OUTAGE status as well.
+     * </p>
+     *
+     * @param id the UUID of the status app
+     * @param status the new status value
+     * @return the updated StatusAppResponse
+     * @throws RuntimeException if the app is not found
+     */
     public StatusAppResponse updateStatus(UUID id, String status) {
         StatusApp app = statusAppRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
@@ -166,6 +255,17 @@ public class StatusAppService {
         return mapToResponse(savedApp);
     }
 
+    /**
+     * Deletes a status app by its unique identifier.
+     * <p>
+     * Deletion is prevented if the app has active incidents or upcoming maintenance.
+     * </p>
+     *
+     * @param id the UUID of the status app to delete
+     * @throws RuntimeException if the app is not found
+     * @throws RuntimeException if the app has active incidents
+     * @throws RuntimeException if the app has upcoming maintenance
+     */
     public void deleteStatusApp(UUID id) {
         StatusApp app = statusAppRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
@@ -185,6 +285,15 @@ public class StatusAppService {
         statusAppRepository.delete(app);
     }
 
+    /**
+     * Maps a StatusApp entity to a StatusAppResponse DTO.
+     * <p>
+     * Includes associated components, current incident, and upcoming maintenance.
+     * </p>
+     *
+     * @param app the StatusApp entity to map
+     * @return the mapped StatusAppResponse
+     */
     private StatusAppResponse mapToResponse(StatusApp app) {
         StatusAppResponse response = new StatusAppResponse();
         response.setId(app.getId());
@@ -235,6 +344,12 @@ public class StatusAppService {
         return response;
     }
 
+    /**
+     * Maps fields from a StatusAppRequest to a StatusApp entity.
+     *
+     * @param request the source request containing app data
+     * @param app the target StatusApp entity to populate
+     */
     private void mapRequestToStatusApp(StatusAppRequest request, StatusApp app) {
         app.setName(request.getName());
         app.setDescription(request.getDescription());
@@ -252,6 +367,12 @@ public class StatusAppService {
         app.setCheckFailureThreshold(request.getCheckFailureThreshold() != null ? request.getCheckFailureThreshold() : 3);
     }
 
+    /**
+     * Maps a StatusComponent entity to a StatusComponentResponse DTO.
+     *
+     * @param component the StatusComponent entity to map
+     * @return the mapped StatusComponentResponse
+     */
     private StatusComponentResponse mapComponentToResponse(StatusComponent component) {
         StatusComponentResponse response = new StatusComponentResponse();
         response.setId(component.getId());
@@ -279,6 +400,12 @@ public class StatusAppService {
         return response;
     }
 
+    /**
+     * Maps a StatusIncident entity to a StatusIncidentResponse DTO.
+     *
+     * @param incident the StatusIncident entity to map
+     * @return the mapped StatusIncidentResponse
+     */
     private StatusIncidentResponse mapIncidentToResponse(StatusIncident incident) {
         StatusIncidentResponse response = new StatusIncidentResponse();
         response.setId(incident.getId());
@@ -292,6 +419,12 @@ public class StatusAppService {
         return response;
     }
 
+    /**
+     * Maps a StatusMaintenance entity to a StatusMaintenanceResponse DTO.
+     *
+     * @param maintenance the StatusMaintenance entity to map
+     * @return the mapped StatusMaintenanceResponse
+     */
     private StatusMaintenanceResponse mapMaintenanceToResponse(StatusMaintenance maintenance) {
         StatusMaintenanceResponse response = new StatusMaintenanceResponse();
         response.setId(maintenance.getId());
@@ -303,6 +436,11 @@ public class StatusAppService {
         return response;
     }
 
+    /**
+     * Retrieves the username of the currently authenticated user.
+     *
+     * @return the username, or "system" if no user is authenticated
+     */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof String) {

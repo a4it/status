@@ -18,25 +18,63 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service responsible for managing scheduled maintenance windows.
+ * <p>
+ * Maintenance windows represent planned service interruptions or updates.
+ * This service provides comprehensive maintenance lifecycle management including
+ * scheduling, starting, completing, and cancelling maintenance. It also manages
+ * component status updates during maintenance periods.
+ * </p>
+ *
+ * @author Status Monitoring Team
+ * @since 1.0
+ */
 @Service
 @Transactional
 public class StatusMaintenanceService {
 
+    /**
+     * Repository for maintenance data access operations.
+     */
     @Autowired
     private StatusMaintenanceRepository statusMaintenanceRepository;
 
+    /**
+     * Repository for maintenance-component relationship data access.
+     */
     @Autowired
     private StatusMaintenanceComponentRepository statusMaintenanceComponentRepository;
 
+    /**
+     * Repository for status app data access operations.
+     */
     @Autowired
     private StatusAppRepository statusAppRepository;
 
+    /**
+     * Repository for status component data access operations.
+     */
     @Autowired
     private StatusComponentRepository statusComponentRepository;
 
+    /**
+     * Repository for status incident data access operations.
+     */
     @Autowired
     private StatusIncidentRepository statusIncidentRepository;
 
+    /**
+     * Retrieves a paginated list of maintenance windows with optional filtering.
+     *
+     * @param appId optional app ID to filter maintenance windows
+     * @param status optional status to filter maintenance windows
+     * @param startDate optional start date for date range filter
+     * @param endDate optional end date for date range filter
+     * @param search optional search term
+     * @param pageable pagination information
+     * @return a page of StatusMaintenanceResponse objects matching the criteria
+     */
     @Transactional(readOnly = true)
     public Page<StatusMaintenanceResponse> getAllMaintenance(UUID appId, String status, ZonedDateTime startDate,
                                                            ZonedDateTime endDate, String search, Pageable pageable) {
@@ -63,6 +101,13 @@ public class StatusMaintenanceService {
         return new PageImpl<>(responses, pageable, responses.size());
     }
 
+    /**
+     * Retrieves a maintenance window by its unique identifier.
+     *
+     * @param id the UUID of the maintenance window
+     * @return the StatusMaintenanceResponse for the requested maintenance
+     * @throws RuntimeException if the maintenance is not found
+     */
     @Transactional(readOnly = true)
     public StatusMaintenanceResponse getMaintenanceById(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
@@ -70,6 +115,14 @@ public class StatusMaintenanceService {
         return mapToResponse(maintenance);
     }
 
+    /**
+     * Retrieves upcoming scheduled maintenance windows within a specified number of days.
+     *
+     * @param appId optional app ID to filter maintenance windows
+     * @param tenantId optional tenant ID to filter maintenance windows
+     * @param days the number of days to look ahead
+     * @return a list of StatusMaintenanceResponse objects for scheduled maintenance
+     */
     @Transactional(readOnly = true)
     public List<StatusMaintenanceResponse> getUpcomingMaintenance(UUID appId, UUID tenantId, int days) {
         ZonedDateTime startDate = ZonedDateTime.now();
@@ -93,6 +146,13 @@ public class StatusMaintenanceService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves currently active (in-progress) maintenance windows.
+     *
+     * @param appId optional app ID to filter maintenance windows
+     * @param tenantId optional tenant ID to filter maintenance windows
+     * @return a list of StatusMaintenanceResponse objects for active maintenance
+     */
     @Transactional(readOnly = true)
     public List<StatusMaintenanceResponse> getActiveMaintenance(UUID appId, UUID tenantId) {
         ZonedDateTime currentTime = ZonedDateTime.now();
@@ -113,6 +173,17 @@ public class StatusMaintenanceService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Creates a new scheduled maintenance window.
+     * <p>
+     * Validates that the start time is before the end time before creating.
+     * </p>
+     *
+     * @param request the maintenance creation request
+     * @return the newly created StatusMaintenanceResponse
+     * @throws RuntimeException if the app is not found
+     * @throws RuntimeException if the start time is after the end time
+     */
     public StatusMaintenanceResponse createMaintenance(StatusMaintenanceRequest request) {
         StatusApp app = statusAppRepository.findById(request.getAppId())
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -140,6 +211,19 @@ public class StatusMaintenanceService {
         return mapToResponse(savedMaintenance);
     }
 
+    /**
+     * Updates an existing maintenance window.
+     * <p>
+     * Cannot update completed or cancelled maintenance.
+     * </p>
+     *
+     * @param id the UUID of the maintenance to update
+     * @param request the maintenance update request
+     * @return the updated StatusMaintenanceResponse
+     * @throws RuntimeException if the maintenance is not found
+     * @throws RuntimeException if the maintenance is completed or cancelled
+     * @throws RuntimeException if the start time is after the end time
+     */
     public StatusMaintenanceResponse updateMaintenance(UUID id, StatusMaintenanceRequest request) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
@@ -173,6 +257,14 @@ public class StatusMaintenanceService {
         return mapToResponse(savedMaintenance);
     }
 
+    /**
+     * Updates the status of a maintenance window.
+     *
+     * @param id the UUID of the maintenance
+     * @param status the new status value
+     * @return the updated StatusMaintenanceResponse
+     * @throws RuntimeException if the maintenance is not found
+     */
     public StatusMaintenanceResponse updateStatus(UUID id, String status) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
@@ -184,6 +276,22 @@ public class StatusMaintenanceService {
         return mapToResponse(savedMaintenance);
     }
 
+    /**
+     * Starts a scheduled maintenance window.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Sets the maintenance status to IN_PROGRESS</li>
+     *   <li>Updates affected components to UNDER_MAINTENANCE status</li>
+     *   <li>Updates the parent app's status</li>
+     * </ul>
+     * </p>
+     *
+     * @param id the UUID of the maintenance to start
+     * @return the started StatusMaintenanceResponse
+     * @throws RuntimeException if the maintenance is not found
+     * @throws RuntimeException if the maintenance is not in SCHEDULED status
+     */
     public StatusMaintenanceResponse startMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
@@ -214,6 +322,22 @@ public class StatusMaintenanceService {
         return mapToResponse(savedMaintenance);
     }
 
+    /**
+     * Completes an in-progress maintenance window.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Sets the maintenance status to COMPLETED</li>
+     *   <li>Resets affected components to OPERATIONAL status</li>
+     *   <li>Updates the parent app's status</li>
+     * </ul>
+     * </p>
+     *
+     * @param id the UUID of the maintenance to complete
+     * @return the completed StatusMaintenanceResponse
+     * @throws RuntimeException if the maintenance is not found
+     * @throws RuntimeException if the maintenance is not in IN_PROGRESS status
+     */
     public StatusMaintenanceResponse completeMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
@@ -244,6 +368,16 @@ public class StatusMaintenanceService {
         return mapToResponse(savedMaintenance);
     }
 
+    /**
+     * Deletes a maintenance window by its unique identifier.
+     * <p>
+     * In-progress maintenance cannot be deleted.
+     * </p>
+     *
+     * @param id the UUID of the maintenance to delete
+     * @throws RuntimeException if the maintenance is not found
+     * @throws RuntimeException if the maintenance is in progress
+     */
     public void deleteMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
@@ -255,6 +389,13 @@ public class StatusMaintenanceService {
         statusMaintenanceRepository.delete(maintenance);
     }
 
+    /**
+     * Links components to a maintenance window.
+     *
+     * @param maintenance the maintenance to link components to
+     * @param componentIds the list of component UUIDs to link
+     * @throws RuntimeException if any component is not found
+     */
     private void linkAffectedComponents(StatusMaintenance maintenance, List<UUID> componentIds) {
         for (UUID componentId : componentIds) {
             StatusComponent component = statusComponentRepository.findById(componentId)
@@ -268,6 +409,15 @@ public class StatusMaintenanceService {
         }
     }
 
+    /**
+     * Updates the app's status based on active maintenance.
+     * <p>
+     * Sets the app to UNDER_MAINTENANCE if there is active maintenance,
+     * or OPERATIONAL if maintenance completes and there are no active incidents.
+     * </p>
+     *
+     * @param app the status app to update
+     */
     private void updateAppStatusForMaintenance(StatusApp app) {
         Long activeMaintenance = statusMaintenanceRepository.countActiveMaintenanceByAppId(app.getId());
         
@@ -286,6 +436,12 @@ public class StatusMaintenanceService {
         }
     }
 
+    /**
+     * Maps a StatusMaintenance entity to a StatusMaintenanceResponse DTO.
+     *
+     * @param maintenance the StatusMaintenance entity to map
+     * @return the mapped StatusMaintenanceResponse
+     */
     private StatusMaintenanceResponse mapToResponse(StatusMaintenance maintenance) {
         StatusMaintenanceResponse response = new StatusMaintenanceResponse();
         response.setId(maintenance.getId());
@@ -305,6 +461,12 @@ public class StatusMaintenanceService {
         return response;
     }
 
+    /**
+     * Maps a StatusComponent entity to a StatusComponentResponse DTO.
+     *
+     * @param component the StatusComponent entity to map
+     * @return the mapped StatusComponentResponse
+     */
     private StatusComponentResponse mapComponentToResponse(StatusComponent component) {
         StatusComponentResponse response = new StatusComponentResponse();
         response.setId(component.getId());
@@ -316,6 +478,12 @@ public class StatusMaintenanceService {
         return response;
     }
 
+    /**
+     * Maps fields from a StatusMaintenanceRequest to a StatusMaintenance entity.
+     *
+     * @param request the source request containing maintenance data
+     * @param maintenance the target StatusMaintenance entity to populate
+     */
     private void mapRequestToMaintenance(StatusMaintenanceRequest request, StatusMaintenance maintenance) {
         maintenance.setTitle(request.getTitle());
         maintenance.setDescription(request.getDescription());
@@ -325,6 +493,11 @@ public class StatusMaintenanceService {
         maintenance.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : true);
     }
 
+    /**
+     * Retrieves the username of the currently authenticated user.
+     *
+     * @return the username, or "system" if no user is authenticated
+     */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof String) {

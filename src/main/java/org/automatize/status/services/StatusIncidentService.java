@@ -21,27 +21,65 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service responsible for managing status incidents.
+ * <p>
+ * Incidents represent service disruptions or issues affecting monitored applications.
+ * This service provides comprehensive incident lifecycle management including creation,
+ * updates, resolution, and component impact tracking. It also manages automatic status
+ * propagation to affected components and parent applications.
+ * </p>
+ *
+ * @author Status Monitoring Team
+ * @since 1.0
+ */
 @Service
 @Transactional
 public class StatusIncidentService {
 
+    /**
+     * Repository for status incident data access operations.
+     */
     @Autowired
     private StatusIncidentRepository statusIncidentRepository;
 
+    /**
+     * Repository for incident update data access operations.
+     */
     @Autowired
     private StatusIncidentUpdateRepository statusIncidentUpdateRepository;
 
+    /**
+     * Repository for incident-component relationship data access.
+     */
     @Autowired
     private StatusIncidentComponentRepository statusIncidentComponentRepository;
 
+    /**
+     * Repository for status app data access operations.
+     */
     @Autowired
     private StatusAppRepository statusAppRepository;
 
+    /**
+     * Repository for status component data access operations.
+     */
     @Autowired
     private StatusComponentRepository statusComponentRepository;
 
+    /**
+     * Retrieves a paginated list of incidents with optional filtering.
+     *
+     * @param appId optional app ID to filter incidents
+     * @param status optional status to filter incidents
+     * @param startDate optional start date for date range filter
+     * @param endDate optional end date for date range filter
+     * @param search optional search term
+     * @param pageable pagination information
+     * @return a page of StatusIncidentResponse objects matching the criteria
+     */
     @Transactional(readOnly = true)
-    public Page<StatusIncidentResponse> getAllIncidents(UUID appId, String status, ZonedDateTime startDate, 
+    public Page<StatusIncidentResponse> getAllIncidents(UUID appId, String status, ZonedDateTime startDate,
                                                        ZonedDateTime endDate, String search, Pageable pageable) {
         List<StatusIncident> incidents;
         
@@ -66,6 +104,13 @@ public class StatusIncidentService {
         return new PageImpl<>(responses, pageable, responses.size());
     }
 
+    /**
+     * Retrieves an incident by its unique identifier.
+     *
+     * @param id the UUID of the incident
+     * @return the StatusIncidentResponse for the requested incident
+     * @throws RuntimeException if the incident is not found
+     */
     @Transactional(readOnly = true)
     public StatusIncidentResponse getIncidentById(UUID id) {
         StatusIncident incident = statusIncidentRepository.findById(id)
@@ -73,6 +118,13 @@ public class StatusIncidentService {
         return mapToResponse(incident);
     }
 
+    /**
+     * Retrieves all active (unresolved) incidents, optionally filtered by app or tenant.
+     *
+     * @param appId optional app ID to filter incidents
+     * @param tenantId optional tenant ID to filter incidents
+     * @return a list of StatusIncidentResponse objects for active incidents
+     */
     @Transactional(readOnly = true)
     public List<StatusIncidentResponse> getActiveIncidents(UUID appId, UUID tenantId) {
         List<StatusIncident> incidents;
@@ -91,6 +143,12 @@ public class StatusIncidentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all updates for a specific incident, ordered by update time descending.
+     *
+     * @param incidentId the UUID of the incident
+     * @return a list of StatusIncidentUpdateResponse objects
+     */
     @Transactional(readOnly = true)
     public List<StatusIncidentUpdateResponse> getIncidentUpdates(UUID incidentId) {
         List<StatusIncidentUpdate> updates = statusIncidentUpdateRepository
@@ -101,6 +159,22 @@ public class StatusIncidentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Creates a new incident for a status app.
+     * <p>
+     * This method also:
+     * <ul>
+     *   <li>Creates an initial incident update if a message is provided</li>
+     *   <li>Links affected components to the incident</li>
+     *   <li>Updates component statuses based on incident severity</li>
+     *   <li>Updates the parent app's status</li>
+     * </ul>
+     * </p>
+     *
+     * @param request the incident creation request
+     * @return the newly created StatusIncidentResponse
+     * @throws RuntimeException if the app is not found
+     */
     public StatusIncidentResponse createIncident(StatusIncidentRequest request) {
         StatusApp app = statusAppRepository.findById(request.getAppId())
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -131,6 +205,17 @@ public class StatusIncidentService {
         return mapToResponse(savedIncident);
     }
 
+    /**
+     * Updates an existing incident with the provided details.
+     * <p>
+     * If the affected components list is provided, it replaces the existing list.
+     * </p>
+     *
+     * @param id the UUID of the incident to update
+     * @param request the incident update request
+     * @return the updated StatusIncidentResponse
+     * @throws RuntimeException if the incident is not found
+     */
     public StatusIncidentResponse updateIncident(UUID id, StatusIncidentRequest request) {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
@@ -160,6 +245,17 @@ public class StatusIncidentService {
         return mapToResponse(savedIncident);
     }
 
+    /**
+     * Adds a new update to an existing incident.
+     * <p>
+     * If the update changes the incident status, the app status is also updated accordingly.
+     * </p>
+     *
+     * @param incidentId the UUID of the incident
+     * @param request the incident update request containing status and message
+     * @return the newly created StatusIncidentUpdateResponse
+     * @throws RuntimeException if the incident is not found
+     */
     public StatusIncidentUpdateResponse addIncidentUpdate(UUID incidentId, StatusIncidentUpdateRequest request) {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new RuntimeException("Incident not found with id: " + incidentId));
@@ -179,6 +275,25 @@ public class StatusIncidentService {
         return mapUpdateToResponse(update);
     }
 
+    /**
+     * Resolves an incident and resets affected component statuses.
+     * <p>
+     * This method:
+     * <ul>
+     *   <li>Sets the incident status to RESOLVED</li>
+     *   <li>Records the resolution timestamp</li>
+     *   <li>Creates a resolution update entry</li>
+     *   <li>Resets all affected components to OPERATIONAL status</li>
+     *   <li>Updates the parent app's status</li>
+     * </ul>
+     * </p>
+     *
+     * @param id the UUID of the incident to resolve
+     * @param message optional resolution message
+     * @return the resolved StatusIncidentResponse
+     * @throws RuntimeException if the incident is not found
+     * @throws RuntimeException if the incident is already resolved
+     */
     public StatusIncidentResponse resolveIncident(UUID id, String message) {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
@@ -212,6 +327,16 @@ public class StatusIncidentService {
         return mapToResponse(savedIncident);
     }
 
+    /**
+     * Deletes an incident by its unique identifier.
+     * <p>
+     * Only resolved incidents can be deleted.
+     * </p>
+     *
+     * @param id the UUID of the incident to delete
+     * @throws RuntimeException if the incident is not found
+     * @throws RuntimeException if the incident is still active
+     */
     public void deleteIncident(UUID id) {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
@@ -223,6 +348,14 @@ public class StatusIncidentService {
         statusIncidentRepository.delete(incident);
     }
 
+    /**
+     * Creates an incident update entry for timeline tracking.
+     *
+     * @param incident the incident to add the update to
+     * @param status the status at the time of the update
+     * @param message the update message
+     * @return the newly created StatusIncidentUpdate
+     */
     private StatusIncidentUpdate createIncidentUpdate(StatusIncident incident, String status, String message) {
         StatusIncidentUpdate update = new StatusIncidentUpdate();
         update.setIncident(incident);
@@ -235,6 +368,13 @@ public class StatusIncidentService {
         return statusIncidentUpdateRepository.save(update);
     }
 
+    /**
+     * Links components to an incident and updates their status.
+     *
+     * @param incident the incident to link components to
+     * @param componentIds the list of component UUIDs to link
+     * @throws RuntimeException if any component is not found
+     */
     private void linkAffectedComponents(StatusIncident incident, List<UUID> componentIds) {
         for (UUID componentId : componentIds) {
             StatusComponent component = statusComponentRepository.findById(componentId)
@@ -252,6 +392,12 @@ public class StatusIncidentService {
         }
     }
 
+    /**
+     * Updates a component's status based on the incident's severity and impact.
+     *
+     * @param component the component to update
+     * @param incident the incident affecting the component
+     */
     private void updateComponentStatusForIncident(StatusComponent component, StatusIncident incident) {
         String newStatus = "DEGRADED";
         
@@ -266,6 +412,15 @@ public class StatusIncidentService {
         statusComponentRepository.save(component);
     }
 
+    /**
+     * Updates the app's status based on active incidents.
+     * <p>
+     * Sets the app to MAJOR_OUTAGE if any active incident is critical,
+     * DEGRADED if there are other active incidents, or OPERATIONAL if resolved.
+     * </p>
+     *
+     * @param app the status app to update
+     */
     private void updateAppStatusForIncident(StatusApp app) {
         Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(app.getId());
         
@@ -293,6 +448,12 @@ public class StatusIncidentService {
         }
     }
 
+    /**
+     * Maps a StatusIncident entity to a StatusIncidentResponse DTO.
+     *
+     * @param incident the StatusIncident entity to map
+     * @return the mapped StatusIncidentResponse
+     */
     private StatusIncidentResponse mapToResponse(StatusIncident incident) {
         StatusIncidentResponse response = new StatusIncidentResponse();
         response.setId(incident.getId());
@@ -323,6 +484,12 @@ public class StatusIncidentService {
         return response;
     }
 
+    /**
+     * Maps a StatusIncidentUpdate entity to a StatusIncidentUpdateResponse DTO.
+     *
+     * @param update the StatusIncidentUpdate entity to map
+     * @return the mapped StatusIncidentUpdateResponse
+     */
     private StatusIncidentUpdateResponse mapUpdateToResponse(StatusIncidentUpdate update) {
         StatusIncidentUpdateResponse response = new StatusIncidentUpdateResponse();
         response.setId(update.getId());
@@ -333,6 +500,12 @@ public class StatusIncidentService {
         return response;
     }
 
+    /**
+     * Maps a StatusComponent entity to a StatusComponentResponse DTO.
+     *
+     * @param component the StatusComponent entity to map
+     * @return the mapped StatusComponentResponse
+     */
     private StatusComponentResponse mapComponentToResponse(StatusComponent component) {
         StatusComponentResponse response = new StatusComponentResponse();
         response.setId(component.getId());
@@ -345,6 +518,12 @@ public class StatusIncidentService {
         return response;
     }
 
+    /**
+     * Maps fields from a StatusIncidentRequest to a StatusIncident entity.
+     *
+     * @param request the source request containing incident data
+     * @param incident the target StatusIncident entity to populate
+     */
     private void mapRequestToIncident(StatusIncidentRequest request, StatusIncident incident) {
         incident.setTitle(request.getTitle());
         incident.setDescription(request.getDescription());
@@ -356,6 +535,11 @@ public class StatusIncidentService {
         incident.setIsPublic(request.getIsPublic() != null ? request.getIsPublic() : true);
     }
 
+    /**
+     * Retrieves the username of the currently authenticated user.
+     *
+     * @return the username, or "system" if no user is authenticated
+     */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if (principal instanceof String) {

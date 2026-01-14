@@ -20,37 +20,92 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service responsible for providing public status information without requiring authentication.
+ * <p>
+ * This service exposes read-only endpoints for public status pages, allowing external users
+ * to view the status of applications, components, incidents, and scheduled maintenance.
+ * All methods only return data marked as public.
+ * </p>
+ * <p>
+ * Features include:
+ * <ul>
+ *   <li>Public app and component status retrieval</li>
+ *   <li>Active and historical incident information</li>
+ *   <li>Scheduled and active maintenance windows</li>
+ *   <li>Uptime history and statistics</li>
+ *   <li>Overall system status summaries</li>
+ * </ul>
+ * </p>
+ *
+ * @author Status Monitoring Team
+ * @since 1.0
+ */
 @Service
 @Transactional(readOnly = true)
 public class PublicStatusService {
 
+    /**
+     * Repository for status app data access.
+     */
     @Autowired
     private StatusAppRepository statusAppRepository;
 
+    /**
+     * Repository for status component data access.
+     */
     @Autowired
     private StatusComponentRepository statusComponentRepository;
 
+    /**
+     * Repository for status incident data access.
+     */
     @Autowired
     private StatusIncidentRepository statusIncidentRepository;
 
+    /**
+     * Repository for incident update data access.
+     */
     @Autowired
     private StatusIncidentUpdateRepository statusIncidentUpdateRepository;
 
+    /**
+     * Repository for incident-component relationship data access.
+     */
     @Autowired
     private StatusIncidentComponentRepository statusIncidentComponentRepository;
 
+    /**
+     * Repository for maintenance data access.
+     */
     @Autowired
     private StatusMaintenanceRepository statusMaintenanceRepository;
 
+    /**
+     * Repository for maintenance-component relationship data access.
+     */
     @Autowired
     private StatusMaintenanceComponentRepository statusMaintenanceComponentRepository;
 
+    /**
+     * Repository for tenant data access.
+     */
     @Autowired
     private TenantRepository tenantRepository;
 
+    /**
+     * Repository for uptime history data access.
+     */
     @Autowired
     private StatusUptimeHistoryRepository statusUptimeHistoryRepository;
 
+    /**
+     * Retrieves all public status apps, optionally filtered by tenant.
+     *
+     * @param tenantName optional tenant name to filter apps
+     * @return a list of StatusAppResponse objects for public apps
+     * @throws RuntimeException if the specified tenant is not found
+     */
     public List<StatusAppResponse> getAllPublicApps(String tenantName) {
         List<StatusApp> apps;
         if (tenantName != null) {
@@ -66,6 +121,14 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a public status app by its slug identifier.
+     *
+     * @param slug the unique slug of the status app
+     * @param tenantName optional tenant name for scoping the search
+     * @return the StatusAppResponse for the requested app
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public StatusAppResponse getAppBySlug(String slug, String tenantName) {
         StatusApp app;
         if (tenantName != null) {
@@ -85,6 +148,13 @@ public class PublicStatusService {
         return mapToStatusAppResponse(app);
     }
 
+    /**
+     * Retrieves all components for a public status app.
+     *
+     * @param appId the UUID of the status app
+     * @return a list of StatusComponentResponse objects for the app's components
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public List<StatusComponentResponse> getAppComponents(UUID appId) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -99,6 +169,14 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves public incidents for an app within a specified time range.
+     *
+     * @param appId the UUID of the status app
+     * @param days the number of days to look back for incidents
+     * @return a list of StatusIncidentResponse objects for public incidents
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public List<StatusIncidentResponse> getAppIncidents(UUID appId, int days) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -116,6 +194,12 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all currently active (unresolved) public incidents for an app.
+     *
+     * @param appId the UUID of the status app
+     * @return a list of StatusIncidentResponse objects for active public incidents
+     */
     public List<StatusIncidentResponse> getCurrentIncidents(UUID appId) {
         List<StatusIncident> incidents = statusIncidentRepository.findByAppIdAndStatus(appId, "RESOLVED");
         
@@ -125,6 +209,13 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves detailed information about a specific public incident.
+     *
+     * @param incidentId the UUID of the incident
+     * @return the StatusIncidentResponse with full incident details
+     * @throws RuntimeException if the incident is not found or is not public
+     */
     public StatusIncidentResponse getIncidentDetails(UUID incidentId) {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new RuntimeException("Incident not found"));
@@ -136,6 +227,13 @@ public class PublicStatusService {
         return mapToStatusIncidentResponse(incident);
     }
 
+    /**
+     * Retrieves all updates for a specific public incident.
+     *
+     * @param incidentId the UUID of the incident
+     * @return a list of StatusIncidentUpdateResponse objects ordered by update time descending
+     * @throws RuntimeException if the incident is not found or is not public
+     */
     public List<StatusIncidentUpdateResponse> getIncidentUpdates(UUID incidentId) {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new RuntimeException("Incident not found"));
@@ -150,6 +248,14 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves public maintenance windows for an app.
+     *
+     * @param appId the UUID of the status app
+     * @param type the type filter: "upcoming" for scheduled, "past" for completed, or null for all
+     * @return a list of StatusMaintenanceResponse objects for public maintenance windows
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public List<StatusMaintenanceResponse> getAppMaintenance(UUID appId, String type) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -173,6 +279,13 @@ public class PublicStatusService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves detailed information about a specific public maintenance window.
+     *
+     * @param maintenanceId the UUID of the maintenance
+     * @return the StatusMaintenanceResponse with full maintenance details
+     * @throws RuntimeException if the maintenance is not found or is not public
+     */
     public StatusMaintenanceResponse getMaintenanceDetails(UUID maintenanceId) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(maintenanceId)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found"));
@@ -184,6 +297,17 @@ public class PublicStatusService {
         return mapToStatusMaintenanceResponse(maintenance);
     }
 
+    /**
+     * Generates an overall status summary for public apps.
+     * <p>
+     * The summary includes counts of operational and affected apps, active incidents,
+     * upcoming maintenance, and an overall system status determination.
+     * </p>
+     *
+     * @param tenantName optional tenant name to filter the summary
+     * @return a StatusSummaryResponse with aggregated status information
+     * @throws RuntimeException if the specified tenant is not found
+     */
     public StatusSummaryResponse getStatusSummary(String tenantName) {
         List<StatusApp> apps;
         if (tenantName != null) {
@@ -229,6 +353,14 @@ public class PublicStatusService {
         return summary;
     }
 
+    /**
+     * Retrieves historical status data for a component over a specified period.
+     *
+     * @param componentId the UUID of the component
+     * @param days the number of days of history to retrieve
+     * @return a ComponentHistoryResponse with daily status history and uptime statistics
+     * @throws RuntimeException if the component is not found or its app is not public
+     */
     public ComponentHistoryResponse getComponentHistory(UUID componentId, int days) {
         StatusComponent component = statusComponentRepository.findById(componentId)
                 .orElseThrow(() -> new RuntimeException("Component not found"));
@@ -261,6 +393,14 @@ public class PublicStatusService {
         return history;
     }
 
+    /**
+     * Calculates uptime statistics for an app over a specified period.
+     *
+     * @param appId the UUID of the status app
+     * @param days the number of days to calculate uptime for
+     * @return an UptimeResponse with uptime percentage and outage/maintenance minutes
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public UptimeResponse getAppUptime(UUID appId, int days) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -292,6 +432,12 @@ public class PublicStatusService {
         return uptime;
     }
 
+    /**
+     * Maps a StatusApp entity to a StatusAppResponse DTO.
+     *
+     * @param app the StatusApp entity to map
+     * @return the mapped StatusAppResponse
+     */
     private StatusAppResponse mapToStatusAppResponse(StatusApp app) {
         StatusAppResponse response = new StatusAppResponse();
         response.setId(app.getId());
@@ -322,6 +468,12 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Maps a StatusComponent entity to a StatusComponentResponse DTO.
+     *
+     * @param component the StatusComponent entity to map
+     * @return the mapped StatusComponentResponse
+     */
     private StatusComponentResponse mapToStatusComponentResponse(StatusComponent component) {
         StatusComponentResponse response = new StatusComponentResponse();
         response.setId(component.getId());
@@ -333,6 +485,12 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Maps a StatusIncident entity to a StatusIncidentResponse DTO.
+     *
+     * @param incident the StatusIncident entity to map
+     * @return the mapped StatusIncidentResponse
+     */
     private StatusIncidentResponse mapToStatusIncidentResponse(StatusIncident incident) {
         StatusIncidentResponse response = new StatusIncidentResponse();
         response.setId(incident.getId());
@@ -359,6 +517,12 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Maps a StatusIncidentUpdate entity to a StatusIncidentUpdateResponse DTO.
+     *
+     * @param update the StatusIncidentUpdate entity to map
+     * @return the mapped StatusIncidentUpdateResponse
+     */
     private StatusIncidentUpdateResponse mapToStatusIncidentUpdateResponse(StatusIncidentUpdate update) {
         StatusIncidentUpdateResponse response = new StatusIncidentUpdateResponse();
         response.setId(update.getId());
@@ -369,6 +533,12 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Maps a StatusMaintenance entity to a StatusMaintenanceResponse DTO.
+     *
+     * @param maintenance the StatusMaintenance entity to map
+     * @return the mapped StatusMaintenanceResponse
+     */
     private StatusMaintenanceResponse mapToStatusMaintenanceResponse(StatusMaintenance maintenance) {
         StatusMaintenanceResponse response = new StatusMaintenanceResponse();
         response.setId(maintenance.getId());
@@ -387,6 +557,12 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Calculates the total outage duration in minutes from a list of incidents.
+     *
+     * @param incidents the list of incidents to calculate outage time from
+     * @return the total outage duration in minutes
+     */
     private int calculateOutageMinutes(List<StatusIncident> incidents) {
         int totalMinutes = 0;
         for (StatusIncident incident : incidents) {
@@ -398,6 +574,13 @@ public class PublicStatusService {
         return totalMinutes;
     }
 
+    /**
+     * Calculates the total maintenance duration in minutes for an app since a given start date.
+     *
+     * @param appId the UUID of the status app
+     * @param startDate the start date for the calculation period
+     * @return the total maintenance duration in minutes
+     */
     private int calculateMaintenanceMinutes(UUID appId, ZonedDateTime startDate) {
         List<StatusMaintenance> maintenances = statusMaintenanceRepository.findByAppIdAndStatus(appId, "COMPLETED");
         int totalMinutes = 0;
@@ -410,6 +593,14 @@ public class PublicStatusService {
         return totalMinutes;
     }
 
+    /**
+     * Retrieves daily uptime history for an app over a specified period.
+     *
+     * @param appId the UUID of the status app
+     * @param days the number of days of history to retrieve
+     * @return an UptimeHistoryResponse with daily uptime data
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public UptimeHistoryResponse getAppUptimeHistory(UUID appId, int days) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
@@ -427,6 +618,14 @@ public class PublicStatusService {
         return buildUptimeHistoryResponse(appId, app.getName(), "APP", days, startDate, endDate, historyRecords);
     }
 
+    /**
+     * Retrieves daily uptime history for a component over a specified period.
+     *
+     * @param componentId the UUID of the component
+     * @param days the number of days of history to retrieve
+     * @return an UptimeHistoryResponse with daily uptime data
+     * @throws RuntimeException if the component is not found or its app is not public
+     */
     public UptimeHistoryResponse getComponentUptimeHistory(UUID componentId, int days) {
         StatusComponent component = statusComponentRepository.findById(componentId)
                 .orElseThrow(() -> new RuntimeException("Component not found"));
@@ -444,6 +643,18 @@ public class PublicStatusService {
         return buildUptimeHistoryResponse(componentId, component.getName(), "COMPONENT", days, startDate, endDate, historyRecords);
     }
 
+    /**
+     * Builds an UptimeHistoryResponse from history records, filling in missing days with default values.
+     *
+     * @param id the UUID of the app or component
+     * @param name the name of the app or component
+     * @param type the type identifier ("APP" or "COMPONENT")
+     * @param days the number of days in the range
+     * @param startDate the start date of the history range
+     * @param endDate the end date of the history range
+     * @param historyRecords the retrieved history records
+     * @return a fully populated UptimeHistoryResponse
+     */
     private UptimeHistoryResponse buildUptimeHistoryResponse(UUID id, String name, String type, int days,
             LocalDate startDate, LocalDate endDate, List<StatusUptimeHistory> historyRecords) {
 
@@ -500,6 +711,14 @@ public class PublicStatusService {
         return response;
     }
 
+    /**
+     * Retrieves uptime history for all components of an app.
+     *
+     * @param appId the UUID of the status app
+     * @param days the number of days of history to retrieve
+     * @return a list of UptimeHistoryResponse objects, one for each component
+     * @throws RuntimeException if the app is not found or is not public
+     */
     public List<UptimeHistoryResponse> getAllComponentsUptimeHistory(UUID appId, int days) {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException("Status app not found"));
