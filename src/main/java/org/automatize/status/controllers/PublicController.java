@@ -9,6 +9,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
+/**
+ * MVC controller for public-facing status pages.
+ * <p>
+ * Serves publicly accessible Thymeleaf templates for status overview,
+ * incidents, maintenance schedules, and history pages.
+ * </p>
+ */
 @Controller
 @PropertySource("classpath:build.properties")
 public class PublicController {
@@ -28,6 +35,11 @@ public class PublicController {
     @Value("${app.copyright:Automatize BV}")
     private String copyright;
 
+    /**
+     * Adds common attributes to the model for all public pages.
+     *
+     * @param model the model to add attributes to
+     */
     private void addCommonAttributes(Model model) {
         model.addAttribute("applicationName", applicationName);
         model.addAttribute("serverPort", serverPort);
@@ -36,18 +48,37 @@ public class PublicController {
         model.addAttribute("copyright", copyright);
     }
 
+    /**
+     * Displays the main public status page.
+     *
+     * @param model the model for template rendering
+     * @return the status template view name
+     */
     @GetMapping("/")
     public String showStatusPage(Model model) {
         addCommonAttributes(model);
         return "public/status";
     }
 
+    /**
+     * Displays the incidents list page.
+     *
+     * @param model the model for template rendering
+     * @return the incidents template view name
+     */
     @GetMapping("/incidents")
     public String showIncidentsPage(Model model) {
         addCommonAttributes(model);
         return "public/incidents";
     }
 
+    /**
+     * Displays a specific incident's detail page.
+     *
+     * @param incidentId the UUID of the incident to display
+     * @param model the model for template rendering
+     * @return the incident detail template view name
+     */
     @GetMapping("/incidents/{incidentId}")
     public String showIncidentDetailPage(@PathVariable UUID incidentId, Model model) {
         addCommonAttributes(model);
@@ -55,12 +86,24 @@ public class PublicController {
         return "public/incident-detail";
     }
 
+    /**
+     * Displays the scheduled maintenance page.
+     *
+     * @param model the model for template rendering
+     * @return the maintenance template view name
+     */
     @GetMapping("/maintenance")
     public String showMaintenancePage(Model model) {
         addCommonAttributes(model);
         return "public/maintenance";
     }
 
+    /**
+     * Displays the uptime history page.
+     *
+     * @param model the model for template rendering
+     * @return the history template view name
+     */
     @GetMapping("/history")
     public String showHistoryPage(Model model) {
         addCommonAttributes(model);

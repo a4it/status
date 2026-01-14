@@ -18,6 +18,18 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST API controller for scheduled maintenance management.
+ * <p>
+ * This controller provides CRUD operations for maintenance windows, which represent
+ * planned service disruptions or scheduled downtime. Maintenance windows have a lifecycle
+ * (scheduled, in-progress, completed) and can be associated with specific applications
+ * and components. Access is controlled based on user authentication and roles.
+ * </p>
+ *
+ * @see StatusMaintenanceService
+ * @see StatusMaintenanceResponse
+ */
 @RestController
 @RequestMapping("/api/maintenance")
 @PreAuthorize("isAuthenticated()")
@@ -26,6 +38,17 @@ public class StatusMaintenanceController {
     @Autowired
     private StatusMaintenanceService statusMaintenanceService;
 
+    /**
+     * Retrieves a paginated list of all maintenance windows with optional filtering.
+     *
+     * @param appId optional filter by status application ID
+     * @param status optional filter by maintenance status
+     * @param startDate optional filter for maintenance windows starting after this date
+     * @param endDate optional filter for maintenance windows ending before this date
+     * @param search optional search term for filtering by title or description
+     * @param pageable pagination parameters (page, size, sort)
+     * @return ResponseEntity containing a page of maintenance windows
+     */
     @GetMapping
     public ResponseEntity<Page<StatusMaintenanceResponse>> getAllMaintenance(
             @RequestParam(required = false) UUID appId,
@@ -39,12 +62,27 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenances);
     }
 
+    /**
+     * Retrieves a maintenance window by its unique identifier.
+     *
+     * @param id the UUID of the maintenance window
+     * @return ResponseEntity containing the maintenance window details
+     */
     @GetMapping("/{id}")
     public ResponseEntity<StatusMaintenanceResponse> getMaintenanceById(@PathVariable UUID id) {
         StatusMaintenanceResponse maintenance = statusMaintenanceService.getMaintenanceById(id);
         return ResponseEntity.ok(maintenance);
     }
 
+    /**
+     * Creates a new scheduled maintenance window.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param request the maintenance creation request containing maintenance details
+     * @return ResponseEntity containing the created maintenance window with HTTP 201 status
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusMaintenanceResponse> createMaintenance(@Valid @RequestBody StatusMaintenanceRequest request) {
@@ -52,6 +90,16 @@ public class StatusMaintenanceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(maintenance);
     }
 
+    /**
+     * Updates an existing maintenance window.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the maintenance window to update
+     * @param request the maintenance update request containing new details
+     * @return ResponseEntity containing the updated maintenance window
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusMaintenanceResponse> updateMaintenance(
@@ -61,6 +109,15 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenance);
     }
 
+    /**
+     * Deletes a maintenance window by its unique identifier.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the maintenance window to delete
+     * @return ResponseEntity containing a success message
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<MessageResponse> deleteMaintenance(@PathVariable UUID id) {
@@ -68,6 +125,16 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(new MessageResponse("Maintenance deleted successfully", true));
     }
 
+    /**
+     * Updates the status of a maintenance window.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the maintenance window
+     * @param status the new status value
+     * @return ResponseEntity containing the updated maintenance window
+     */
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusMaintenanceResponse> updateMaintenanceStatus(
@@ -77,6 +144,14 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenance);
     }
 
+    /**
+     * Retrieves upcoming scheduled maintenance windows within a time range.
+     *
+     * @param appId optional filter by status application ID
+     * @param tenantId optional filter by tenant ID
+     * @param days the number of days in the future to look (default: 30)
+     * @return ResponseEntity containing a list of upcoming maintenance windows
+     */
     @GetMapping("/upcoming")
     public ResponseEntity<List<StatusMaintenanceResponse>> getUpcomingMaintenance(
             @RequestParam(required = false) UUID appId,
@@ -86,6 +161,13 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenances);
     }
 
+    /**
+     * Retrieves currently active (in-progress) maintenance windows.
+     *
+     * @param appId optional filter by status application ID
+     * @param tenantId optional filter by tenant ID
+     * @return ResponseEntity containing a list of active maintenance windows
+     */
     @GetMapping("/active")
     public ResponseEntity<List<StatusMaintenanceResponse>> getActiveMaintenance(
             @RequestParam(required = false) UUID appId,
@@ -94,6 +176,16 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenances);
     }
 
+    /**
+     * Starts a scheduled maintenance window.
+     * <p>
+     * This transitions the maintenance window from scheduled to in-progress status.
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the maintenance window to start
+     * @return ResponseEntity containing the updated maintenance window
+     */
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusMaintenanceResponse> startMaintenance(@PathVariable UUID id) {
@@ -101,6 +193,16 @@ public class StatusMaintenanceController {
         return ResponseEntity.ok(maintenance);
     }
 
+    /**
+     * Completes an active maintenance window.
+     * <p>
+     * This transitions the maintenance window from in-progress to completed status.
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the maintenance window to complete
+     * @return ResponseEntity containing the updated maintenance window
+     */
     @PostMapping("/{id}/complete")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusMaintenanceResponse> completeMaintenance(@PathVariable UUID id) {

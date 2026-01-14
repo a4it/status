@@ -16,6 +16,18 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST API controller for status component management.
+ * <p>
+ * This controller provides CRUD operations for status components, which represent
+ * individual services or subsystems within a status application. Components can
+ * have their own operational status and can be reordered for display purposes.
+ * Access is controlled based on user authentication and roles.
+ * </p>
+ *
+ * @see StatusComponentService
+ * @see StatusComponentResponse
+ */
 @RestController
 @RequestMapping("/api/components")
 @PreAuthorize("isAuthenticated()")
@@ -24,6 +36,14 @@ public class StatusComponentController {
     @Autowired
     private StatusComponentService statusComponentService;
 
+    /**
+     * Retrieves a paginated list of all status components with optional filtering.
+     *
+     * @param appId optional filter by status application ID
+     * @param search optional search term for filtering by name
+     * @param pageable pagination parameters (page, size, sort)
+     * @return ResponseEntity containing a page of status components
+     */
     @GetMapping
     public ResponseEntity<Page<StatusComponentResponse>> getAllComponents(
             @RequestParam(required = false) UUID appId,
@@ -33,12 +53,27 @@ public class StatusComponentController {
         return ResponseEntity.ok(components);
     }
 
+    /**
+     * Retrieves a status component by its unique identifier.
+     *
+     * @param id the UUID of the status component
+     * @return ResponseEntity containing the status component details
+     */
     @GetMapping("/{id}")
     public ResponseEntity<StatusComponentResponse> getComponentById(@PathVariable UUID id) {
         StatusComponentResponse component = statusComponentService.getComponentById(id);
         return ResponseEntity.ok(component);
     }
 
+    /**
+     * Creates a new status component.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param request the status component creation request
+     * @return ResponseEntity containing the created status component with HTTP 201 status
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusComponentResponse> createComponent(@Valid @RequestBody StatusComponentRequest request) {
@@ -46,6 +81,16 @@ public class StatusComponentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(component);
     }
 
+    /**
+     * Updates an existing status component.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the status component to update
+     * @param request the status component update request
+     * @return ResponseEntity containing the updated status component
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<StatusComponentResponse> updateComponent(
@@ -55,6 +100,15 @@ public class StatusComponentController {
         return ResponseEntity.ok(component);
     }
 
+    /**
+     * Deletes a status component by its unique identifier.
+     * <p>
+     * This endpoint is restricted to users with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the status component to delete
+     * @return ResponseEntity containing a success message
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<MessageResponse> deleteComponent(@PathVariable UUID id) {
@@ -62,6 +116,16 @@ public class StatusComponentController {
         return ResponseEntity.ok(new MessageResponse("Component deleted successfully", true));
     }
 
+    /**
+     * Updates the operational status of a status component.
+     * <p>
+     * This endpoint is accessible to users with ADMIN, MANAGER, or USER roles.
+     * </p>
+     *
+     * @param id the UUID of the status component
+     * @param status the new operational status value
+     * @return ResponseEntity containing the updated status component
+     */
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'USER')")
     public ResponseEntity<StatusComponentResponse> updateComponentStatus(
@@ -71,12 +135,29 @@ public class StatusComponentController {
         return ResponseEntity.ok(component);
     }
 
+    /**
+     * Retrieves all status components belonging to a specific status application.
+     *
+     * @param appId the UUID of the status application
+     * @return ResponseEntity containing a list of status components
+     */
     @GetMapping("/app/{appId}")
     public ResponseEntity<List<StatusComponentResponse>> getComponentsByApp(@PathVariable UUID appId) {
         List<StatusComponentResponse> components = statusComponentService.getComponentsByApp(appId);
         return ResponseEntity.ok(components);
     }
 
+    /**
+     * Reorders status components within their parent application.
+     * <p>
+     * This endpoint accepts a list of component order requests specifying the new
+     * display position for each component. This endpoint is restricted to users
+     * with ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param orderRequests list of component order requests containing component IDs and new positions
+     * @return ResponseEntity containing a success message
+     */
     @PutMapping("/reorder")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<MessageResponse> reorderComponents(@RequestBody List<ComponentOrderRequest> orderRequests) {

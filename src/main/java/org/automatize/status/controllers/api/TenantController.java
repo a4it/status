@@ -15,6 +15,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+/**
+ * REST API controller for tenant management operations.
+ * <p>
+ * This controller provides CRUD operations for tenants, which are the top-level
+ * entities in the multi-tenant hierarchy. Tenants contain organizations, which
+ * in turn contain users. All endpoints in this controller are restricted to
+ * users with ADMIN role only.
+ * </p>
+ *
+ * @see TenantService
+ * @see Tenant
+ */
 @RestController
 @RequestMapping("/api/tenants")
 @PreAuthorize("hasRole('ADMIN')")
@@ -23,6 +35,13 @@ public class TenantController {
     @Autowired
     private TenantService tenantService;
 
+    /**
+     * Retrieves a paginated list of all tenants with optional search filtering.
+     *
+     * @param search optional search term for filtering by name
+     * @param pageable pagination parameters (page, size, sort)
+     * @return ResponseEntity containing a page of tenants
+     */
     @GetMapping
     public ResponseEntity<Page<Tenant>> getAllTenants(
             @RequestParam(required = false) String search,
@@ -31,18 +50,37 @@ public class TenantController {
         return ResponseEntity.ok(tenants);
     }
 
+    /**
+     * Retrieves a tenant by its unique identifier.
+     *
+     * @param id the UUID of the tenant
+     * @return ResponseEntity containing the tenant details
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Tenant> getTenantById(@PathVariable UUID id) {
         Tenant tenant = tenantService.getTenantById(id);
         return ResponseEntity.ok(tenant);
     }
 
+    /**
+     * Creates a new tenant.
+     *
+     * @param request the tenant creation request containing tenant details
+     * @return ResponseEntity containing the created tenant with HTTP 201 status
+     */
     @PostMapping
     public ResponseEntity<Tenant> createTenant(@Valid @RequestBody TenantRequest request) {
         Tenant tenant = tenantService.createTenant(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(tenant);
     }
 
+    /**
+     * Updates an existing tenant.
+     *
+     * @param id the UUID of the tenant to update
+     * @param request the tenant update request containing new details
+     * @return ResponseEntity containing the updated tenant
+     */
     @PutMapping("/{id}")
     public ResponseEntity<Tenant> updateTenant(
             @PathVariable UUID id,
@@ -51,12 +89,27 @@ public class TenantController {
         return ResponseEntity.ok(tenant);
     }
 
+    /**
+     * Deletes a tenant by its unique identifier.
+     * <p>
+     * Note: Deleting a tenant will cascade to all associated organizations and users.
+     * </p>
+     *
+     * @param id the UUID of the tenant to delete
+     * @return ResponseEntity containing a success message
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<MessageResponse> deleteTenant(@PathVariable UUID id) {
         tenantService.deleteTenant(id);
         return ResponseEntity.ok(new MessageResponse("Tenant deleted successfully", true));
     }
 
+    /**
+     * Retrieves a tenant by its unique name.
+     *
+     * @param name the unique name of the tenant
+     * @return ResponseEntity containing the tenant details
+     */
     @GetMapping("/name/{name}")
     public ResponseEntity<Tenant> getTenantByName(@PathVariable String name) {
         Tenant tenant = tenantService.getTenantByName(name);

@@ -13,6 +13,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Initializes default data on application startup.
+ * <p>
+ * Creates a default tenant, organization, and admin user if they don't exist.
+ * This ensures the application has baseline data for initial access and configuration.
+ * </p>
+ */
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -23,6 +30,14 @@ public class DataInitializer implements CommandLineRunner {
     private final OrganizationRepository organizationRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Constructs the data initializer with required dependencies.
+     *
+     * @param userRepository the user repository for persisting users
+     * @param tenantRepository the tenant repository for persisting tenants
+     * @param organizationRepository the organization repository for persisting organizations
+     * @param passwordEncoder the password encoder for hashing passwords
+     */
     public DataInitializer(UserRepository userRepository,
                           TenantRepository tenantRepository,
                           OrganizationRepository organizationRepository,
@@ -33,6 +48,14 @@ public class DataInitializer implements CommandLineRunner {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Executes the data initialization on application startup.
+     * <p>
+     * Creates default tenant, organization, and admin user if they don't already exist.
+     * </p>
+     *
+     * @param args command line arguments (unused)
+     */
     @Override
     @Transactional
     public void run(String... args) {

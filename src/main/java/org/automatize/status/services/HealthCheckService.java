@@ -19,15 +19,56 @@ import java.net.URI;
 import java.net.URL;
 import java.time.ZonedDateTime;
 
+/**
+ * Service responsible for performing various types of health checks on monitored services.
+ * <p>
+ * This service supports multiple health check types:
+ * <ul>
+ *   <li><strong>PING</strong> - ICMP ping to verify host reachability</li>
+ *   <li><strong>HTTP_GET</strong> - HTTP GET request with expected status code validation</li>
+ *   <li><strong>SPRING_BOOT_HEALTH</strong> - Spring Boot Actuator health endpoint check</li>
+ *   <li><strong>TCP_PORT</strong> - TCP socket connection check</li>
+ * </ul>
+ * </p>
+ * <p>
+ * The service also handles updating app and component status based on check results,
+ * including automatic status transitions based on consecutive failures.
+ * </p>
+ *
+ * @author Status Monitoring Team
+ * @since 1.0
+ * @see HealthCheckScheduler
+ */
 @Service
 public class HealthCheckService {
 
+    /**
+     * Logger instance for health check operations.
+     */
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckService.class);
 
+    /**
+     * Repository for status app data access and updates.
+     */
     private final StatusAppRepository statusAppRepository;
+
+    /**
+     * Repository for status component data access and updates.
+     */
     private final StatusComponentRepository statusComponentRepository;
+
+    /**
+     * JSON object mapper for parsing health check responses.
+     */
     private final ObjectMapper objectMapper;
 
+    /**
+     * Constructs a new HealthCheckService with the required dependencies.
+     *
+     * @param statusAppRepository repository for status app operations
+     * @param statusComponentRepository repository for status component operations
+     * @param objectMapper JSON mapper for parsing responses
+     */
     public HealthCheckService(StatusAppRepository statusAppRepository,
                               StatusComponentRepository statusComponentRepository,
                               ObjectMapper objectMapper) {
@@ -36,6 +77,18 @@ public class HealthCheckService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * Performs a health check based on the specified check type.
+     * <p>
+     * This method dispatches the check to the appropriate handler based on the check type.
+     * </p>
+     *
+     * @param checkType the type of check to perform (PING, HTTP_GET, SPRING_BOOT_HEALTH, TCP_PORT)
+     * @param url the URL or host address to check
+     * @param timeoutSeconds the timeout for the check in seconds
+     * @param expectedStatus the expected HTTP status code (for HTTP-based checks)
+     * @return a HealthCheckResult indicating success or failure with a message
+     */
     public HealthCheckResult performCheck(String checkType, String url, int timeoutSeconds, Integer expectedStatus) {
         if (checkType == null || "NONE".equals(checkType)) {
             return new HealthCheckResult(true, "No check configured");
@@ -52,6 +105,13 @@ public class HealthCheckService {
         };
     }
 
+    /**
+     * Performs an ICMP ping check to verify host reachability.
+     *
+     * @param host the hostname or IP address to ping
+     * @param timeoutMs the timeout in milliseconds
+     * @return a HealthCheckResult indicating whether the host is reachable
+     */
     private HealthCheckResult performPing(String host, int timeoutMs) {
         try {
             String hostname = extractHostname(host);
@@ -71,6 +131,17 @@ public class HealthCheckService {
         }
     }
 
+    /**
+     * Performs an HTTP GET request and validates the response status code.
+     * <p>
+     * If the expected status is 200, any 2xx status code is considered successful.
+     * </p>
+     *
+     * @param urlString the URL to request
+     * @param timeoutMs the connection and read timeout in milliseconds
+     * @param expectedStatus the expected HTTP status code
+     * @return a HealthCheckResult indicating whether the request was successful
+     */
     private HealthCheckResult performHttpGet(String urlString, int timeoutMs, int expectedStatus) {
         HttpURLConnection connection = null;
         try {
@@ -100,6 +171,17 @@ public class HealthCheckService {
         }
     }
 
+    /**
+     * Performs a Spring Boot Actuator health endpoint check.
+     * <p>
+     * This method requests the /actuator/health endpoint and parses the JSON response
+     * to determine if the application status is "UP".
+     * </p>
+     *
+     * @param urlString the base URL of the Spring Boot application
+     * @param timeoutMs the connection and read timeout in milliseconds
+     * @return a HealthCheckResult indicating whether the application is healthy
+     */
     private HealthCheckResult performSpringBootHealth(String urlString, int timeoutMs) {
         HttpURLConnection connection = null;
         try {
@@ -144,6 +226,17 @@ public class HealthCheckService {
         }
     }
 
+    /**
+     * Performs a TCP port connection check.
+     * <p>
+     * This method attempts to establish a TCP socket connection to the specified
+     * host and port to verify the service is accepting connections.
+     * </p>
+     *
+     * @param hostPort the host and port in format "host:port" or "tcp://host:port"
+     * @param timeoutMs the connection timeout in milliseconds
+     * @return a HealthCheckResult indicating whether the connection was successful
+     */
     private HealthCheckResult performTcpCheck(String hostPort, int timeoutMs) {
         try {
             String[] parts = hostPort.replace("tcp://", "").split(":");
@@ -164,6 +257,16 @@ public class HealthCheckService {
         }
     }
 
+    /**
+     * Extracts the hostname from a URL string.
+     * <p>
+     * This method strips protocol prefixes, port numbers, and path components
+     * to return just the hostname.
+     * </p>
+     *
+     * @param url the URL to extract the hostname from
+     * @return the extracted hostname, or empty string if url is null
+     */
     private String extractHostname(String url) {
         if (url == null) return "";
         String hostname = url.replaceFirst("^(https?://)", "").replaceFirst("^(tcp://)", "");
@@ -178,6 +281,19 @@ public class HealthCheckService {
         return hostname;
     }
 
+    /**
+     * Updates the health check result for a status app and manages status transitions.
+     * <p>
+     * On successful checks, the consecutive failure counter is reset and the app
+     * may be auto-restored to OPERATIONAL status if it was previously degraded.
+     * On failed checks, the consecutive failure counter is incremented and the app
+     * status may be changed to DEGRADED_PERFORMANCE or MAJOR_OUTAGE based on the
+     * configured failure threshold.
+     * </p>
+     *
+     * @param app the status app to update
+     * @param result the health check result
+     */
     @Transactional
     public void updateAppCheckResult(StatusApp app, HealthCheckResult result) {
         app.setLastCheckAt(ZonedDateTime.now());
@@ -213,6 +329,19 @@ public class HealthCheckService {
         statusAppRepository.save(app);
     }
 
+    /**
+     * Updates the health check result for a status component and manages status transitions.
+     * <p>
+     * On successful checks, the consecutive failure counter is reset and the component
+     * may be auto-restored to OPERATIONAL status if it was previously degraded.
+     * On failed checks, the consecutive failure counter is incremented and the component
+     * status may be changed to DEGRADED_PERFORMANCE or MAJOR_OUTAGE based on the
+     * configured failure threshold.
+     * </p>
+     *
+     * @param component the status component to update
+     * @param result the health check result
+     */
     @Transactional
     public void updateComponentCheckResult(StatusComponent component, HealthCheckResult result) {
         component.setLastCheckAt(ZonedDateTime.now());
@@ -248,5 +377,11 @@ public class HealthCheckService {
         statusComponentRepository.save(component);
     }
 
+    /**
+     * Record representing the result of a health check operation.
+     *
+     * @param success true if the health check passed, false otherwise
+     * @param message a descriptive message about the check result
+     */
     public record HealthCheckResult(boolean success, String message) {}
 }

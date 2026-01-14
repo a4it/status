@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+/**
+ * MVC controller for authentication-related pages.
+ * <p>
+ * Handles login, logout, registration, and password recovery page rendering.
+ * Also manages JWT cookie cleanup during logout.
+ * </p>
+ */
 @Controller
 public class AuthenticationController {
 
@@ -26,6 +33,15 @@ public class AuthenticationController {
     @Value("${app.registration.enabled:true}")
     private boolean registrationEnabled;
 
+    /**
+     * Displays the login form page.
+     * <p>
+     * Redirects authenticated users to the dashboard.
+     * </p>
+     *
+     * @param model the model for template rendering
+     * @return the login template view name or redirect to dashboard
+     */
     @GetMapping("/login")
     public String showLoginForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -39,6 +55,13 @@ public class AuthenticationController {
         return "authentication/login";
     }
 
+    /**
+     * Handles user logout by clearing JWT cookies.
+     *
+     * @param response the HTTP response for cookie manipulation
+     * @param redirectAttributes attributes for flash messages
+     * @return redirect to login page
+     */
     @GetMapping("/logout")
     public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
         Cookie jwtCookie = new Cookie("jwt", null);
@@ -63,11 +86,28 @@ public class AuthenticationController {
         return "redirect:/login";
     }
 
+    /**
+     * Handles POST logout requests by delegating to the GET logout handler.
+     *
+     * @param response the HTTP response for cookie manipulation
+     * @param redirectAttributes attributes for flash messages
+     * @return redirect to login page
+     */
     @PostMapping("/logout")
     public String handleLogout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
         return logout(response, redirectAttributes);
     }
 
+    /**
+     * Displays the user registration form.
+     * <p>
+     * Redirects if registration is disabled or user is already authenticated.
+     * </p>
+     *
+     * @param model the model for template rendering
+     * @param redirectAttributes attributes for flash messages
+     * @return the register template view name or redirect
+     */
     @GetMapping("/register")
     public String showRegisterForm(Model model, RedirectAttributes redirectAttributes) {
         if (!registrationEnabled) {
@@ -86,7 +126,16 @@ public class AuthenticationController {
 
         return "authentication/register";
     }
-    
+
+    /**
+     * Displays the forgot password form.
+     * <p>
+     * Redirects authenticated users to the dashboard.
+     * </p>
+     *
+     * @param model the model for template rendering
+     * @return the forgot password template view name or redirect to dashboard
+     */
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

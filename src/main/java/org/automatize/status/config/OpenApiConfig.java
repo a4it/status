@@ -10,9 +10,21 @@ import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class for OpenAPI/Swagger documentation.
+ * <p>
+ * Configures the OpenAPI specification including API information,
+ * security schemes, and grouped API endpoints for documentation.
+ * </p>
+ */
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * Creates the main OpenAPI configuration bean.
+     *
+     * @return the configured OpenAPI instance with API info and security schemes
+     */
     @Bean
     public OpenAPI statusOpenAPI() {
         return new OpenAPI()
@@ -24,6 +36,11 @@ public class OpenApiConfig {
                         .addSecuritySchemes("Bearer Authentication", createAPIKeyScheme()));
     }
 
+    /**
+     * Creates a grouped API configuration for public endpoints.
+     *
+     * @return the grouped API configuration for authentication and public status endpoints
+     */
     @Bean
     public GroupedOpenApi publicApi() {
         return GroupedOpenApi.builder()
@@ -33,6 +50,11 @@ public class OpenApiConfig {
                 .build();
     }
 
+    /**
+     * Creates a grouped API configuration for authenticated endpoints.
+     *
+     * @return the grouped API configuration for endpoints requiring authentication
+     */
     @Bean
     public GroupedOpenApi authenticatedApi() {
         return GroupedOpenApi.builder()
@@ -46,6 +68,11 @@ public class OpenApiConfig {
                 .build();
     }
 
+    /**
+     * Creates the JWT bearer authentication security scheme.
+     *
+     * @return the configured security scheme for JWT authentication
+     */
     private SecurityScheme createAPIKeyScheme() {
         return new SecurityScheme().type(SecurityScheme.Type.HTTP)
                 .bearerFormat("JWT")
