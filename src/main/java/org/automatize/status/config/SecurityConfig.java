@@ -102,7 +102,6 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/", "/login", "/logout", "/register", "/forgot-password").permitAll()
-                .requestMatchers("/dashboard", "/dashboard/**").permitAll()
                 .requestMatchers("/admin/**").permitAll()
                 .requestMatchers("/incidents", "/incidents/**", "/maintenance", "/history").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/icons/**").permitAll()

@@ -46,7 +46,7 @@ public class AuthenticationController {
     public String showLoginForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/dashboard";
+            return "redirect:/admin";
         }
         
         model.addAttribute("applicationName", applicationName);
@@ -118,7 +118,7 @@ public class AuthenticationController {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/dashboard";
+            return "redirect:/admin";
         }
 
         model.addAttribute("applicationName", applicationName);
@@ -140,7 +140,7 @@ public class AuthenticationController {
     public String showForgotPasswordForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/dashboard";
+            return "redirect:/admin";
         }
         
         model.addAttribute("applicationName", applicationName);

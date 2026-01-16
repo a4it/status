@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
             notifications.show('Login successful! Redirecting...', 'success');
             
             setTimeout(() => {
-                window.location.href = '/dashboard';
+                window.location.href = '/admin';
             }, 1000);
             
         } catch (error) {
