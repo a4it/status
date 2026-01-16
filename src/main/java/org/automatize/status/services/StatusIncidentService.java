@@ -68,6 +68,12 @@ public class StatusIncidentService {
     private StatusComponentRepository statusComponentRepository;
 
     /**
+     * Service for sending incident notifications to subscribers.
+     */
+    @Autowired
+    private IncidentNotificationService incidentNotificationService;
+
+    /**
      * Retrieves a paginated list of incidents with optional filtering.
      *
      * @param appId optional app ID to filter incidents
@@ -201,7 +207,10 @@ public class StatusIncidentService {
         
         // Update app status
         updateAppStatusForIncident(app);
-        
+
+        // Notify subscribers about the new incident
+        incidentNotificationService.notifySubscribersOfNewIncident(savedIncident);
+
         return mapToResponse(savedIncident);
     }
 
@@ -323,7 +332,10 @@ public class StatusIncidentService {
         
         // Update app status
         updateAppStatusForIncident(savedIncident.getApp());
-        
+
+        // Notify subscribers about the incident resolution
+        incidentNotificationService.notifySubscribersOfIncidentResolution(savedIncident, resolvedMessage);
+
         return mapToResponse(savedIncident);
     }
 

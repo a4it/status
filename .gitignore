@@ -33,3 +33,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Maven Flatten Plugin ###
+.flattened-pom.xml

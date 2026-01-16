@@ -14,11 +14,12 @@
 
     <groupId>org.automatize</groupId>
     <artifactId>status</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${revision}</version>
     <name>status</name>
     <description>Status Monitoring Solution</description>
 
     <properties>
+        <revision>0.0.0-SNAPSHOT</revision>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -49,7 +50,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-        
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Flyway -->
         <dependency>
             <groupId>org.flywaydb</groupId>
@@ -129,7 +134,7 @@
             </resource>
         </resources>
         <plugins>
-            <!-- Antrun Plugin - increments build number first -->
+            <!-- Antrun Plugin - increments build number and writes revision -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
@@ -143,11 +148,73 @@
                         </goals>
                         <configuration>
                             <target>
+                                <!-- Increment build number -->
                                 <propertyfile file="${project.basedir}/build.properties">
                                     <entry key="buildNumber" type="int" default="0" operation="+"/>
                                 </propertyfile>
+                                <!-- Read the incremented value -->
+                                <loadfile property="build.num" srcFile="${project.basedir}/build.properties">
+                                    <filterchain>
+                                        <linecontainsregexp>
+                                            <regexp pattern="^buildNumber="/>
+                                        </linecontainsregexp>
+                                        <replaceregex pattern="buildNumber=" replace=""/>
+                                        <striplinebreaks/>
+                                    </filterchain>
+                                </loadfile>
+                                <!-- Write revision back to properties file -->
+                                <propertyfile file="${project.basedir}/build.properties">
+                                    <entry key="revision" value="0.0.${build.num}-SNAPSHOT"/>
+                                </propertyfile>
+                                <echo message="Build ${build.num} - Revision: 0.0.${build.num}-SNAPSHOT"/>
                             </target>
                         </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Properties Plugin - reads build.properties after increment -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.2.1</version>
+                <executions>
+                    <execution>
+                        <id>read-build-properties</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/build.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Flatten Plugin - resolves ${revision} in installed/deployed pom -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

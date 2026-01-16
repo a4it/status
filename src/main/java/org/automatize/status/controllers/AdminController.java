@@ -104,4 +104,17 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/components";
     }
+
+    /**
+     * Displays the notification subscribers management page.
+     *
+     * @param model the model for template rendering
+     * @return the subscribers template view name
+     */
+    @GetMapping("/subscribers")
+    public String subscribers(Model model) {
+        model.addAttribute("activeNav", "subscribers");
+        addCommonAttributes(model);
+        return "admin/subscribers";
+    }
 }
