@@ -19,7 +19,7 @@
     <description>Status Monitoring Solution</description>
 
     <properties>
-        <revision>0.0.0-SNAPSHOT</revision>
+        <revision>0.0.27-SNAPSHOT</revision>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
@@ -166,6 +166,10 @@
                                 <propertyfile file="${project.basedir}/build.properties">
                                     <entry key="revision" value="0.0.${build.num}-SNAPSHOT"/>
                                 </propertyfile>
+                                <!-- Update revision property in pom.xml -->
+                                <replaceregexp file="${project.basedir}/pom.xml"
+                                               match="&lt;revision&gt;[^&lt;]*&lt;/revision&gt;"
+                                               replace="&lt;revision&gt;0.0.${build.num}-SNAPSHOT&lt;/revision&gt;"/>
                                 <echo message="Build ${build.num} - Revision: 0.0.${build.num}-SNAPSHOT"/>
                             </target>
                         </configuration>

@@ -1,10 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // If already authenticated, redirect to admin
+    if (auth.isAuthenticated()) {
+        window.location.href = '/admin';
+        return;
+    }
+
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
     const togglePassword = document.getElementById('togglePassword');
-    
+
     notifications.showFlashMessages();
     
     togglePassword.addEventListener('click', function(e) {

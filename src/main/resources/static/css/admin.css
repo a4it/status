@@ -1,0 +1,347 @@
+/* Admin Pages - Black and White Theme */
+
+/* Override Primary Colors */
+:root {
+    --tblr-primary: #222;
+    --tblr-primary-rgb: 34, 34, 34;
+}
+
+/* Body */
+body {
+    background-color: #f8f9fa;
+}
+
+/* Navbar - Dark Theme */
+.navbar {
+    background-color: #1a1a1a !important;
+    border-bottom: 1px solid #333;
+}
+
+.navbar-brand,
+.navbar .nav-link,
+.navbar .nav-link-title {
+    color: #fff !important;
+}
+
+.navbar .nav-link:hover {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar .nav-link-icon {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.navbar .nav-item.active .nav-link {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+/* Secondary Navbar */
+.navbar-light {
+    background-color: #2d2d2d !important;
+}
+
+.navbar-light .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.navbar-light .nav-link:hover {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Avatar */
+.avatar {
+    background-color: #444;
+    color: #fff;
+}
+
+/* Dropdown */
+.dropdown-menu {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item:hover {
+    background-color: #f5f5f5;
+}
+
+/* Cards */
+.card {
+    border: none;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.card-header {
+    background-color: #fafafa;
+    border-bottom: 1px solid #eee;
+}
+
+.card-title {
+    color: #222;
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #222;
+    border-color: #222;
+}
+
+.btn-primary:hover {
+    background-color: #000;
+    border-color: #000;
+}
+
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: #111;
+    border-color: #111;
+    box-shadow: 0 0 0 0.25rem rgba(34, 34, 34, 0.25);
+}
+
+.btn-outline-primary {
+    color: #222;
+    border-color: #222;
+}
+
+.btn-outline-primary:hover {
+    background-color: #222;
+    border-color: #222;
+    color: #fff;
+}
+
+/* Status Colors - Monochrome */
+.text-green, .text-success {
+    color: #222 !important;
+}
+
+.text-red, .text-danger {
+    color: #666 !important;
+}
+
+.text-orange, .text-warning {
+    color: #444 !important;
+}
+
+.text-blue, .text-info {
+    color: #555 !important;
+}
+
+/* Status Badges - Monochrome */
+.badge-success, .bg-success {
+    background-color: #222 !important;
+}
+
+.badge-danger, .bg-danger {
+    background-color: #666 !important;
+}
+
+.badge-warning, .bg-warning {
+    background-color: #888 !important;
+    color: #fff !important;
+}
+
+.badge-info, .bg-info {
+    background-color: #555 !important;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+/* Status Dot */
+.status-dot {
+    background-color: #222;
+}
+
+.status-dot-animated {
+    position: relative;
+}
+
+.status-dot-animated::before {
+    background-color: rgba(34, 34, 34, 0.5);
+}
+
+/* Tables */
+.table {
+    --tblr-table-bg: transparent;
+}
+
+.table thead th {
+    background-color: #fafafa;
+    color: #222;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Forms */
+.form-control,
+.form-select {
+    border-color: #ddd;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #222;
+    box-shadow: 0 0 0 0.25rem rgba(34, 34, 34, 0.1);
+}
+
+.form-check-input:checked {
+    background-color: #222;
+    border-color: #222;
+}
+
+/* Spinner */
+.spinner-border {
+    color: #222 !important;
+}
+
+/* Links */
+a {
+    color: #222;
+}
+
+a:hover {
+    color: #000;
+}
+
+.link-secondary {
+    color: #666 !important;
+}
+
+.link-secondary:hover {
+    color: #222 !important;
+}
+
+/* Page Title */
+.page-title {
+    color: #222;
+    font-weight: 700;
+}
+
+.page-subtitle {
+    color: #666;
+}
+
+/* Subheader */
+.subheader {
+    color: #666;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+/* Stats Cards */
+.card .h1 {
+    color: #222;
+    font-weight: 700;
+}
+
+/* Footer */
+.footer {
+    background-color: #fafafa;
+    border-top: 1px solid #eee;
+}
+
+/* List Group */
+.list-group-item {
+    border-color: #eee;
+}
+
+.list-group-item:hover {
+    background-color: #f9f9f9;
+}
+
+/* Alerts */
+.alert-info {
+    background-color: #f5f5f5;
+    border-color: #ddd;
+    color: #222;
+}
+
+.alert-success {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+    color: #222;
+}
+
+.alert-warning {
+    background-color: #f5f5f5;
+    border-color: #bbb;
+    color: #222;
+}
+
+.alert-danger {
+    background-color: #f5f5f5;
+    border-color: #999;
+    color: #222;
+}
+
+/* Modal */
+.modal-header {
+    background-color: #222;
+    color: #fff;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Pagination */
+.page-link {
+    color: #222;
+}
+
+.page-item.active .page-link {
+    background-color: #222;
+    border-color: #222;
+}
+
+/* Tab Navigation */
+.nav-tabs .nav-link {
+    color: #666;
+}
+
+.nav-tabs .nav-link.active {
+    color: #222;
+    border-bottom-color: #222;
+}
+
+/* Progress Bar */
+.progress-bar {
+    background-color: #222;
+}
+
+/* Empty State */
+.empty-title {
+    color: #222;
+}
+
+.empty-subtitle {
+    color: #666;
+}
+
+/* Icon Colors */
+.text-muted i,
+.text-muted .ti {
+    color: #888;
+}
+
+/* Accordion */
+.accordion-button:not(.collapsed) {
+    background-color: #f5f5f5;
+    color: #222;
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgba(34, 34, 34, 0.1);
+}
