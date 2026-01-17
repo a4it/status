@@ -352,12 +352,152 @@ public class StatusIncidentService {
     public void deleteIncident(UUID id) {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
-        
+
         if (!"RESOLVED".equals(incident.getStatus())) {
             throw new RuntimeException("Cannot delete active incident. Resolve it first.");
         }
-        
+
         statusIncidentRepository.delete(incident);
+    }
+
+    /**
+     * Creates an automated incident for an app when health checks detect a failure.
+     * <p>
+     * This method is called by the health check system when an app transitions to
+     * a degraded or outage state. It checks if there's already an active automated
+     * incident for the app and only creates a new one if none exists.
+     * </p>
+     *
+     * @param app the affected status app
+     * @param severity the severity level (MINOR, MAJOR, CRITICAL)
+     * @param checkMessage the message from the health check describing the failure
+     * @return the created or existing incident, or null if creation failed
+     */
+    public StatusIncident createAutomatedIncident(StatusApp app, String severity, String checkMessage) {
+        if (app == null) {
+            return null;
+        }
+
+        // Check if there's already an active automated incident
+        List<StatusIncident> existingIncidents =
+                statusIncidentRepository.findActiveAutomatedIncidents(app.getId(), SYSTEM_USER);
+
+        if (!existingIncidents.isEmpty()) {
+            // Update severity if the new severity is worse
+            StatusIncident existingIncident = existingIncidents.get(0);
+            if (shouldUpgradeSeverity(existingIncident.getSeverity(), severity)) {
+                existingIncident.setSeverity(severity);
+                existingIncident.setImpact(severityToImpact(severity));
+                existingIncident.setLastModifiedBy(SYSTEM_USER);
+                statusIncidentRepository.save(existingIncident);
+            }
+            return existingIncident;
+        }
+
+        // Create new automated incident
+        StatusIncident incident = new StatusIncident();
+        incident.setApp(app);
+        incident.setTitle("Automated: " + app.getName() + " health check failure");
+        incident.setDescription("Health check failure detected: " + checkMessage);
+        incident.setStatus("INVESTIGATING");
+        incident.setSeverity(severity);
+        incident.setImpact(severityToImpact(severity));
+        incident.setStartedAt(ZonedDateTime.now());
+        incident.setIsPublic(true);
+        incident.setCreatedBy(SYSTEM_USER);
+        incident.setLastModifiedBy(SYSTEM_USER);
+
+        StatusIncident savedIncident = statusIncidentRepository.save(incident);
+
+        // Create initial incident update
+        createIncidentUpdate(savedIncident, "INVESTIGATING",
+                "Automated health check detected an issue: " + checkMessage);
+
+        // Notify subscribers about the new incident
+        incidentNotificationService.notifySubscribersOfNewIncident(savedIncident);
+
+        return savedIncident;
+    }
+
+    /**
+     * Resolves all active automated incidents for an app when health checks recover.
+     * <p>
+     * This method is called by the health check system when an app recovers and
+     * transitions back to operational status. It finds and resolves all automated
+     * incidents, sending resolution notifications to subscribers.
+     * </p>
+     *
+     * @param app the recovered status app
+     */
+    public void resolveAutomatedIncidents(StatusApp app) {
+        if (app == null) {
+            return;
+        }
+
+        List<StatusIncident> automatedIncidents =
+                statusIncidentRepository.findActiveAutomatedIncidents(app.getId(), SYSTEM_USER);
+
+        for (StatusIncident incident : automatedIncidents) {
+            incident.setStatus("RESOLVED");
+            incident.setResolvedAt(ZonedDateTime.now());
+            incident.setLastModifiedBy(SYSTEM_USER);
+
+            statusIncidentRepository.save(incident);
+
+            String resolutionMessage = "Service has recovered and health checks are now passing.";
+            createIncidentUpdate(incident, "RESOLVED", resolutionMessage);
+
+            // Notify subscribers about the resolution
+            incidentNotificationService.notifySubscribersOfIncidentResolution(incident, resolutionMessage);
+        }
+    }
+
+    /**
+     * Constant identifying automated incidents created by the system.
+     */
+    private static final String SYSTEM_USER = "system";
+
+    /**
+     * Determines if the severity should be upgraded based on priority.
+     *
+     * @param current the current severity
+     * @param newSeverity the new severity to compare
+     * @return true if the new severity is worse than the current one
+     */
+    private boolean shouldUpgradeSeverity(String current, String newSeverity) {
+        int currentPriority = getSeverityPriority(current);
+        int newPriority = getSeverityPriority(newSeverity);
+        return newPriority > currentPriority;
+    }
+
+    /**
+     * Gets the numeric priority of a severity level (higher is worse).
+     *
+     * @param severity the severity level
+     * @return the priority number
+     */
+    private int getSeverityPriority(String severity) {
+        return switch (severity) {
+            case "MINOR" -> 1;
+            case "MAJOR" -> 2;
+            case "CRITICAL" -> 3;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Maps severity to impact level.
+     *
+     * @param severity the severity level
+     * @return the corresponding impact level
+     */
+    private String severityToImpact(String severity) {
+        return switch (severity) {
+            case "CRITICAL" -> "MAJOR";
+            case "MAJOR" -> "PARTIAL_OUTAGE";
+            case "MINOR" -> "MINOR";
+            default -> "NONE";
+        };
     }
 
     /**

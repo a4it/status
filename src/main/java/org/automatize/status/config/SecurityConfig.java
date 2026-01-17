@@ -101,11 +101,12 @@ public class SecurityConfig {
             .authorizeHttpRequests()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
+                .requestMatchers("/api/events/log").permitAll()
                 .requestMatchers("/", "/login", "/logout", "/register", "/forgot-password").permitAll()
                 .requestMatchers("/admin/**").permitAll()
                 .requestMatchers("/incidents", "/incidents/**", "/maintenance", "/history").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/icons/**").permitAll()
-                .requestMatchers("/swagger/**", "/swagger-ui/**", "/swagger-ui.html", "/swagger-ui/index.html", "/api-docs/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/swagger/**", "/v3/api-docs/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
                 .requestMatchers("/health", "/actuator/**").permitAll()
                 .anyRequest().authenticated();
 

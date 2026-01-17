@@ -69,6 +69,14 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" href="/admin/events">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                        <i class="ti ti-list"></i>
+                                    </span>
+                                    <span class="nav-link-title">Events</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" href="/admin/subscribers">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-mail"></i>
@@ -259,6 +267,27 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- API Key Section (shown only when editing) -->
+                        <div class="card mt-3" id="apiKeySection" style="display: none;">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <i class="ti ti-key me-2"></i>API Key for Event Logging
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="input-group">
+                                    <input type="text" class="form-control font-monospace" id="componentApiKey" readonly>
+                                    <button class="btn btn-outline-secondary" type="button" onclick="copyApiKey()" title="Copy to clipboard">
+                                        <i class="ti ti-copy"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" type="button" onclick="regenerateApiKey()" title="Regenerate API key">
+                                        <i class="ti ti-refresh"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted mt-2 d-block">Use this API key in the X-API-Key header when logging events via POST /api/events/log</small>
                             </div>
                         </div>
                     </form>

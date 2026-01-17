@@ -3,10 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Status Monitoring API Documentation</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.11.8/swagger-ui.css" />
-    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.11.8/favicon-32x32.png" sizes="32x32" />
-    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.11.8/favicon-16x16.png" sizes="16x16" />
+    <link rel="stylesheet" type="text/css" href="/webjars/swagger-ui/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="/webjars/swagger-ui/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/webjars/swagger-ui/favicon-16x16.png" sizes="16x16" />
     <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+        *, *:before, *:after {
+            box-sizing: inherit;
+        }
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
         .auth-modal {
             display: none;
             position: fixed;
@@ -59,16 +71,17 @@
             font-size: 14px;
         }
         .auth-button {
-            background-color: #007bff;
+            background-color: #49cc90;
             color: white;
             padding: 12px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 16px;
+            font-weight: 600;
         }
         .auth-button:hover {
-            background-color: #0056b3;
+            background-color: #3db57e;
         }
         .auth-button:disabled {
             background-color: #6c757d;
@@ -80,15 +93,15 @@
             margin-top: 5px;
         }
         .success-message {
-            color: #28a745;
+            color: #49cc90;
             font-size: 14px;
             margin-top: 5px;
         }
         .custom-auth-btn {
-            background: #61affe;
+            background: #49cc90;
             color: white;
             border: none;
-            padding: 5px 23px;
+            padding: 8px 20px;
             border-radius: 4px;
             cursor: pointer;
             margin-left: 10px;
@@ -96,22 +109,19 @@
             font-family: sans-serif;
             font-weight: 600;
             transition: all .3s;
-            box-shadow: 0 1px 2px rgba(0,0,0,.1);
         }
         .custom-auth-btn:hover {
-            background: #49a2f5;
-            box-shadow: 0 0 0 3px rgba(97,175,254,.3);
+            background: #3db57e;
         }
         .logout-btn {
-            background: #dc3545;
+            background: #f93e3e;
         }
         .logout-btn:hover {
-            background: #c82333;
-            box-shadow: 0 0 0 3px rgba(220,53,69,.3);
+            background: #e02020;
         }
         .auth-status {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 6px 12px;
             margin-right: 10px;
             border-radius: 4px;
             font-size: 13px;
@@ -126,122 +136,115 @@
             background: #f8d7da;
             color: #721c24;
         }
+        .topbar-wrapper {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
     <div id="swagger-ui"></div>
-    
+
     <!-- Login Modal -->
     <div id="authModal" class="auth-modal">
         <div class="auth-modal-content">
             <div class="auth-modal-header">
-                <h3 class="auth-modal-title">Login to API</h3>
+                <h3 class="auth-modal-title">API Authentication</h3>
                 <span class="close" onclick="closeAuthModal()">&times;</span>
             </div>
             <form id="loginForm" class="auth-form">
-                <input type="text" id="username" class="auth-input" placeholder="Username" required />
-                <input type="password" id="password" class="auth-input" placeholder="Password" required />
+                <input type="text" id="username" class="auth-input" placeholder="Username" required autocomplete="username" />
+                <input type="password" id="password" class="auth-input" placeholder="Password" required autocomplete="current-password" />
                 <button type="submit" id="loginBtn" class="auth-button">Login</button>
                 <div id="authMessage"></div>
             </form>
         </div>
     </div>
 
-    <script src="https://unpkg.com/swagger-ui-dist@5.11.8/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.11.8/swagger-ui-standalone-preset.js"></script>
+    <script src="/webjars/swagger-ui/swagger-ui-bundle.js"></script>
+    <script src="/webjars/swagger-ui/swagger-ui-standalone-preset.js"></script>
     <script>
-        let authToken = localStorage.getItem('swagger_auth_token');
-        
+        const AUTH_TOKEN_KEY = 'swagger_jwt_token';
+        const BEARER_AUTH_NAME = 'Bearer Authentication';
+
+        let authToken = localStorage.getItem(AUTH_TOKEN_KEY);
+
         function showAuthModal() {
             document.getElementById('authModal').style.display = 'block';
-            // Clear form fields
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('authMessage').innerHTML = '';
-            // Focus on username field
             document.getElementById('username').focus();
         }
-        
+
         function closeAuthModal() {
             document.getElementById('authModal').style.display = 'none';
             document.getElementById('authMessage').innerHTML = '';
         }
-        
+
         function logout() {
             authToken = null;
-            localStorage.removeItem('swagger_auth_token');
-            updateAuthButton();
-            
-            // Remove authorization from Swagger UI
+            localStorage.removeItem(AUTH_TOKEN_KEY);
+            updateAuthUI();
+
             if (window.ui) {
-                window.ui.preauthorizeApiKey('Bearer Authentication', '');
+                window.ui.preauthorizeApiKey(BEARER_AUTH_NAME, '');
             }
         }
-        
-        function updateAuthButton() {
-            // Remove any existing custom auth container
+
+        function updateAuthUI() {
             const existingContainer = document.getElementById('custom-auth-container');
             if (existingContainer) {
                 existingContainer.remove();
             }
-            
-            // Find the Authorize button
-            const authorizeBtn = document.querySelector('.btn.authorize') || 
-                                document.querySelector('button.btn.authorize') ||
-                                Array.from(document.querySelectorAll('button')).find(btn => 
-                                    btn.textContent.includes('Authorize'));
-            
-            if (authorizeBtn) {
-                // Create a container for our custom elements
-                const buttonContainer = document.createElement('div');
-                buttonContainer.id = 'custom-auth-container';
-                buttonContainer.style.display = 'inline-flex';
-                buttonContainer.style.alignItems = 'center';
-                buttonContainer.style.marginLeft = '10px';
-                buttonContainer.style.verticalAlign = 'middle';
-                
-                // Add authentication status indicator
-                const statusSpan = document.createElement('span');
-                if (authToken) {
-                    statusSpan.className = 'auth-status authenticated';
-                    statusSpan.textContent = '🔓 Authenticated';
-                    buttonContainer.appendChild(statusSpan);
-                    
-                    const logoutBtn = document.createElement('button');
-                    logoutBtn.className = 'custom-auth-btn logout-btn';
-                    logoutBtn.textContent = 'Logout';
-                    logoutBtn.onclick = logout;
-                    buttonContainer.appendChild(logoutBtn);
-                } else {
-                    statusSpan.className = 'auth-status unauthenticated';
-                    statusSpan.textContent = '🔒 Not Authenticated';
-                    buttonContainer.appendChild(statusSpan);
-                    
-                    const loginBtn = document.createElement('button');
-                    loginBtn.className = 'custom-auth-btn';
-                    loginBtn.textContent = 'Login with Credentials';
-                    loginBtn.onclick = showAuthModal;
-                    buttonContainer.appendChild(loginBtn);
-                }
-                
-                // Insert after the Authorize button
-                authorizeBtn.parentNode.insertBefore(buttonContainer, authorizeBtn.nextSibling);
+
+            const authWrapper = document.querySelector('.auth-wrapper');
+            if (!authWrapper) return;
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'custom-auth-container';
+            buttonContainer.style.display = 'inline-flex';
+            buttonContainer.style.alignItems = 'center';
+            buttonContainer.style.marginLeft = '15px';
+
+            const statusSpan = document.createElement('span');
+            if (authToken) {
+                statusSpan.className = 'auth-status authenticated';
+                statusSpan.textContent = 'Authenticated';
+                buttonContainer.appendChild(statusSpan);
+
+                const logoutBtn = document.createElement('button');
+                logoutBtn.className = 'custom-auth-btn logout-btn';
+                logoutBtn.textContent = 'Logout';
+                logoutBtn.onclick = logout;
+                buttonContainer.appendChild(logoutBtn);
+            } else {
+                statusSpan.className = 'auth-status unauthenticated';
+                statusSpan.textContent = 'Not Authenticated';
+                buttonContainer.appendChild(statusSpan);
+
+                const loginBtn = document.createElement('button');
+                loginBtn.className = 'custom-auth-btn';
+                loginBtn.textContent = 'Login';
+                loginBtn.onclick = showAuthModal;
+                buttonContainer.appendChild(loginBtn);
             }
+
+            authWrapper.appendChild(buttonContainer);
         }
-        
-        // Handle login form submission
+
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
             const authMessage = document.getElementById('authMessage');
-            
+
             loginBtn.disabled = true;
             loginBtn.textContent = 'Logging in...';
             authMessage.innerHTML = '';
-            
+
             try {
                 const response = await fetch('/api/auth/login', {
                     method: 'POST',
@@ -253,27 +256,26 @@
                         password: password
                     })
                 });
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     authToken = data.accessToken;
-                    localStorage.setItem('swagger_auth_token', authToken);
-                    
-                    // Set authorization in Swagger UI
+                    localStorage.setItem(AUTH_TOKEN_KEY, authToken);
+
                     if (window.ui) {
-                        window.ui.preauthorizeApiKey('Bearer Authentication', 'Bearer ' + authToken);
+                        window.ui.preauthorizeApiKey(BEARER_AUTH_NAME, 'Bearer ' + authToken);
                     }
-                    
+
                     authMessage.innerHTML = '<div class="success-message">Login successful!</div>';
-                    
+
                     setTimeout(() => {
                         closeAuthModal();
-                        updateAuthButton();
-                    }, 1000);
-                    
+                        updateAuthUI();
+                    }, 800);
+
                 } else {
-                    const errorData = await response.json();
-                    authMessage.innerHTML = '<div class="error-message">' + (errorData.message || 'Login failed') + '</div>';
+                    const errorData = await response.json().catch(() => ({}));
+                    authMessage.innerHTML = '<div class="error-message">' + (errorData.message || 'Invalid credentials') + '</div>';
                 }
             } catch (error) {
                 authMessage.innerHTML = '<div class="error-message">Network error. Please try again.</div>';
@@ -282,29 +284,26 @@
                 loginBtn.textContent = 'Login';
             }
         });
-        
-        // Close modal when clicking outside
+
         window.onclick = function(event) {
             const modal = document.getElementById('authModal');
             if (event.target === modal) {
                 closeAuthModal();
             }
         }
-        
-        // Add keyboard shortcut (Ctrl+L) to open login modal
+
         document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'l') {
-                e.preventDefault();
-                if (!authToken) {
-                    showAuthModal();
-                }
+            if (e.key === 'Escape') {
+                closeAuthModal();
             }
         });
-        
-        // Initialize Swagger UI
+
         window.onload = function() {
             const ui = SwaggerUIBundle({
-                url: '/v3/api-docs',
+                urls: [
+                    { url: '/v3/api-docs/1-public', name: 'Public API' },
+                    { url: '/v3/api-docs/2-authenticated', name: 'Authenticated API' }
+                ],
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
@@ -314,28 +313,26 @@
                 plugins: [
                     SwaggerUIBundle.plugins.DownloadUrl
                 ],
-                layout: "StandaloneLayout",
+                layout: 'StandaloneLayout',
+                operationsSorter: 'method',
+                tagsSorter: 'alpha',
+                tryItOutEnabled: true,
                 onComplete: function() {
-                    // Auto-authorize if token exists
                     if (authToken) {
-                        ui.preauthorizeApiKey('Bearer Authentication', 'Bearer ' + authToken);
+                        ui.preauthorizeApiKey(BEARER_AUTH_NAME, 'Bearer ' + authToken);
                     }
-                    
-                    // Add custom auth button after UI is loaded
-                    // Try multiple times to ensure the button is added
+
                     let attempts = 0;
                     const addButtonInterval = setInterval(() => {
-                        updateAuthButton();
+                        updateAuthUI();
                         attempts++;
-                        
-                        // Stop trying after button is successfully added or after 10 attempts
-                        if (document.getElementById('custom-auth-container') || attempts >= 10) {
+                        if (document.getElementById('custom-auth-container') || attempts >= 15) {
                             clearInterval(addButtonInterval);
                         }
-                    }, 500);
+                    }, 300);
                 }
             });
-            
+
             window.ui = ui;
         }
     </script>

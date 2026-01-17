@@ -43,6 +43,12 @@ public class StatusAppResponse {
     /** When the status was last updated. */
     private ZonedDateTime lastUpdated;
 
+    /** The ID of the platform this application belongs to. */
+    private UUID platformId;
+
+    /** The name of the platform this application belongs to. */
+    private String platformName;
+
     /** Whether health checking is enabled. */
     private Boolean checkEnabled;
 
@@ -75,6 +81,9 @@ public class StatusAppResponse {
 
     /** The current count of consecutive failures. */
     private Integer consecutiveFailures;
+
+    /** API key for event logging authentication. */
+    private String apiKey;
 
     /**
      * Default constructor.
@@ -260,6 +269,42 @@ public class StatusAppResponse {
      */
     public void setLastUpdated(ZonedDateTime lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    /**
+     * Gets the platform ID.
+     *
+     * @return the platform ID
+     */
+    public UUID getPlatformId() {
+        return platformId;
+    }
+
+    /**
+     * Sets the platform ID.
+     *
+     * @param platformId the platform ID to set
+     */
+    public void setPlatformId(UUID platformId) {
+        this.platformId = platformId;
+    }
+
+    /**
+     * Gets the platform name.
+     *
+     * @return the platform name
+     */
+    public String getPlatformName() {
+        return platformName;
+    }
+
+    /**
+     * Sets the platform name.
+     *
+     * @param platformName the platform name to set
+     */
+    public void setPlatformName(String platformName) {
+        this.platformName = platformName;
     }
 
     /**
@@ -458,5 +503,23 @@ public class StatusAppResponse {
      */
     public void setConsecutiveFailures(Integer consecutiveFailures) {
         this.consecutiveFailures = consecutiveFailures;
+    }
+
+    /**
+     * Gets the API key for event logging.
+     *
+     * @return the API key
+     */
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    /**
+     * Sets the API key for event logging.
+     *
+     * @param apiKey the API key to set
+     */
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }

@@ -84,6 +84,13 @@ public class StatusApp {
     private Organization organization;
 
     /**
+     * The parent platform that this application belongs to.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "platform_id")
+    private StatusPlatform platform;
+
+    /**
      * Flag indicating whether automated health checks are enabled for this application.
      * Defaults to false.
      */
@@ -156,6 +163,13 @@ public class StatusApp {
      */
     @Column(name = "consecutive_failures")
     private Integer consecutiveFailures = 0;
+
+    /**
+     * API key for authenticating event logging requests.
+     * Auto-generated on create or when empty.
+     */
+    @Column(name = "api_key", length = 64)
+    private String apiKey;
 
     /**
      * Username or identifier of the user who created this application.
@@ -374,6 +388,24 @@ public class StatusApp {
      */
     public void setOrganization(Organization organization) {
         this.organization = organization;
+    }
+
+    /**
+     * Gets the parent platform that this application belongs to.
+     *
+     * @return the parent platform
+     */
+    public StatusPlatform getPlatform() {
+        return platform;
+    }
+
+    /**
+     * Sets the parent platform that this application belongs to.
+     *
+     * @param platform the parent platform to set
+     */
+    public void setPlatform(StatusPlatform platform) {
+        this.platform = platform;
     }
 
     /**
@@ -680,5 +712,23 @@ public class StatusApp {
      */
     public void setConsecutiveFailures(Integer consecutiveFailures) {
         this.consecutiveFailures = consecutiveFailures;
+    }
+
+    /**
+     * Gets the API key for event logging authentication.
+     *
+     * @return the API key
+     */
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    /**
+     * Sets the API key for event logging authentication.
+     *
+     * @param apiKey the API key to set
+     */
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }

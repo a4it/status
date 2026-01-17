@@ -149,4 +149,12 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return true if a component with the name exists in the app, false otherwise
      */
     boolean existsByAppIdAndName(UUID appId, String name);
+
+    /**
+     * Finds a component by its API key.
+     *
+     * @param apiKey the API key for event logging authentication
+     * @return an Optional containing the component if found, or empty if not found
+     */
+    Optional<StatusComponent> findByApiKey(String apiKey);
 }

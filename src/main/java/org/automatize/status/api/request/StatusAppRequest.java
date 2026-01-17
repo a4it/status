@@ -38,6 +38,9 @@ public class StatusAppRequest {
     /** The organization this application belongs to. */
     private UUID organizationId;
 
+    /** The platform this application belongs to. */
+    private UUID platformId;
+
     /** Whether health checking is enabled for this application. */
     private Boolean checkEnabled = false;
 
@@ -189,6 +192,24 @@ public class StatusAppRequest {
      */
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
+    }
+
+    /**
+     * Gets the platform ID.
+     *
+     * @return the platform ID
+     */
+    public UUID getPlatformId() {
+        return platformId;
+    }
+
+    /**
+     * Sets the platform ID.
+     *
+     * @param platformId the platform ID to set
+     */
+    public void setPlatformId(UUID platformId) {
+        this.platformId = platformId;
     }
 
     /**

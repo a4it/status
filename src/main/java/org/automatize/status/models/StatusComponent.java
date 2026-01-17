@@ -155,6 +155,13 @@ public class StatusComponent {
     private Integer consecutiveFailures = 0;
 
     /**
+     * API key for authenticating event logging requests.
+     * Auto-generated on create or when empty.
+     */
+    @Column(name = "api_key", length = 64)
+    private String apiKey;
+
+    /**
      * Username or identifier of the user who created this component.
      */
     @Column(name = "created_by", nullable = false, length = 255)
@@ -677,5 +684,23 @@ public class StatusComponent {
      */
     public void setConsecutiveFailures(Integer consecutiveFailures) {
         this.consecutiveFailures = consecutiveFailures;
+    }
+
+    /**
+     * Gets the API key for event logging authentication.
+     *
+     * @return the API key
+     */
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    /**
+     * Sets the API key for event logging authentication.
+     *
+     * @param apiKey the API key to set
+     */
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }

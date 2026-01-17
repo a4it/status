@@ -6,7 +6,14 @@ import org.automatize.status.api.response.StatusComponentResponse;
 import org.automatize.status.api.response.StatusIncidentResponse;
 import org.automatize.status.api.response.StatusMaintenanceResponse;
 import org.automatize.status.models.*;
-import org.automatize.status.repositories.*;
+import org.automatize.status.repositories.OrganizationRepository;
+import org.automatize.status.repositories.StatusAppRepository;
+import org.automatize.status.repositories.StatusComponentRepository;
+import org.automatize.status.repositories.StatusIncidentRepository;
+import org.automatize.status.repositories.StatusMaintenanceRepository;
+import org.automatize.status.repositories.StatusPlatformRepository;
+import org.automatize.status.repositories.TenantRepository;
+import org.automatize.status.util.ApiKeyGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -69,6 +76,9 @@ public class StatusAppService {
      */
     @Autowired
     private StatusMaintenanceRepository statusMaintenanceRepository;
+
+    @Autowired
+    private StatusPlatformRepository statusPlatformRepository;
 
     /**
      * Retrieves a paginated list of status apps with optional filtering.
@@ -171,10 +181,19 @@ public class StatusAppService {
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
             app.setOrganization(organization);
         }
-        
+
+        if (request.getPlatformId() != null) {
+            StatusPlatform platform = statusPlatformRepository.findById(request.getPlatformId())
+                    .orElseThrow(() -> new RuntimeException("Platform not found"));
+            app.setPlatform(platform);
+        }
+
         String currentUser = getCurrentUsername();
         app.setCreatedBy(currentUser);
         app.setLastModifiedBy(currentUser);
+
+        // Generate API key for event logging
+        app.setApiKey(ApiKeyGenerator.generateApiKey());
 
         StatusApp savedApp = statusAppRepository.save(app);
         return mapToResponse(savedApp);
@@ -208,14 +227,29 @@ public class StatusAppService {
             app.setTenant(tenant);
         }
         
-        if (request.getOrganizationId() != null && 
+        if (request.getOrganizationId() != null &&
             (app.getOrganization() == null || !app.getOrganization().getId().equals(request.getOrganizationId()))) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
             app.setOrganization(organization);
         }
-        
+
+        if (request.getPlatformId() != null) {
+            if (app.getPlatform() == null || !app.getPlatform().getId().equals(request.getPlatformId())) {
+                StatusPlatform platform = statusPlatformRepository.findById(request.getPlatformId())
+                        .orElseThrow(() -> new RuntimeException("Platform not found"));
+                app.setPlatform(platform);
+            }
+        } else {
+            app.setPlatform(null);
+        }
+
         app.setLastModifiedBy(getCurrentUsername());
+
+        // Generate API key if empty
+        if (app.getApiKey() == null || app.getApiKey().isEmpty()) {
+            app.setApiKey(ApiKeyGenerator.generateApiKey());
+        }
 
         StatusApp savedApp = statusAppRepository.save(app);
         return mapToResponse(savedApp);
@@ -304,6 +338,12 @@ public class StatusAppService {
         response.setIsPublic(app.getIsPublic());
         response.setLastUpdated(app.getLastModifiedDate());
 
+        // Platform information
+        if (app.getPlatform() != null) {
+            response.setPlatformId(app.getPlatform().getId());
+            response.setPlatformName(app.getPlatform().getName());
+        }
+
         // Health check configuration
         response.setCheckEnabled(app.getCheckEnabled());
         response.setCheckType(app.getCheckType());
@@ -316,6 +356,9 @@ public class StatusAppService {
         response.setLastCheckSuccess(app.getLastCheckSuccess());
         response.setLastCheckMessage(app.getLastCheckMessage());
         response.setConsecutiveFailures(app.getConsecutiveFailures());
+
+        // API key for event logging
+        response.setApiKey(app.getApiKey());
 
         // Load components
         List<StatusComponent> components = statusComponentRepository.findByAppIdOrderByPosition(app.getId());

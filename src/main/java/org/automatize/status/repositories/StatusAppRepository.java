@@ -60,6 +60,14 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
     List<StatusApp> findByOrganizationId(UUID organizationId);
 
     /**
+     * Finds all status apps belonging to a specific platform.
+     *
+     * @param platformId the unique identifier of the platform
+     * @return a list of status apps belonging to the specified platform
+     */
+    List<StatusApp> findByPlatformId(UUID platformId);
+
+    /**
      * Finds all status apps with a specific status.
      *
      * @param status the status to filter by (e.g., "ACTIVE", "INACTIVE")
@@ -156,4 +164,12 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @return true if a status app with the slug exists in the tenant, false otherwise
      */
     boolean existsByTenantIdAndSlug(UUID tenantId, String slug);
+
+    /**
+     * Finds a status app by its API key.
+     *
+     * @param apiKey the API key for event logging authentication
+     * @return an Optional containing the status app if found, or empty if not found
+     */
+    Optional<StatusApp> findByApiKey(String apiKey);
 }

@@ -117,4 +117,17 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/subscribers";
     }
+
+    /**
+     * Displays the platform events log page.
+     *
+     * @param model the model for template rendering
+     * @return the events template view name
+     */
+    @GetMapping("/events")
+    public String events(Model model) {
+        model.addAttribute("activeNav", "events");
+        addCommonAttributes(model);
+        return "admin/events";
+    }
 }

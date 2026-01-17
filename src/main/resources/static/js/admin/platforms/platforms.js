@@ -34,7 +34,7 @@ function updateUserInfo() {
 
 async function loadPlatforms() {
     try {
-        const response = await API.get('/status-apps?size=100');
+        const response = await API.get('/status-platforms?size=100');
         const platforms = response.content || response;
         displayPlatforms(platforms);
     } catch (error) {
@@ -54,17 +54,23 @@ function displayPlatforms(platforms) {
     tbody.innerHTML = platforms.map(platform => `
         <tr>
             <td>
-                <div class="font-weight-medium">${escapeHtml(platform.name)}</div>
+                <div class="d-flex align-items-center">
+                    ${platform.logoUrl ? `<img src="${escapeHtml(platform.logoUrl)}" alt="" class="avatar avatar-sm me-2" style="object-fit: contain;">` : ''}
+                    <div>
+                        <div class="font-weight-medium">${escapeHtml(platform.name)}</div>
+                        ${platform.websiteUrl ? `<small class="text-muted"><a href="${escapeHtml(platform.websiteUrl)}" target="_blank" class="text-reset"><i class="ti ti-external-link"></i></a></small>` : ''}
+                    </div>
+                </div>
             </td>
             <td><code>${escapeHtml(platform.slug)}</code></td>
-            <td class="text-muted">${escapeHtml(platform.description || '-')}</td>
+            <td class="text-muted">${escapeHtml(truncate(platform.description, 50) || '-')}</td>
             <td>
                 <span class="badge bg-${getStatusColor(platform.status)}">
                     ${formatStatus(platform.status)}
                 </span>
             </td>
             <td>
-                ${getHealthCheckStatus(platform)}
+                ${getAppsDisplay(platform)}
             </td>
             <td>
                 <span class="badge bg-${platform.isPublic ? 'green' : 'secondary'}">
@@ -72,10 +78,10 @@ function displayPlatforms(platforms) {
                 </span>
             </td>
             <td>
-                <button class="btn btn-sm btn-primary me-1" onclick="editPlatform('${platform.id}')">
+                <button class="btn btn-sm btn-primary me-1" onclick="editPlatform('${platform.id}')" title="Edit">
                     <i class="ti ti-edit"></i>
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="confirmDeletePlatform('${platform.id}', '${escapeHtml(platform.name)}')">
+                <button class="btn btn-sm btn-danger" onclick="confirmDeletePlatform('${platform.id}', '${escapeHtml(platform.name)}')" title="Delete">
                     <i class="ti ti-trash"></i>
                 </button>
             </td>
@@ -83,106 +89,46 @@ function displayPlatforms(platforms) {
     `).join('');
 }
 
-function getHealthCheckStatus(platform) {
-    if (!platform.checkEnabled || platform.checkType === 'NONE') {
-        return '<span class="badge bg-secondary"><i class="ti ti-minus"></i> Disabled</span>';
+function getAppsDisplay(platform) {
+    if (!platform.apps || platform.apps.length === 0) {
+        return '<span class="text-muted">No apps</span>';
     }
 
-    if (platform.lastCheckSuccess === null) {
-        return '<span class="badge bg-azure"><i class="ti ti-clock"></i> Pending</span>';
-    }
+    const appCount = platform.apps.length;
+    const appNames = platform.apps.slice(0, 3).map(app => app.name).join(', ');
+    const moreText = appCount > 3 ? ` +${appCount - 3} more` : '';
 
-    if (platform.lastCheckSuccess) {
-        const timeAgo = platform.lastCheckAt ? formatTimeAgo(platform.lastCheckAt) : '';
-        return `<span class="badge bg-green" title="${escapeHtml(platform.lastCheckMessage || '')}"><i class="ti ti-check"></i> OK ${timeAgo}</span>`;
-    } else {
-        const failures = platform.consecutiveFailures || 0;
-        return `<span class="badge bg-red" title="${escapeHtml(platform.lastCheckMessage || '')}"><i class="ti ti-x"></i> Failed (${failures})</span>`;
-    }
+    return `<span class="badge bg-blue" title="${escapeHtml(platform.apps.map(a => a.name).join(', '))}">${appCount} app${appCount !== 1 ? 's' : ''}</span>`;
 }
 
-function formatTimeAgo(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now - date;
-    const diffSecs = Math.floor(diffMs / 1000);
-
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffSecs < 3600) return `${Math.floor(diffSecs / 60)}m ago`;
-    if (diffSecs < 86400) return `${Math.floor(diffSecs / 3600)}h ago`;
-    return `${Math.floor(diffSecs / 86400)}d ago`;
+function truncate(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 function openAddPlatformModal() {
     document.getElementById('platformForm').reset();
     document.getElementById('platformId').value = '';
     document.getElementById('platformIsPublic').checked = true;
-    // Reset health check fields
-    document.getElementById('platformCheckEnabled').checked = false;
-    document.getElementById('platformCheckType').value = 'NONE';
-    document.getElementById('platformCheckUrl').value = '';
-    document.getElementById('platformCheckInterval').value = '60';
-    document.getElementById('platformCheckTimeout').value = '10';
-    document.getElementById('platformCheckExpectedStatus').value = '200';
-    document.getElementById('platformCheckFailureThreshold').value = '3';
-    toggleCheckFields();
+    document.getElementById('platformPosition').value = '0';
     document.querySelector('#platformModal .modal-title').textContent = 'Add Platform';
     platformModal.show();
 }
 
-function toggleCheckFields() {
-    const checkType = document.getElementById('platformCheckType').value;
-    const httpStatusRow = document.getElementById('httpStatusRow');
-    const checkUrlHelp = document.getElementById('checkUrlHelp');
-
-    // Show/hide HTTP status field based on check type
-    if (checkType === 'HTTP_GET') {
-        httpStatusRow.style.display = '';
-        checkUrlHelp.textContent = 'Enter full URL (e.g., https://example.com/api/health)';
-    } else if (checkType === 'SPRING_BOOT_HEALTH') {
-        httpStatusRow.style.display = 'none';
-        checkUrlHelp.textContent = 'Enter base URL (e.g., https://example.com). /actuator/health will be appended automatically.';
-    } else if (checkType === 'PING') {
-        httpStatusRow.style.display = 'none';
-        checkUrlHelp.textContent = 'Enter hostname (e.g., example.com)';
-    } else if (checkType === 'TCP_PORT') {
-        httpStatusRow.style.display = 'none';
-        checkUrlHelp.textContent = 'Enter host:port (e.g., example.com:5432)';
-    } else {
-        httpStatusRow.style.display = 'none';
-        checkUrlHelp.textContent = 'Enter URL for HTTP/Health checks, hostname for Ping, host:port for TCP';
-    }
-}
-
 async function editPlatform(id) {
     try {
-        const platform = await API.get(`/status-apps/${id}`);
+        const platform = await API.get(`/status-platforms/${id}`);
 
         document.getElementById('platformId').value = platform.id;
         document.getElementById('platformName').value = platform.name;
         document.getElementById('platformSlug').value = platform.slug;
         document.getElementById('platformDescription').value = platform.description || '';
+        document.getElementById('platformLogoUrl').value = platform.logoUrl || '';
+        document.getElementById('platformWebsiteUrl').value = platform.websiteUrl || '';
         document.getElementById('platformStatus').value = platform.status;
+        document.getElementById('platformPosition').value = platform.position || 0;
         document.getElementById('platformIsPublic').checked = platform.isPublic;
-
-        // Health check fields
-        document.getElementById('platformCheckEnabled').checked = platform.checkEnabled || false;
-        document.getElementById('platformCheckType').value = platform.checkType || 'NONE';
-        document.getElementById('platformCheckUrl').value = platform.checkUrl || '';
-        document.getElementById('platformCheckInterval').value = platform.checkIntervalSeconds || 60;
-        document.getElementById('platformCheckTimeout').value = platform.checkTimeoutSeconds || 10;
-        document.getElementById('platformCheckExpectedStatus').value = platform.checkExpectedStatus || 200;
-        document.getElementById('platformCheckFailureThreshold').value = platform.checkFailureThreshold || 3;
-        toggleCheckFields();
-
-        // Expand health check section if enabled
-        if (platform.checkEnabled) {
-            const healthCheckSection = document.getElementById('healthCheckSection');
-            if (healthCheckSection) {
-                healthCheckSection.classList.add('show');
-            }
-        }
 
         document.querySelector('#platformModal .modal-title').textContent = 'Edit Platform';
         platformModal.show();
@@ -198,16 +144,11 @@ async function savePlatform() {
         name: document.getElementById('platformName').value,
         slug: document.getElementById('platformSlug').value,
         description: document.getElementById('platformDescription').value,
+        logoUrl: document.getElementById('platformLogoUrl').value || null,
+        websiteUrl: document.getElementById('platformWebsiteUrl').value || null,
         status: document.getElementById('platformStatus').value,
-        isPublic: document.getElementById('platformIsPublic').checked,
-        // Health check configuration
-        checkEnabled: document.getElementById('platformCheckEnabled').checked,
-        checkType: document.getElementById('platformCheckType').value,
-        checkUrl: document.getElementById('platformCheckUrl').value,
-        checkIntervalSeconds: parseInt(document.getElementById('platformCheckInterval').value) || 60,
-        checkTimeoutSeconds: parseInt(document.getElementById('platformCheckTimeout').value) || 10,
-        checkExpectedStatus: parseInt(document.getElementById('platformCheckExpectedStatus').value) || 200,
-        checkFailureThreshold: parseInt(document.getElementById('platformCheckFailureThreshold').value) || 3
+        position: parseInt(document.getElementById('platformPosition').value) || 0,
+        isPublic: document.getElementById('platformIsPublic').checked
     };
 
     if (!platform.name || !platform.slug) {
@@ -215,17 +156,11 @@ async function savePlatform() {
         return;
     }
 
-    // Validate health check config if enabled
-    if (platform.checkEnabled && platform.checkType !== 'NONE' && !platform.checkUrl) {
-        showError('Check URL is required when health checking is enabled');
-        return;
-    }
-
     try {
         if (id) {
-            await API.put(`/status-apps/${id}`, platform);
+            await API.put(`/status-platforms/${id}`, platform);
         } else {
-            await API.post('/status-apps', platform);
+            await API.post('/status-platforms', platform);
         }
         platformModal.hide();
         loadPlatforms();
@@ -245,12 +180,12 @@ function confirmDeletePlatform(id, name) {
 
 async function deletePlatform(id) {
     try {
-        await API.delete(`/status-apps/${id}`);
+        await API.delete(`/status-platforms/${id}`);
         loadPlatforms();
         showSuccess('Platform deleted successfully');
     } catch (error) {
         console.error('Failed to delete platform:', error);
-        showError('Failed to delete platform');
+        showError(error.message || 'Failed to delete platform');
     }
 }
 

@@ -172,4 +172,15 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      */
     @Query("SELECT COUNT(i) FROM StatusIncident i WHERE i.app.id = :appId AND i.status != 'RESOLVED'")
     Long countActiveIncidentsByAppId(@Param("appId") UUID appId);
+
+    /**
+     * Finds active automated incidents for a specific status app.
+     * Automated incidents are created by the system during health check failures.
+     *
+     * @param appId the unique identifier of the status app
+     * @param createdBy the creator identifier (typically "system" for automated incidents)
+     * @return a list of active automated incidents
+     */
+    @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.createdBy = :createdBy AND i.status != 'RESOLVED'")
+    List<StatusIncident> findActiveAutomatedIncidents(@Param("appId") UUID appId, @Param("createdBy") String createdBy);
 }

@@ -69,6 +69,9 @@ public class StatusComponentResponse {
     /** The current count of consecutive failures. */
     private Integer consecutiveFailures;
 
+    /** API key for event logging authentication. */
+    private String apiKey;
+
     /**
      * Default constructor.
      */
@@ -415,5 +418,23 @@ public class StatusComponentResponse {
      */
     public void setConsecutiveFailures(Integer consecutiveFailures) {
         this.consecutiveFailures = consecutiveFailures;
+    }
+
+    /**
+     * Gets the API key for event logging.
+     *
+     * @return the API key
+     */
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    /**
+     * Sets the API key for event logging.
+     *
+     * @param apiKey the API key to set
+     */
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 }

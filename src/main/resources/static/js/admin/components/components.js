@@ -202,6 +202,9 @@ function openAddComponentModal() {
     toggleComponentCheckInherit();
     toggleComponentCheckFields();
 
+    // Hide API key section for new components
+    document.getElementById('apiKeySection').style.display = 'none';
+
     document.querySelector('#componentModal .modal-title').textContent = 'Add Component';
     componentModal.show();
 }
@@ -237,6 +240,10 @@ async function editComponent(id) {
                 healthCheckSection.classList.add('show');
             }
         }
+
+        // Show API key section and set the value
+        document.getElementById('apiKeySection').style.display = '';
+        document.getElementById('componentApiKey').value = component.apiKey || '';
 
         document.querySelector('#componentModal .modal-title').textContent = 'Edit Component';
         componentModal.show();
@@ -371,4 +378,37 @@ function createToastContainer() {
     container.style.zIndex = '1100';
     document.body.appendChild(container);
     return container;
+}
+
+function copyApiKey() {
+    const apiKeyInput = document.getElementById('componentApiKey');
+    navigator.clipboard.writeText(apiKeyInput.value).then(() => {
+        showSuccess('API key copied to clipboard');
+    }).catch(() => {
+        // Fallback for older browsers
+        apiKeyInput.select();
+        document.execCommand('copy');
+        showSuccess('API key copied to clipboard');
+    });
+}
+
+async function regenerateApiKey() {
+    const id = document.getElementById('componentId').value;
+    if (!id) {
+        showError('Cannot regenerate API key for a new component');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to regenerate the API key? Any systems using the current key will stop working.')) {
+        return;
+    }
+
+    try {
+        const response = await API.post(`/events/regenerate-key/component/${id}`);
+        document.getElementById('componentApiKey').value = response.apiKey || '';
+        showSuccess('API key regenerated successfully');
+    } catch (error) {
+        console.error('Failed to regenerate API key:', error);
+        showError('Failed to regenerate API key');
+    }
 }

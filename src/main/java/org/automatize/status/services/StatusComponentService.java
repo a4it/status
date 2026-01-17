@@ -9,6 +9,7 @@ import org.automatize.status.repositories.StatusAppRepository;
 import org.automatize.status.repositories.StatusComponentRepository;
 import org.automatize.status.repositories.StatusIncidentComponentRepository;
 import org.automatize.status.repositories.StatusMaintenanceComponentRepository;
+import org.automatize.status.util.ApiKeyGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -150,6 +151,9 @@ public class StatusComponentService {
             component.setPosition((int)(componentCount + 1));
         }
 
+        // Generate API key for event logging
+        component.setApiKey(ApiKeyGenerator.generateApiKey());
+
         StatusComponent savedComponent = statusComponentRepository.save(component);
         return mapToResponse(savedComponent);
     }
@@ -181,6 +185,11 @@ public class StatusComponentService {
         }
         
         component.setLastModifiedBy(getCurrentUsername());
+
+        // Generate API key if empty
+        if (component.getApiKey() == null || component.getApiKey().isEmpty()) {
+            component.setApiKey(ApiKeyGenerator.generateApiKey());
+        }
 
         StatusComponent savedComponent = statusComponentRepository.save(component);
         return mapToResponse(savedComponent);
@@ -334,6 +343,9 @@ public class StatusComponentService {
         response.setLastCheckSuccess(component.getLastCheckSuccess());
         response.setLastCheckMessage(component.getLastCheckMessage());
         response.setConsecutiveFailures(component.getConsecutiveFailures());
+
+        // API key for event logging
+        response.setApiKey(component.getApiKey());
 
         return response;
     }

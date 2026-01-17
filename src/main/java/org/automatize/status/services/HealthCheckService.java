@@ -32,7 +32,9 @@ import java.time.ZonedDateTime;
  * </p>
  * <p>
  * The service also handles updating app and component status based on check results,
- * including automatic status transitions based on consecutive failures.
+ * including automatic status transitions based on consecutive failures. When status
+ * transitions occur, incidents are automatically created and notifications are sent
+ * to subscribers.
  * </p>
  *
  * @author Status Monitoring Team
@@ -63,18 +65,26 @@ public class HealthCheckService {
     private final ObjectMapper objectMapper;
 
     /**
+     * Service for managing automated incidents.
+     */
+    private final StatusIncidentService statusIncidentService;
+
+    /**
      * Constructs a new HealthCheckService with the required dependencies.
      *
      * @param statusAppRepository repository for status app operations
      * @param statusComponentRepository repository for status component operations
      * @param objectMapper JSON mapper for parsing responses
+     * @param statusIncidentService service for automated incident management
      */
     public HealthCheckService(StatusAppRepository statusAppRepository,
                               StatusComponentRepository statusComponentRepository,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              StatusIncidentService statusIncidentService) {
         this.statusAppRepository = statusAppRepository;
         this.statusComponentRepository = statusComponentRepository;
         this.objectMapper = objectMapper;
+        this.statusIncidentService = statusIncidentService;
     }
 
     /**
@@ -286,9 +296,13 @@ public class HealthCheckService {
      * <p>
      * On successful checks, the consecutive failure counter is reset and the app
      * may be auto-restored to OPERATIONAL status if it was previously degraded.
+     * When restored, any automated incidents are also resolved and notifications sent.
+     * </p>
+     * <p>
      * On failed checks, the consecutive failure counter is incremented and the app
      * status may be changed to DEGRADED_PERFORMANCE or MAJOR_OUTAGE based on the
-     * configured failure threshold.
+     * configured failure threshold. When status degrades, an automated incident is
+     * created and subscribers are notified.
      * </p>
      *
      * @param app the status app to update
@@ -300,13 +314,17 @@ public class HealthCheckService {
         app.setLastCheckSuccess(result.success());
         app.setLastCheckMessage(result.message());
 
+        String previousStatus = app.getStatus();
+
         if (result.success()) {
             app.setConsecutiveFailures(0);
             // Auto-restore to OPERATIONAL if it was auto-degraded
             if ("DEGRADED_PERFORMANCE".equals(app.getStatus()) || "MAJOR_OUTAGE".equals(app.getStatus())) {
-                String previousStatus = app.getStatus();
                 app.setStatus("OPERATIONAL");
                 logger.info("App {} auto-restored from {} to OPERATIONAL", app.getName(), previousStatus);
+
+                // Resolve any automated incidents and notify subscribers
+                statusIncidentService.resolveAutomatedIncidents(app);
             }
         } else {
             int failures = (app.getConsecutiveFailures() != null ? app.getConsecutiveFailures() : 0) + 1;
@@ -317,11 +335,17 @@ public class HealthCheckService {
                 if (!"MAJOR_OUTAGE".equals(app.getStatus())) {
                     app.setStatus("MAJOR_OUTAGE");
                     logger.warn("App {} changed to MAJOR_OUTAGE after {} consecutive failures", app.getName(), failures);
+
+                    // Create or upgrade automated incident with CRITICAL severity
+                    statusIncidentService.createAutomatedIncident(app, "CRITICAL", result.message());
                 }
             } else if (failures >= threshold) {
                 if (!"DEGRADED_PERFORMANCE".equals(app.getStatus()) && !"MAJOR_OUTAGE".equals(app.getStatus())) {
                     app.setStatus("DEGRADED_PERFORMANCE");
                     logger.warn("App {} changed to DEGRADED_PERFORMANCE after {} consecutive failures", app.getName(), failures);
+
+                    // Create automated incident with MAJOR severity
+                    statusIncidentService.createAutomatedIncident(app, "MAJOR", result.message());
                 }
             }
         }
