@@ -1,5 +1,6 @@
 package org.automatize.status.services;
 
+import org.automatize.status.api.response.HealthCheckTriggerResponse;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
 import org.automatize.status.repositories.StatusAppRepository;
@@ -12,64 +13,40 @@ import org.springframework.stereotype.Service;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * <p>
  * Scheduled service responsible for orchestrating health checks on status apps and components.
- * </p>
- *
  * <p>
- * Responsibilities:
- * <ul>
- *   <li>Identify apps and components due for health checks</li>
- *   <li>Execute health checks asynchronously using a thread pool</li>
- *   <li>Coordinate with HealthCheckService for actual check execution</li>
- * </ul>
+ * This service runs on a configurable interval and identifies apps and components that are due
+ * for health checks based on their configured check intervals. Health checks are executed
+ * asynchronously using a thread pool to avoid blocking and to handle multiple checks concurrently.
  * </p>
- *
  * <p>
- * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
- * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * Configuration can be set via database (HealthCheckSettingsService) or application.properties.
+ * Database settings take precedence when available.
  * </p>
  *
  * @author Tim De Smedt
  * @see HealthCheckService
+ * @see HealthCheckSettingsService
  */
 @Service
 public class HealthCheckScheduler {
 
-    /**
-     * Logger instance for health check scheduling operations.
-     */
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckScheduler.class);
 
-    /**
-     * Repository for accessing status app data.
-     */
     private final StatusAppRepository statusAppRepository;
-
-    /**
-     * Repository for accessing status component data.
-     */
     private final StatusComponentRepository statusComponentRepository;
-
-    /**
-     * Service that performs the actual health checks.
-     */
     private final HealthCheckService healthCheckService;
-
-    /**
-     * Thread pool executor for running health checks asynchronously.
-     */
+    private final HealthCheckSettingsService settingsService;
     private final ExecutorService executorService;
 
-    /**
-     * Flag indicating whether health checks are enabled.
-     */
     @Value("${health-check.enabled:true}")
-    private boolean healthCheckEnabled;
+    private boolean healthCheckEnabledDefault;
 
     /**
      * Constructs a new HealthCheckScheduler with the required dependencies.
@@ -77,16 +54,33 @@ public class HealthCheckScheduler {
      * @param statusAppRepository repository for status app data access
      * @param statusComponentRepository repository for status component data access
      * @param healthCheckService service for performing health checks
+     * @param settingsService service for accessing health check settings from database
      * @param threadPoolSize the size of the thread pool for concurrent health checks
      */
     public HealthCheckScheduler(StatusAppRepository statusAppRepository,
                                 StatusComponentRepository statusComponentRepository,
                                 HealthCheckService healthCheckService,
+                                HealthCheckSettingsService settingsService,
                                 @Value("${health-check.thread-pool-size:10}") int threadPoolSize) {
         this.statusAppRepository = statusAppRepository;
         this.statusComponentRepository = statusComponentRepository;
         this.healthCheckService = healthCheckService;
+        this.settingsService = settingsService;
         this.executorService = Executors.newFixedThreadPool(threadPoolSize);
+    }
+
+    /**
+     * Check if health checks are enabled (from database or default).
+     *
+     * @return true if health checks are enabled
+     */
+    private boolean isHealthCheckEnabled() {
+        try {
+            return settingsService.isEnabled();
+        } catch (Exception e) {
+            logger.debug("Could not read health check enabled setting from database, using default: {}", healthCheckEnabledDefault);
+            return healthCheckEnabledDefault;
+        }
     }
 
     /**
@@ -97,13 +91,10 @@ public class HealthCheckScheduler {
      * that need to be checked based on their last check time and configured interval,
      * then submits each check to the thread pool for asynchronous execution.
      * </p>
-     * <p>
-     * Health checks are skipped entirely if {@code health-check.enabled} is set to false.
-     * </p>
      */
     @Scheduled(fixedRateString = "${health-check.scheduler-interval-ms:10000}")
     public void runHealthChecks() {
-        if (!healthCheckEnabled) {
+        if (!isHealthCheckEnabled()) {
             return;
         }
 
@@ -127,18 +118,143 @@ public class HealthCheckScheduler {
     }
 
     /**
-     * Retrieves all status apps that are due for a health check.
-     * <p>
-     * An app is considered due for check if:
-     * <ul>
-     *   <li>Health checking is enabled for the app</li>
-     *   <li>The check type is configured and not "NONE"</li>
-     *   <li>A check URL is configured</li>
-     *   <li>The time since the last check exceeds the configured interval</li>
-     * </ul>
-     * </p>
+     * Trigger all health checks immediately, regardless of their scheduled intervals.
      *
-     * @return a list of StatusApp entities that need to be checked
+     * @return the number of entities triggered for health check
+     */
+    public int triggerAllChecks() {
+        logger.info("Manual trigger: Running all health checks");
+
+        List<StatusApp> apps = statusAppRepository.findAll().stream()
+                .filter(app -> Boolean.TRUE.equals(app.getCheckEnabled()))
+                .filter(app -> app.getCheckType() != null && !"NONE".equals(app.getCheckType()))
+                .filter(app -> app.getCheckUrl() != null && !app.getCheckUrl().isBlank())
+                .toList();
+
+        List<StatusComponent> components = statusComponentRepository.findAll().stream()
+                .filter(component -> !Boolean.TRUE.equals(component.getCheckInheritFromApp()))
+                .filter(component -> Boolean.TRUE.equals(component.getCheckEnabled()))
+                .filter(component -> component.getCheckType() != null && !"NONE".equals(component.getCheckType()))
+                .filter(component -> component.getCheckUrl() != null && !component.getCheckUrl().isBlank())
+                .toList();
+
+        for (StatusApp app : apps) {
+            executorService.submit(() -> checkApp(app));
+        }
+
+        for (StatusComponent component : components) {
+            executorService.submit(() -> checkComponent(component));
+        }
+
+        int count = apps.size() + components.size();
+        logger.info("Manual trigger: Submitted {} health checks", count);
+        return count;
+    }
+
+    /**
+     * Trigger health check for a specific app immediately.
+     *
+     * @param appId the UUID of the app to check
+     * @return the result of the health check trigger
+     */
+    public HealthCheckTriggerResponse triggerAppCheck(UUID appId) {
+        logger.info("Manual trigger: Running health check for app {}", appId);
+
+        Optional<StatusApp> appOpt = statusAppRepository.findById(appId);
+        if (appOpt.isEmpty()) {
+            return new HealthCheckTriggerResponse(false, "App not found: " + appId);
+        }
+
+        StatusApp app = appOpt.get();
+
+        if (!Boolean.TRUE.equals(app.getCheckEnabled())) {
+            return new HealthCheckTriggerResponse(false, "Health checking is not enabled for this app");
+        }
+
+        if (app.getCheckType() == null || "NONE".equals(app.getCheckType())) {
+            return new HealthCheckTriggerResponse(false, "No check type configured for this app");
+        }
+
+        if (app.getCheckUrl() == null || app.getCheckUrl().isBlank()) {
+            return new HealthCheckTriggerResponse(false, "No check URL configured for this app");
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            HealthCheckService.HealthCheckResult result = healthCheckService.performCheck(
+                    app.getCheckType(),
+                    app.getCheckUrl(),
+                    app.getCheckTimeoutSeconds() != null ? app.getCheckTimeoutSeconds() : 10,
+                    app.getCheckExpectedStatus()
+            );
+
+            healthCheckService.updateAppCheckResult(app, result);
+
+            long duration = System.currentTimeMillis() - startTime;
+            return new HealthCheckTriggerResponse(result.success(), result.message(), duration);
+        } catch (Exception e) {
+            logger.error("Error during manual app check for {}: {}", appId, e.getMessage());
+            long duration = System.currentTimeMillis() - startTime;
+            return new HealthCheckTriggerResponse(false, "Check error: " + e.getMessage(), duration);
+        }
+    }
+
+    /**
+     * Trigger health check for a specific component immediately.
+     *
+     * @param componentId the UUID of the component to check
+     * @return the result of the health check trigger
+     */
+    public HealthCheckTriggerResponse triggerComponentCheck(UUID componentId) {
+        logger.info("Manual trigger: Running health check for component {}", componentId);
+
+        Optional<StatusComponent> componentOpt = statusComponentRepository.findById(componentId);
+        if (componentOpt.isEmpty()) {
+            return new HealthCheckTriggerResponse(false, "Component not found: " + componentId);
+        }
+
+        StatusComponent component = componentOpt.get();
+
+        if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
+            return new HealthCheckTriggerResponse(false, "Component inherits check from app, trigger the app check instead");
+        }
+
+        if (!Boolean.TRUE.equals(component.getCheckEnabled())) {
+            return new HealthCheckTriggerResponse(false, "Health checking is not enabled for this component");
+        }
+
+        if (component.getCheckType() == null || "NONE".equals(component.getCheckType())) {
+            return new HealthCheckTriggerResponse(false, "No check type configured for this component");
+        }
+
+        if (component.getCheckUrl() == null || component.getCheckUrl().isBlank()) {
+            return new HealthCheckTriggerResponse(false, "No check URL configured for this component");
+        }
+
+        long startTime = System.currentTimeMillis();
+
+        try {
+            HealthCheckService.HealthCheckResult result = healthCheckService.performCheck(
+                    component.getCheckType(),
+                    component.getCheckUrl(),
+                    component.getCheckTimeoutSeconds() != null ? component.getCheckTimeoutSeconds() : 10,
+                    component.getCheckExpectedStatus()
+            );
+
+            healthCheckService.updateComponentCheckResult(component, result);
+
+            long duration = System.currentTimeMillis() - startTime;
+            return new HealthCheckTriggerResponse(result.success(), result.message(), duration);
+        } catch (Exception e) {
+            logger.error("Error during manual component check for {}: {}", componentId, e.getMessage());
+            long duration = System.currentTimeMillis() - startTime;
+            return new HealthCheckTriggerResponse(false, "Check error: " + e.getMessage(), duration);
+        }
+    }
+
+    /**
+     * Retrieves all status apps that are due for a health check.
      */
     private List<StatusApp> getAppsDueForCheck() {
         List<StatusApp> allApps = statusAppRepository.findAll();
@@ -154,18 +270,6 @@ public class HealthCheckScheduler {
 
     /**
      * Retrieves all status components that are due for a health check.
-     * <p>
-     * A component is considered due for check if:
-     * <ul>
-     *   <li>It does not inherit check settings from its parent app</li>
-     *   <li>Health checking is enabled for the component</li>
-     *   <li>The check type is configured and not "NONE"</li>
-     *   <li>A check URL is configured</li>
-     *   <li>The time since the last check exceeds the configured interval</li>
-     * </ul>
-     * </p>
-     *
-     * @return a list of StatusComponent entities that need to be checked
      */
     private List<StatusComponent> getComponentsDueForCheck() {
         List<StatusComponent> allComponents = statusComponentRepository.findAll();
@@ -173,7 +277,6 @@ public class HealthCheckScheduler {
 
         return allComponents.stream()
                 .filter(component -> {
-                    // If inheriting from app, skip - the app check will cover it
                     if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
                         return false;
                     }
@@ -187,15 +290,10 @@ public class HealthCheckScheduler {
 
     /**
      * Determines whether an entity is due for a health check based on its last check time and interval.
-     *
-     * @param lastCheckAt the timestamp of the last health check, or null if never checked
-     * @param intervalSeconds the configured check interval in seconds, or null for default (60 seconds)
-     * @param now the current timestamp for comparison
-     * @return true if the entity should be checked, false otherwise
      */
     private boolean isDueForCheck(ZonedDateTime lastCheckAt, Integer intervalSeconds, ZonedDateTime now) {
         if (lastCheckAt == null) {
-            return true; // Never checked before
+            return true;
         }
         int interval = intervalSeconds != null ? intervalSeconds : 60;
         return lastCheckAt.plusSeconds(interval).isBefore(now);
@@ -203,13 +301,6 @@ public class HealthCheckScheduler {
 
     /**
      * Performs a health check on a single status app.
-     * <p>
-     * This method executes the configured health check for the app using the
-     * HealthCheckService and updates the app's check result accordingly.
-     * Any exceptions during the check are caught and recorded as failures.
-     * </p>
-     *
-     * @param app the status app to check
      */
     private void checkApp(StatusApp app) {
         try {
@@ -238,13 +329,6 @@ public class HealthCheckScheduler {
 
     /**
      * Performs a health check on a single status component.
-     * <p>
-     * This method executes the configured health check for the component using the
-     * HealthCheckService and updates the component's check result accordingly.
-     * Any exceptions during the check are caught and recorded as failures.
-     * </p>
-     *
-     * @param component the status component to check
      */
     private void checkComponent(StatusComponent component) {
         try {
