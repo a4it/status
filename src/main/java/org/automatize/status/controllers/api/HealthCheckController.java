@@ -149,7 +149,7 @@ public class HealthCheckController {
 
             // Apply filters
             if (platformId != null) {
-                StatusApp componentApp = component.getStatusApp();
+                StatusApp componentApp = component.getApp();
                 if (componentApp == null || componentApp.getPlatform() == null ||
                     !platformId.equals(componentApp.getPlatform().getId())) {
                     continue;
@@ -166,9 +166,9 @@ public class HealthCheckController {
             response.setEntityId(component.getId());
             response.setEntityType("COMPONENT");
             response.setName(component.getName());
-            if (component.getStatusApp() != null && component.getStatusApp().getPlatform() != null) {
-                response.setPlatformId(component.getStatusApp().getPlatform().getId().toString());
-                response.setPlatformName(component.getStatusApp().getPlatform().getName());
+            if (component.getApp() != null && component.getApp().getPlatform() != null) {
+                response.setPlatformId(component.getApp().getPlatform().getId().toString());
+                response.setPlatformName(component.getApp().getPlatform().getName());
             }
             response.setCheckEnabled(component.getCheckEnabled());
             response.setCheckType(component.getCheckType());

@@ -58,13 +58,20 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable);
 
-    @Query("SELECT e FROM PlatformEvent e WHERE " +
-           "(:appId IS NULL OR e.app.id = :appId) AND " +
-           "(:componentId IS NULL OR e.component.id = :componentId) AND " +
-           "(:severity IS NULL OR e.severity = :severity) AND " +
-           "(:startDate IS NULL OR e.eventTime >= :startDate) AND " +
-           "(:endDate IS NULL OR e.eventTime <= :endDate) " +
-           "ORDER BY e.eventTime DESC")
+    @Query(value = "SELECT * FROM platform_events e WHERE " +
+           "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
+           "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
+           "(CAST(:severity AS varchar) IS NULL OR e.severity = :severity) AND " +
+           "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
+           "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate) " +
+           "ORDER BY e.event_time DESC",
+           countQuery = "SELECT COUNT(*) FROM platform_events e WHERE " +
+           "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
+           "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
+           "(CAST(:severity AS varchar) IS NULL OR e.severity = :severity) AND " +
+           "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
+           "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate)",
+           nativeQuery = true)
     Page<PlatformEvent> findWithFilters(
             @Param("appId") UUID appId,
             @Param("componentId") UUID componentId,
@@ -73,16 +80,26 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable);
 
-    @Query("SELECT e FROM PlatformEvent e WHERE " +
-           "(:appId IS NULL OR e.app.id = :appId) AND " +
-           "(:componentId IS NULL OR e.component.id = :componentId) AND " +
-           "(:severity IS NULL OR e.severity = :severity) AND " +
-           "(:startDate IS NULL OR e.eventTime >= :startDate) AND " +
-           "(:endDate IS NULL OR e.eventTime <= :endDate) AND " +
-           "(LOWER(e.message) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
-           " LOWER(e.details) LIKE LOWER(CONCAT('%', :searchText, '%')) OR " +
-           " LOWER(e.source) LIKE LOWER(CONCAT('%', :searchText, '%'))) " +
-           "ORDER BY e.eventTime DESC")
+    @Query(value = "SELECT * FROM platform_events e WHERE " +
+           "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
+           "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
+           "(CAST(:severity AS varchar) IS NULL OR e.severity = :severity) AND " +
+           "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
+           "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate) AND " +
+           "(LOWER(e.message) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%')) OR " +
+           " LOWER(COALESCE(e.details, '')) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%')) OR " +
+           " LOWER(COALESCE(e.source, '')) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%'))) " +
+           "ORDER BY e.event_time DESC",
+           countQuery = "SELECT COUNT(*) FROM platform_events e WHERE " +
+           "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
+           "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
+           "(CAST(:severity AS varchar) IS NULL OR e.severity = :severity) AND " +
+           "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
+           "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate) AND " +
+           "(LOWER(e.message) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%')) OR " +
+           " LOWER(COALESCE(e.details, '')) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%')) OR " +
+           " LOWER(COALESCE(e.source, '')) LIKE LOWER(CONCAT('%', CAST(:searchText AS varchar), '%')))",
+           nativeQuery = true)
     Page<PlatformEvent> searchWithFilters(
             @Param("appId") UUID appId,
             @Param("componentId") UUID componentId,

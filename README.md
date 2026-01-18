@@ -5,7 +5,7 @@ A comprehensive, multi-tenant status monitoring solution built with Spring Boot.
 ![Java](https://img.shields.io/badge/Java-17+-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey)
 
 ## Overview
 
@@ -491,7 +491,7 @@ Migration files are located in `src/main/resources/db/migration/`
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) - see the [LICENSE](LICENSE.md) file for details.
 
 ## Acknowledgments
 

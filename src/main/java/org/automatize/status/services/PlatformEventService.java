@@ -8,6 +8,7 @@ import org.automatize.status.repositories.StatusAppRepository;
 import org.automatize.status.repositories.StatusComponentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -185,8 +186,10 @@ public class PlatformEventService {
     public Page<PlatformEvent> getEvents(UUID appId, UUID componentId, String severity,
                                           ZonedDateTime startDate, ZonedDateTime endDate,
                                           Pageable pageable) {
+        // Strip sort from Pageable since native query handles sorting
+        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return platformEventRepository.findWithFilters(appId, componentId, severity,
-                startDate, endDate, pageable);
+                startDate, endDate, unsortedPageable);
     }
 
     /**
@@ -205,11 +208,13 @@ public class PlatformEventService {
     public Page<PlatformEvent> searchEvents(UUID appId, UUID componentId, String severity,
                                              ZonedDateTime startDate, ZonedDateTime endDate,
                                              String searchText, Pageable pageable) {
+        // Strip sort from Pageable since native query handles sorting
+        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         if (searchText != null && !searchText.trim().isEmpty()) {
             return platformEventRepository.searchWithFilters(appId, componentId, severity,
-                    startDate, endDate, searchText.trim(), pageable);
+                    startDate, endDate, searchText.trim(), unsortedPageable);
         }
-        return getEvents(appId, componentId, severity, startDate, endDate, pageable);
+        return getEvents(appId, componentId, severity, startDate, endDate, unsortedPageable);
     }
 
     /**

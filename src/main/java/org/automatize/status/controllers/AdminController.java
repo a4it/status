@@ -144,4 +144,17 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/events";
     }
+
+    /**
+     * Displays the health checks configuration and monitoring page.
+     *
+     * @param model the model for template rendering
+     * @return the health-checks template view name
+     */
+    @GetMapping("/health-checks")
+    public String healthChecks(Model model) {
+        model.addAttribute("activeNav", "health-checks");
+        addCommonAttributes(model);
+        return "admin/health-checks";
+    }
 }

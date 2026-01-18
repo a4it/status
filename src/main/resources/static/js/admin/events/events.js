@@ -92,7 +92,6 @@ function buildQueryParams() {
     const params = new URLSearchParams();
     params.append('page', currentPage);
     params.append('size', pageSize);
-    params.append('sort', 'eventTime,desc');
 
     const appId = document.getElementById('filterPlatform').value;
     if (appId) {
