@@ -92,7 +92,40 @@
 
             <div class="page-body">
                 <div class="container-xl">
+                    <!-- Platforms Section -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h3 class="card-title">Platforms</h3>
+                        </div>
+                        <div class="card-body" id="platforms-loading">
+                            <div class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive" id="platforms-content" style="display: none;">
+                            <table class="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Platform</th>
+                                        <th>Uptime</th>
+                                        <th id="platforms-days-header">Last 90 Days</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="platforms-table-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="card-body" id="platforms-empty" style="display: none;">
+                            <p class="text-muted text-center mb-0">No platform data available.</p>
+                        </div>
+                    </div>
+
+                    <!-- Components Section -->
                     <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Components</h3>
+                        </div>
                         <div class="card-body" id="history-loading">
                             <div class="text-center py-4">
                                 <div class="spinner-border text-primary" role="status">
@@ -106,14 +139,14 @@
                                     <tr>
                                         <th>Component</th>
                                         <th>Uptime</th>
-                                        <th>Last 90 Days</th>
+                                        <th id="components-days-header">Last 90 Days</th>
                                     </tr>
                                 </thead>
                                 <tbody id="history-table-body"></tbody>
                             </table>
                         </div>
                         <div class="card-body" id="history-empty" style="display: none;">
-                            <p class="text-muted text-center mb-0">No history data available.</p>
+                            <p class="text-muted text-center mb-0">No component data available.</p>
                         </div>
                     </div>
                 </div>

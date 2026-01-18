@@ -44,11 +44,19 @@ public class StatusUptimeHistory {
 
     /**
      * The specific component this uptime record applies to.
-     * Null if this record represents application-level uptime.
+     * Null if this record represents application-level or platform-level uptime.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "component_id")
     private StatusComponent component;
+
+    /**
+     * The platform this uptime record applies to.
+     * Null if this record represents application-level or component-level uptime.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "platform_id")
+    private StatusPlatform platform;
 
     /**
      * The date this uptime record represents.

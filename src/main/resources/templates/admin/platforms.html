@@ -217,6 +217,63 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Health Check Configuration -->
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h4 class="card-title mb-0">
+                                    <a class="text-decoration-none" data-bs-toggle="collapse" href="#platformHealthCheckSection">
+                                        <i class="ti ti-heartbeat me-2"></i>Health Check Configuration
+                                    </a>
+                                </h4>
+                            </div>
+                            <div class="collapse" id="platformHealthCheckSection">
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="platformCheckEnabled">
+                                            <span class="form-check-label">Enable Health Checking</span>
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Check Type</label>
+                                        <select class="form-select" id="platformCheckType" onchange="togglePlatformCheckFields()">
+                                            <option value="NONE">None (Manual)</option>
+                                            <option value="PING">Ping</option>
+                                            <option value="HTTP_GET">HTTP GET</option>
+                                            <option value="SPRING_BOOT_HEALTH">Spring Boot Health</option>
+                                            <option value="TCP_PORT">TCP Port</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Check URL / Host</label>
+                                        <input type="text" class="form-control" id="platformCheckUrl" placeholder="https://example.com or host:port">
+                                        <small class="text-muted" id="platformCheckUrlHelp">Enter URL for HTTP/Health checks, hostname for Ping, host:port for TCP</small>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Check Interval (seconds)</label>
+                                            <input type="number" class="form-control" id="platformCheckInterval" value="60" min="10">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Timeout (seconds)</label>
+                                            <input type="number" class="form-control" id="platformCheckTimeout" value="10" min="1" max="60">
+                                        </div>
+                                    </div>
+                                    <div class="row" id="platformHttpStatusRow">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Expected HTTP Status</label>
+                                            <input type="number" class="form-control" id="platformCheckExpectedStatus" value="200">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Failure Threshold</label>
+                                            <input type="number" class="form-control" id="platformCheckFailureThreshold" value="3" min="1">
+                                            <small class="text-muted">Number of consecutive failures before status change</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">

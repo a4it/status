@@ -288,14 +288,13 @@ async function saveUpdate() {
         return;
     }
 
-    try {
-        await API.post(`/incidents/${incidentId}/updates`, { message });
+    if (!newStatus) {
+        showError('Status is required');
+        return;
+    }
 
-        if (newStatus) {
-            const issue = await API.get(`/incidents/${incidentId}`);
-            issue.status = newStatus;
-            await API.put(`/incidents/${incidentId}`, issue);
-        }
+    try {
+        await API.post(`/incidents/${incidentId}/updates`, { message, status: newStatus });
 
         addUpdateModal.hide();
         loadIssues();

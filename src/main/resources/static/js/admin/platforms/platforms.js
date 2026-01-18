@@ -112,6 +112,15 @@ function openAddPlatformModal() {
     document.getElementById('platformId').value = '';
     document.getElementById('platformIsPublic').checked = true;
     document.getElementById('platformPosition').value = '0';
+    // Reset health check fields
+    document.getElementById('platformCheckEnabled').checked = false;
+    document.getElementById('platformCheckType').value = 'NONE';
+    document.getElementById('platformCheckUrl').value = '';
+    document.getElementById('platformCheckInterval').value = '60';
+    document.getElementById('platformCheckTimeout').value = '10';
+    document.getElementById('platformCheckExpectedStatus').value = '200';
+    document.getElementById('platformCheckFailureThreshold').value = '3';
+    togglePlatformCheckFields();
     document.querySelector('#platformModal .modal-title').textContent = 'Add Platform';
     platformModal.show();
 }
@@ -129,6 +138,16 @@ async function editPlatform(id) {
         document.getElementById('platformStatus').value = platform.status;
         document.getElementById('platformPosition').value = platform.position || 0;
         document.getElementById('platformIsPublic').checked = platform.isPublic;
+
+        // Load health check fields
+        document.getElementById('platformCheckEnabled').checked = platform.checkEnabled || false;
+        document.getElementById('platformCheckType').value = platform.checkType || 'NONE';
+        document.getElementById('platformCheckUrl').value = platform.checkUrl || '';
+        document.getElementById('platformCheckInterval').value = platform.checkIntervalSeconds || 60;
+        document.getElementById('platformCheckTimeout').value = platform.checkTimeoutSeconds || 10;
+        document.getElementById('platformCheckExpectedStatus').value = platform.checkExpectedStatus || 200;
+        document.getElementById('platformCheckFailureThreshold').value = platform.checkFailureThreshold || 3;
+        togglePlatformCheckFields();
 
         document.querySelector('#platformModal .modal-title').textContent = 'Edit Platform';
         platformModal.show();
@@ -148,7 +167,15 @@ async function savePlatform() {
         websiteUrl: document.getElementById('platformWebsiteUrl').value || null,
         status: document.getElementById('platformStatus').value,
         position: parseInt(document.getElementById('platformPosition').value) || 0,
-        isPublic: document.getElementById('platformIsPublic').checked
+        isPublic: document.getElementById('platformIsPublic').checked,
+        // Health check fields
+        checkEnabled: document.getElementById('platformCheckEnabled').checked,
+        checkType: document.getElementById('platformCheckType').value,
+        checkUrl: document.getElementById('platformCheckUrl').value || null,
+        checkIntervalSeconds: parseInt(document.getElementById('platformCheckInterval').value) || 60,
+        checkTimeoutSeconds: parseInt(document.getElementById('platformCheckTimeout').value) || 10,
+        checkExpectedStatus: parseInt(document.getElementById('platformCheckExpectedStatus').value) || 200,
+        checkFailureThreshold: parseInt(document.getElementById('platformCheckFailureThreshold').value) || 3
     };
 
     if (!platform.name || !platform.slug) {
@@ -250,4 +277,25 @@ function createToastContainer() {
     container.style.zIndex = '1100';
     document.body.appendChild(container);
     return container;
+}
+
+function togglePlatformCheckFields() {
+    const checkType = document.getElementById('platformCheckType').value;
+    const httpStatusRow = document.getElementById('platformHttpStatusRow');
+    const checkUrlHelp = document.getElementById('platformCheckUrlHelp');
+
+    // Show/hide HTTP status row based on check type
+    if (checkType === 'HTTP_GET' || checkType === 'SPRING_BOOT_HEALTH') {
+        httpStatusRow.style.display = '';
+        checkUrlHelp.textContent = 'Enter the full URL to check (e.g., https://example.com/health)';
+    } else if (checkType === 'PING') {
+        httpStatusRow.style.display = 'none';
+        checkUrlHelp.textContent = 'Enter the hostname or IP address to ping';
+    } else if (checkType === 'TCP_PORT') {
+        httpStatusRow.style.display = 'none';
+        checkUrlHelp.textContent = 'Enter host:port to check (e.g., example.com:443)';
+    } else {
+        httpStatusRow.style.display = 'none';
+        checkUrlHelp.textContent = 'Enter URL for HTTP/Health checks, hostname for Ping, host:port for TCP';
+    }
 }
