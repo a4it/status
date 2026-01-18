@@ -13,12 +13,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link PlatformEvent} entities.
  * <p>
- * Provides data access operations for platform events within the system.
- * Events are log entries from monitored platforms and their components.
+ * Repository interface for managing {@link PlatformEvent} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for platform event data</li>
+ *   <li>Support filtering by severity, date ranges, and search text</li>
+ *   <li>Enable paginated queries for event listings</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see PlatformEvent
  * @see StatusAppRepository
  * @see StatusComponentRepository

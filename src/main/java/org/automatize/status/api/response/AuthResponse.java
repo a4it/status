@@ -3,11 +3,25 @@ package org.automatize.status.api.response;
 import java.util.UUID;
 
 /**
- * Response object for authentication operations.
  * <p>
- * Contains JWT tokens and user information returned after successful
- * authentication or token refresh operations.
+ * Response object for authentication operations.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate JWT tokens for API authentication</li>
+ *   <li>Provide authenticated user information including role and organization</li>
+ *   <li>Include token expiration and type metadata</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class AuthResponse {
 

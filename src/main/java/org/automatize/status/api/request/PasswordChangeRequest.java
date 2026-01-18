@@ -4,10 +4,24 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Request object for changing a user's password.
  * <p>
- * Contains the current password for verification and the new password to set.
+ * Request object for changing a user's password.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate current and new password for password change operations</li>
+ *   <li>Validate password requirements including minimum length</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class PasswordChangeRequest {
 

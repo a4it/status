@@ -14,13 +14,25 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST API controller for authentication operations.
  * <p>
- * This controller handles all authentication-related endpoints including user login,
- * registration, token refresh, logout, and retrieving current user information.
- * It uses JWT-based authentication with Bearer tokens.
+ * REST API controller for authentication operations.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Handle user login and JWT token generation</li>
+ *   <li>Process user registration and token refresh requests</li>
+ *   <li>Manage logout and current user information retrieval</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see AuthService
  * @see AuthResponse
  */

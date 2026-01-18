@@ -11,14 +11,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusIncident} entities.
  * <p>
- * Provides data access operations for status incidents within the system.
- * Incidents represent service disruptions, outages, or degraded performance
- * that affect one or more components of a status app. Incidents can have
- * different severities and statuses, and can be either public or private.
+ * Repository interface for managing {@link StatusIncident} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for incident data</li>
+ *   <li>Support filtering by status, severity, and date ranges</li>
+ *   <li>Enable queries for active and resolved incidents</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusIncident
  * @see StatusAppRepository
  * @see StatusIncidentComponentRepository

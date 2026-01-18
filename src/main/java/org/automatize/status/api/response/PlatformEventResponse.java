@@ -4,10 +4,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
- * Response object containing platform event details.
  * <p>
- * Platform events are log entries from monitored platforms and their components.
+ * Response object containing platform event details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide platform event log entry information</li>
+ *   <li>Track event severity, source, and timing</li>
+ *   <li>Associate events with applications and components</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class PlatformEventResponse {
 

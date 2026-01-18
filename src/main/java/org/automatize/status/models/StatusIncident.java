@@ -5,18 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing an incident affecting a status application.
- * <p>
- * StatusIncident tracks service disruptions, outages, and degradations for monitored
- * applications. Incidents have a lifecycle from creation through investigation,
- * identification, monitoring, and resolution.
- * </p>
- * <p>
- * Each incident can be associated with multiple components (via StatusIncidentComponent)
- * and can have multiple updates (via StatusIncidentUpdate) to communicate progress
- * to users.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Track service disruptions, outages, and degradations</li>
+ *   <li>Manage incident lifecycle from investigation through resolution</li>
+ *   <li>Associate incidents with affected components and progress updates</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusIncidentComponent
  * @see StatusIncidentUpdate

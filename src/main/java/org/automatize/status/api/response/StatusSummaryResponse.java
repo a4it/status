@@ -3,11 +3,25 @@ package org.automatize.status.api.response;
 import java.util.List;
 
 /**
- * Response object containing an overall status summary.
  * <p>
- * Provides aggregate statistics and status information across all
- * monitored applications and their current state.
+ * Response object containing an overall status summary.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide aggregate statistics across all monitored applications</li>
+ *   <li>Track operational vs issue counts for applications</li>
+ *   <li>Include active incidents and upcoming maintenance counts</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusSummaryResponse {
 

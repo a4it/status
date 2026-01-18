@@ -4,17 +4,25 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing the association between a maintenance window and an affected component.
- * <p>
- * StatusMaintenanceComponent is a join entity that links StatusMaintenance to StatusComponent,
- * allowing maintenance windows to specify which components will be affected during the
- * scheduled maintenance period.
- * </p>
- * <p>
- * This enables granular communication to users about which specific parts of a service
- * will be impacted during planned maintenance.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Link maintenance windows to affected components as a join entity</li>
+ *   <li>Specify which components will be affected during maintenance</li>
+ *   <li>Enable granular communication about maintenance impact</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusMaintenance
  * @see StatusComponent
  */

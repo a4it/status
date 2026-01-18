@@ -5,18 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a scheduled maintenance window for a status application.
- * <p>
- * StatusMaintenance allows operators to announce planned maintenance periods
- * in advance, helping users prepare for expected downtime or degraded service.
- * Maintenance windows have defined start and end times and can be associated
- * with specific components.
- * </p>
- * <p>
- * Unlike incidents which are unplanned, maintenance represents expected and
- * controlled service interruptions for updates, upgrades, or other planned work.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Announce planned maintenance periods in advance</li>
+ *   <li>Define start and end times for maintenance windows</li>
+ *   <li>Associate maintenance with affected components</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusMaintenanceComponent
  */

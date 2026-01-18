@@ -6,11 +6,25 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating an organization.
  * <p>
- * Organizations represent entities within a tenant that can have users,
- * status applications, and other resources assigned to them.
+ * Request object for creating or updating an organization entity.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate organization data for create and update operations</li>
+ *   <li>Validate required organization fields such as name and type</li>
+ *   <li>Provide tenant association and configuration options</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class OrganizationRequest {
 

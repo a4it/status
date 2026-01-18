@@ -3,12 +3,24 @@ package org.automatize.status.controllers.api;
 import java.util.UUID;
 
 /**
- * Request object for specifying a component's position in a reorder operation.
  * <p>
- * This class is used when reordering status components within a status application.
- * Each request specifies a component ID and its new display position.
+ * Request object for specifying a component's position in a reorder operation.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate component ID and target position for reordering</li>
+ *   <li>Support JSON deserialization for reorder API requests</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusComponentController#reorderComponents
  */
 public class ComponentOrderRequest {

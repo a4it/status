@@ -23,15 +23,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing status components within status apps.
  * <p>
- * Components represent individual parts of a monitored application, allowing for
- * granular status tracking. This service provides CRUD operations for components,
- * status management, ordering/positioning, and cascading status updates to parent apps.
+ * Service responsible for managing status components within status apps.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for component entities</li>
+ *   <li>Manage component ordering, positioning, and grouping</li>
+ *   <li>Handle cascading status updates to parent applications</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

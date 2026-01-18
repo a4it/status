@@ -12,14 +12,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusUptimeHistory} entities.
  * <p>
- * Provides data access operations for uptime history records within the system.
- * Uptime history tracks daily uptime statistics for both status apps and individual
- * components, including uptime percentages and incident counts. This data is used
- * for generating uptime reports and historical analytics.
+ * Repository interface for managing {@link StatusUptimeHistory} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for uptime history data</li>
+ *   <li>Support date range queries for historical uptime analysis</li>
+ *   <li>Enable aggregate calculations for uptime percentages and incident counts</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusUptimeHistory
  * @see StatusAppRepository
  * @see StatusComponentRepository

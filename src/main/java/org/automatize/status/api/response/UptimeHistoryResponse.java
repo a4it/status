@@ -5,11 +5,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response object containing uptime history for an application or component.
  * <p>
- * Provides overall uptime statistics and daily breakdown for a specified
- * date range.
+ * Response object containing uptime history for an application or component.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide overall uptime statistics for a date range</li>
+ *   <li>Include daily breakdown of uptime records</li>
+ *   <li>Track total incidents during the reporting period</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class UptimeHistoryResponse {
 

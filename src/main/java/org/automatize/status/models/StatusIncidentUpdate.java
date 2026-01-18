@@ -5,17 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing an update or progress report for an incident.
- * <p>
- * StatusIncidentUpdate provides a timeline of communications during an incident,
- * allowing operators to post status updates, progress reports, and resolution
- * announcements that are visible to users monitoring the status page.
- * </p>
- * <p>
- * Each update captures the incident status at the time of posting along with
- * a message explaining the current situation and any actions being taken.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide timeline of communications during an incident</li>
+ *   <li>Capture incident status and messages at each update point</li>
+ *   <li>Track who posted updates and when for audit purposes</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusIncident
  */
 @Entity

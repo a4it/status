@@ -4,11 +4,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
- * Response object containing incident update details.
  * <p>
- * Represents a single status update posted during an incident's lifecycle,
- * tracking progress from investigation through resolution.
+ * Response object containing incident update details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Represent a single status update in an incident's lifecycle</li>
+ *   <li>Track update timestamp and status progression</li>
+ *   <li>Identify the user who created the update</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusIncidentUpdateResponse {
 

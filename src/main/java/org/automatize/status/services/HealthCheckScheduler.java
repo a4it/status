@@ -16,23 +16,25 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
+ * <p>
  * Scheduled service responsible for orchestrating health checks on status apps and components.
- * <p>
- * This service runs on a configurable interval and identifies apps and components that are due
- * for health checks based on their configured check intervals. Health checks are executed
- * asynchronously using a thread pool to avoid blocking and to handle multiple checks concurrently.
  * </p>
+ *
  * <p>
- * Configuration properties:
+ * Responsibilities:
  * <ul>
- *   <li>{@code health-check.enabled} - Enable or disable health checks (default: true)</li>
- *   <li>{@code health-check.scheduler-interval-ms} - Scheduler interval in milliseconds (default: 10000)</li>
- *   <li>{@code health-check.thread-pool-size} - Thread pool size for concurrent checks (default: 10)</li>
+ *   <li>Identify apps and components due for health checks</li>
+ *   <li>Execute health checks asynchronously using a thread pool</li>
+ *   <li>Coordinate with HealthCheckService for actual check execution</li>
  * </ul>
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see HealthCheckService
  */
 @Service

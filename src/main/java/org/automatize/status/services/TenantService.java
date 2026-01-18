@@ -14,15 +14,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Service responsible for managing tenant entities.
  * <p>
- * Tenants represent the top level of the multi-tenant hierarchy (Tenant -> Organization -> User).
- * This service provides CRUD operations for tenants, including name validation and
- * active/inactive status management.
+ * Service responsible for managing tenant entities.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for tenant entities</li>
+ *   <li>Validate unique tenant names</li>
+ *   <li>Manage tenant active/inactive status</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

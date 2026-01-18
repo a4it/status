@@ -3,11 +3,25 @@ package org.automatize.status.api.response;
 import java.util.UUID;
 
 /**
- * Response object containing uptime statistics for an application.
  * <p>
- * Provides aggregate uptime metrics including percentage, incident counts,
- * and outage duration for the calculated period.
+ * Response object containing uptime statistics for an application.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide aggregate uptime percentage for an application</li>
+ *   <li>Track incident counts and outage duration</li>
+ *   <li>Include maintenance time and calculation period</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class UptimeResponse {
 

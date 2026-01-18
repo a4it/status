@@ -5,11 +5,25 @@ import org.springframework.web.servlet.config.annotation.ContentNegotiationConfi
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Web configuration for content negotiation settings.
  * <p>
- * Configures how the application handles different content types
- * and media type mappings for requests and responses.
+ * Web configuration for content negotiation settings.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Configure content negotiation for requests and responses</li>
+ *   <li>Set up media type mappings for CSS, JavaScript, and HTML files</li>
+ *   <li>Define default content type for API responses</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

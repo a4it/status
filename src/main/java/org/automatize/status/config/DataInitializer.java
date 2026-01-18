@@ -14,11 +14,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Initializes default data on application startup.
  * <p>
- * Creates a default tenant, organization, and admin user if they don't exist.
- * This ensures the application has baseline data for initial access and configuration.
+ * Initializes default data on application startup.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Create default tenant, organization, and admin user if they don't exist</li>
+ *   <li>Ensure baseline data for initial application access</li>
+ *   <li>Log initialization status and results</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Component
 public class DataInitializer implements CommandLineRunner {

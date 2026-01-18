@@ -3,11 +3,25 @@ package org.automatize.status.api.request;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Request object for creating or updating a tenant.
  * <p>
- * Tenants represent the top-level organizational unit in the multi-tenant hierarchy.
- * Each tenant can have multiple organizations.
+ * Request object for creating or updating a tenant entity.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate tenant data for create and update operations</li>
+ *   <li>Validate required tenant fields such as name</li>
+ *   <li>Provide tenant activation status management</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class TenantRequest {
 

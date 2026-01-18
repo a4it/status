@@ -6,11 +6,25 @@ import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating a status platform.
  * <p>
- * A status platform represents a higher-level grouping that can contain
- * multiple status applications.
+ * Request object for creating or updating a status platform.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate platform data for create and update operations</li>
+ *   <li>Validate required fields such as name and URL slug</li>
+ *   <li>Provide tenant and organization association configuration</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusPlatformRequest {
 

@@ -18,14 +18,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for user management operations.
  * <p>
- * This controller provides CRUD operations for users within the multi-tenant
- * system. Users belong to organizations and have roles (ADMIN, MANAGER, USER)
- * that determine their access levels. Access to endpoints is controlled based
- * on the user's role and whether they are accessing their own data.
+ * REST API controller for user management operations.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for users within the multi-tenant system</li>
+ *   <li>Handle password changes, role updates, and account enable/disable</li>
+ *   <li>Manage role-based access control for user operations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see UserService
  * @see User
  */

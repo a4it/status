@@ -4,11 +4,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
- * Response object containing status component details.
  * <p>
- * Provides information about a component including its status,
- * position, group, and health check configuration and results.
+ * Response object containing status component details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide component information including status and grouping</li>
+ *   <li>Include health check configuration and results</li>
+ *   <li>Track consecutive failures and check history</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusComponentResponse {
 

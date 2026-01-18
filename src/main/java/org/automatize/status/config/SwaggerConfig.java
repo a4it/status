@@ -8,11 +8,24 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for Swagger UI resource handling.
  * <p>
- * Configures resource handlers for webjars with appropriate caching policies.
- * The springdoc-openapi library handles Swagger UI resources automatically.
+ * Configuration for Swagger UI resource handling.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Configure resource handlers for webjars</li>
+ *   <li>Set appropriate caching policies for API documentation resources</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Configuration
 public class SwaggerConfig implements WebMvcConfigurer {

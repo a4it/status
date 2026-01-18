@@ -21,14 +21,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for incident management.
  * <p>
- * This controller provides CRUD operations for status incidents, which represent
- * service disruptions, outages, or degraded performance events. Incidents can have
- * multiple updates to track progress and resolution. Access is controlled based on
- * user authentication and roles.
+ * REST API controller for incident management.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status incidents</li>
+ *   <li>Handle incident updates, resolution, and filtering</li>
+ *   <li>Manage role-based access control for incident operations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusIncidentService
  * @see StatusIncidentResponse
  */

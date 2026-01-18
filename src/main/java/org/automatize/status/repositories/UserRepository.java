@@ -11,13 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link User} entities.
  * <p>
- * Provides data access operations for users within the multi-tenant hierarchy.
- * Users belong to organizations and have roles that determine their access permissions.
- * This repository supports authentication, authorization, and user management operations.
+ * Repository interface for managing {@link User} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for user data</li>
+ *   <li>Support authentication lookups by username, email, or both</li>
+ *   <li>Enable searching and filtering users by organization, role, and status</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see User
  * @see OrganizationRepository
  * @see TenantRepository

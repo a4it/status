@@ -10,11 +10,25 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.UUID;
 
 /**
- * MVC controller for public-facing status pages.
  * <p>
- * Serves publicly accessible Thymeleaf templates for status overview,
- * incidents, maintenance schedules, and history pages.
+ * MVC controller for public-facing status pages.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Serve publicly accessible Thymeleaf templates for status pages</li>
+ *   <li>Provide common attributes to templates such as application name and build info</li>
+ *   <li>Handle routing for status overview, incidents, maintenance, and history pages</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Controller
 @PropertySource("classpath:build.properties")

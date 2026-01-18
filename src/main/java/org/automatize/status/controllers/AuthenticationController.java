@@ -12,11 +12,25 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
- * MVC controller for authentication-related pages.
  * <p>
- * Handles login, logout, registration, and password recovery page rendering.
- * Also manages JWT cookie cleanup during logout.
+ * MVC controller for authentication-related pages.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Serve login, registration, and password recovery templates</li>
+ *   <li>Manage JWT cookie cleanup during logout</li>
+ *   <li>Handle authentication-based redirects for authenticated users</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Controller
 public class AuthenticationController {

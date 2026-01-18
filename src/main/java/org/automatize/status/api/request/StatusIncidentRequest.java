@@ -8,11 +8,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating a status incident.
  * <p>
- * Incidents represent service disruptions or issues that affect the status
- * of an application or its components.
+ * Request object for creating or updating a status incident.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate incident data for create and update operations</li>
+ *   <li>Validate required fields such as app ID, title, status, and severity</li>
+ *   <li>Track affected components and incident timeline</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusIncidentRequest {
 

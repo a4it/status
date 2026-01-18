@@ -17,12 +17,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing status platforms.
  * <p>
- * Status platforms represent higher-level groupings that can contain multiple
- * status applications. This service provides CRUD operations for platforms,
- * including tenant and organization associations and status management.
+ * Service responsible for managing status platforms.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for platform entities</li>
+ *   <li>Manage platform ordering and visibility settings</li>
+ *   <li>Handle tenant and organization associations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

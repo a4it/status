@@ -17,14 +17,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for status component management.
  * <p>
- * This controller provides CRUD operations for status components, which represent
- * individual services or subsystems within a status application. Components can
- * have their own operational status and can be reordered for display purposes.
- * Access is controlled based on user authentication and roles.
+ * REST API controller for status component management.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status components</li>
+ *   <li>Handle component filtering, status updates, and reordering</li>
+ *   <li>Manage role-based access control for component operations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusComponentService
  * @see StatusComponentResponse
  */

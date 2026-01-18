@@ -12,20 +12,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
+ * <p>
  * Custom implementation of Spring Security's {@link UserDetailsService} interface.
- * <p>
- * This service is responsible for loading user-specific data during authentication.
- * It retrieves user information from the database and converts it into a Spring Security
- * compatible {@link UserDetails} object (specifically {@link UserPrincipal}).
  * </p>
+ *
  * <p>
- * The service supports loading users by:
+ * Responsibilities:
  * <ul>
- *     <li>Username or email address (for standard authentication flows)</li>
- *     <li>User ID (for JWT token-based authentication)</li>
+ *   <li>Load user-specific data during authentication</li>
+ *   <li>Convert database users to Spring Security UserDetails</li>
+ *   <li>Support username/email and ID-based user lookups</li>
  * </ul>
  * </p>
  *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see UserDetailsService
  * @see UserPrincipal
  * @see UserRepository

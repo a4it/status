@@ -11,14 +11,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusMaintenance} entities.
  * <p>
- * Provides data access operations for scheduled maintenance windows within the system.
- * Maintenance windows represent planned service disruptions or updates that affect
- * one or more components. They have defined start and end times and can be scheduled
- * in advance to notify users.
+ * Repository interface for managing {@link StatusMaintenance} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for maintenance window data</li>
+ *   <li>Support filtering by status, date ranges, and visibility</li>
+ *   <li>Enable queries for active and upcoming maintenance windows</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusMaintenance
  * @see StatusAppRepository
  * @see StatusMaintenanceComponentRepository

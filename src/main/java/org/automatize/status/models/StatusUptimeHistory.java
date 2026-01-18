@@ -7,18 +7,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing daily uptime statistics for applications and components.
- * <p>
- * StatusUptimeHistory tracks historical uptime data on a per-day basis for both
- * applications and their components. This enables display of uptime percentages,
- * historical graphs, and SLA reporting.
- * </p>
- * <p>
- * Each record captures detailed metrics including operational time, degraded time,
- * outage time, and maintenance time, as well as counts of incidents and maintenance
- * windows for the recorded date.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Track historical uptime data on a per-day basis</li>
+ *   <li>Store detailed metrics for operational, degraded, and outage time</li>
+ *   <li>Enable uptime percentage calculations and SLA reporting</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusComponent
  */

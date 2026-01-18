@@ -25,16 +25,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Service responsible for handling authentication and authorization operations.
  * <p>
- * This service provides functionality for user authentication, registration,
- * token management (JWT access tokens and refresh tokens), and session handling.
- * It integrates with Spring Security for authentication and uses JWT for
- * stateless token-based authorization.
+ * Service responsible for handling authentication and authorization operations.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Handle user authentication and registration</li>
+ *   <li>Manage JWT access tokens and refresh tokens</li>
+ *   <li>Integrate with Spring Security for stateless authorization</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

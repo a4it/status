@@ -22,16 +22,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing status incidents.
  * <p>
- * Incidents represent service disruptions or issues affecting monitored applications.
- * This service provides comprehensive incident lifecycle management including creation,
- * updates, resolution, and component impact tracking. It also manages automatic status
- * propagation to affected components and parent applications.
+ * Service responsible for managing status incidents.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Manage incident lifecycle from creation through resolution</li>
+ *   <li>Track component impact and propagate status updates</li>
+ *   <li>Handle incident updates and notifications</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

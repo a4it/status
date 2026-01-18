@@ -5,18 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a user in the status monitoring system.
- * <p>
- * User represents an authenticated individual who can access and interact with
- * the status monitoring application. Users belong to an organization and have
- * role-based access control determining their permissions within the system.
- * </p>
- * <p>
- * The entity supports JWT-based authentication with refresh token storage,
- * and includes comprehensive audit trailing with both human-readable timestamps
- * and technical epoch milliseconds for efficient querying and sorting operations.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Store user authentication credentials and profile information</li>
+ *   <li>Support JWT-based authentication with refresh token storage</li>
+ *   <li>Maintain role-based access control permissions within the system</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see Organization
  * @see Tenant
  */

@@ -20,16 +20,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service responsible for managing user accounts and profiles.
  * <p>
- * This service provides comprehensive user management functionality including
- * CRUD operations, password management, role updates, and profile management.
- * It enforces permission checks for user modifications and supports the
- * multi-tenant hierarchy through organization associations.
+ * Service responsible for managing user accounts and profiles.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for user entities</li>
+ *   <li>Handle password management and role updates</li>
+ *   <li>Enforce permission checks and organization associations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

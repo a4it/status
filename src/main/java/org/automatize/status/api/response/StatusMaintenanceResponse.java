@@ -5,11 +5,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response object containing scheduled maintenance details.
  * <p>
- * Provides information about a maintenance window including its schedule,
- * status, and affected components.
+ * Response object containing scheduled maintenance details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide maintenance window information including schedule</li>
+ *   <li>Track maintenance status and description</li>
+ *   <li>Include affected components during maintenance periods</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusMaintenanceResponse {
 

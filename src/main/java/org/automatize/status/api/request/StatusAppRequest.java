@@ -6,11 +6,25 @@ import jakarta.validation.constraints.Pattern;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating a status application.
  * <p>
- * A status application represents a monitored service or platform that can have
- * components, incidents, and maintenance windows associated with it.
+ * Request object for creating or updating a status application.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate status application data for create and update operations</li>
+ *   <li>Validate required fields such as name and URL slug</li>
+ *   <li>Configure health check settings including URL, interval, and thresholds</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusAppRequest {
 

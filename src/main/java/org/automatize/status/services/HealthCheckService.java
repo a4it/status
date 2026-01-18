@@ -20,25 +20,25 @@ import java.net.URL;
 import java.time.ZonedDateTime;
 
 /**
+ * <p>
  * Service responsible for performing various types of health checks on monitored services.
- * <p>
- * This service supports multiple health check types:
- * <ul>
- *   <li><strong>PING</strong> - ICMP ping to verify host reachability</li>
- *   <li><strong>HTTP_GET</strong> - HTTP GET request with expected status code validation</li>
- *   <li><strong>SPRING_BOOT_HEALTH</strong> - Spring Boot Actuator health endpoint check</li>
- *   <li><strong>TCP_PORT</strong> - TCP socket connection check</li>
- * </ul>
- * </p>
- * <p>
- * The service also handles updating app and component status based on check results,
- * including automatic status transitions based on consecutive failures. When status
- * transitions occur, incidents are automatically created and notifications are sent
- * to subscribers.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Execute PING, HTTP_GET, SPRING_BOOT_HEALTH, and TCP_PORT checks</li>
+ *   <li>Update app and component status based on check results</li>
+ *   <li>Trigger automatic incident creation on status transitions</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see HealthCheckScheduler
  */
 @Service

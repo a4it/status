@@ -5,11 +5,25 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.ZonedDateTime;
 
 /**
- * Request object for creating an incident status update.
  * <p>
- * Used to add progress updates to an existing incident, tracking the
- * investigation and resolution process.
+ * Request object for creating an incident status update.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate incident update data including status and message</li>
+ *   <li>Validate required fields such as status and message</li>
+ *   <li>Track update timestamp for incident timeline</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusIncidentUpdateRequest {
 

@@ -19,15 +19,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Service responsible for managing organization entities within the multi-tenant hierarchy.
  * <p>
- * Organizations represent the middle tier in the Tenant -> Organization -> User hierarchy.
- * This service provides CRUD operations for organizations, including tenant association,
- * status management, and validation of business rules such as unique names and emails.
+ * Service responsible for managing organization entities within the multi-tenant hierarchy.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for organization entities</li>
+ *   <li>Manage tenant associations and status updates</li>
+ *   <li>Validate business rules for unique names and emails</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

@@ -5,11 +5,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response object containing historical status data for a component.
  * <p>
- * Provides daily status history, uptime statistics, and incident counts
- * for a specific component over a given time period.
+ * Response object containing historical status data for a component.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide daily status history for a component</li>
+ *   <li>Calculate and expose uptime statistics and incident counts</li>
+ *   <li>Encapsulate nested daily status records</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class ComponentHistoryResponse {
 

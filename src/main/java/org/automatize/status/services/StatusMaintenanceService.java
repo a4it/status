@@ -19,16 +19,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing scheduled maintenance windows.
  * <p>
- * Maintenance windows represent planned service interruptions or updates.
- * This service provides comprehensive maintenance lifecycle management including
- * scheduling, starting, completing, and cancelling maintenance. It also manages
- * component status updates during maintenance periods.
+ * Service responsible for managing scheduled maintenance windows.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Manage maintenance lifecycle from scheduling through completion</li>
+ *   <li>Handle component status updates during maintenance periods</li>
+ *   <li>Provide upcoming and active maintenance queries</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

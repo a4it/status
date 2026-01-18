@@ -5,17 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a tenant in the multi-tenant status monitoring system.
- * <p>
- * Tenant is the top-level entity in the multi-tenant hierarchy (Tenant -> Organization -> User).
- * Each tenant represents a separate customer or client with complete data isolation.
- * All organizations, applications, incidents, and other data belong to a specific tenant.
- * </p>
- * <p>
- * The entity supports comprehensive audit trailing with both human-readable timestamps
- * and technical epoch milliseconds for efficient querying and sorting operations.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Serve as the top-level entity in the multi-tenant hierarchy</li>
+ *   <li>Provide complete data isolation between customers or clients</li>
+ *   <li>Track audit information with creation and modification timestamps</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see Organization
  * @see StatusApp
  */

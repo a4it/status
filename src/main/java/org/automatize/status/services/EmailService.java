@@ -14,14 +14,25 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 /**
- * Service responsible for sending email notifications.
  * <p>
- * Provides methods for sending both simple text emails and HTML-formatted emails.
- * Email sending is performed asynchronously to avoid blocking the main thread.
+ * Service responsible for sending email notifications.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Send simple text and HTML-formatted emails</li>
+ *   <li>Execute email sending asynchronously</li>
+ *   <li>Handle email enable/disable configuration</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 public class EmailService {

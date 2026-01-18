@@ -11,13 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusApp} entities.
  * <p>
- * Provides data access operations for status applications (status pages) within the system.
- * Status apps represent individual status pages that can contain components, incidents,
- * and maintenance windows. Each status app belongs to a tenant and organization.
+ * Repository interface for managing {@link StatusApp} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status application data</li>
+ *   <li>Support searching and filtering by tenant, organization, and platform</li>
+ *   <li>Enable API key-based lookups for event logging authentication</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusComponentRepository
  * @see StatusIncidentRepository

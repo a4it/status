@@ -5,18 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a status application (service or platform) being monitored.
- * <p>
- * StatusApp is the core entity for tracking the availability and health of services
- * within the status monitoring system. Each application can have multiple components,
- * incidents, and maintenance windows associated with it.
- * </p>
- * <p>
- * The entity includes comprehensive health check configuration allowing automated
- * monitoring of service availability through HTTP/HTTPS endpoints with configurable
- * intervals, timeouts, and failure thresholds.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Track availability and health of monitored services</li>
+ *   <li>Store health check configuration for automated monitoring</li>
+ *   <li>Maintain relationships with components, incidents, and maintenance windows</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusComponent
  * @see StatusIncident
  * @see StatusMaintenance

@@ -11,14 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusComponent} entities.
  * <p>
- * Provides data access operations for status components within status applications.
- * Components represent individual services or subsystems that can be monitored
- * and have their status tracked. Components can be grouped and positioned for
- * display purposes on the status page.
+ * Repository interface for managing {@link StatusComponent} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for component data</li>
+ *   <li>Support grouping and ordering components for display purposes</li>
+ *   <li>Enable filtering by status, group, and parent application</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusComponent
  * @see StatusAppRepository
  * @see StatusIncidentComponentRepository

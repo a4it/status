@@ -5,18 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a component or sub-service of a status application.
- * <p>
- * StatusComponent allows breaking down a StatusApp into smaller, independently
- * monitored pieces. For example, an application might have separate components
- * for "API", "Web Interface", "Database", and "Authentication".
- * </p>
- * <p>
- * Components can inherit health check configuration from their parent application
- * or define their own custom monitoring settings. They support grouping for
- * logical organization on status pages.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Break down applications into smaller, independently monitored pieces</li>
+ *   <li>Support custom or inherited health check configuration</li>
+ *   <li>Enable logical grouping for organization on status pages</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusIncidentComponent
  * @see StatusMaintenanceComponent

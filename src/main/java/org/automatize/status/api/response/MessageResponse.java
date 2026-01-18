@@ -1,11 +1,24 @@
 package org.automatize.status.api.response;
 
 /**
- * Generic response object for simple API operations.
  * <p>
- * Used to return a success/failure status along with a descriptive message
- * for operations that don't require complex response data.
+ * Generic response object for simple API operations.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate success/failure status for API operations</li>
+ *   <li>Provide descriptive messages for operation results</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class MessageResponse {
 

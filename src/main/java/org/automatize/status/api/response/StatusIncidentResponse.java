@@ -5,11 +5,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response object containing incident details.
  * <p>
- * Provides comprehensive information about an incident including its status,
- * severity, timeline, updates, and affected components.
+ * Response object containing incident details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide comprehensive incident information including status and severity</li>
+ *   <li>Track incident timeline from start to resolution</li>
+ *   <li>Include status updates and affected components</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusIncidentResponse {
 

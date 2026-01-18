@@ -12,23 +12,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
+ * <p>
  * Custom implementation of Spring Security's {@link UserDetails} interface.
- * <p>
- * This class serves as the principal object representing an authenticated user
- * in the Spring Security context. It encapsulates all essential user information
- * needed for authentication and authorization, including custom fields specific
- * to the application's multi-tenant architecture.
  * </p>
+ *
  * <p>
- * The UserPrincipal contains:
+ * Responsibilities:
  * <ul>
- *     <li>Standard authentication fields (username, password, authorities)</li>
- *     <li>User identification (id, email)</li>
- *     <li>Multi-tenant context (organizationId)</li>
- *     <li>Role-based access control (role)</li>
+ *   <li>Represent authenticated users in the Spring Security context</li>
+ *   <li>Encapsulate user information for authentication and authorization</li>
+ *   <li>Support multi-tenant architecture with organization context</li>
  * </ul>
  * </p>
  *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see UserDetails
  * @see User
  */

@@ -11,13 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusIncidentComponent} entities.
  * <p>
- * Provides data access operations for the association between incidents and components.
- * This is a join entity that tracks which components are affected by which incidents,
- * along with the specific status of each component during the incident.
+ * Repository interface for managing {@link StatusIncidentComponent} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Manage associations between incidents and affected components</li>
+ *   <li>Track component-specific status during incidents</li>
+ *   <li>Support queries for active incidents affecting components</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusIncidentComponent
  * @see StatusIncidentRepository
  * @see StatusComponentRepository

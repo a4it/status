@@ -5,17 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
+ * <p>
  * Entity representing a status platform that groups multiple status applications.
- * <p>
- * StatusPlatform is a higher-level entity that can contain multiple StatusApp entities,
- * allowing for hierarchical organization of monitored services. For example, a platform
- * like "Atlassian Cloud" could contain multiple apps like "Jira", "Confluence", etc.
- * </p>
- * <p>
- * Platforms can have their own status, which may be derived from the aggregate status
- * of their child applications, and can be displayed on status pages as groupings.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Group multiple status applications for hierarchical organization</li>
+ *   <li>Maintain platform-level status derived from child applications</li>
+ *   <li>Store health check configuration for automated monitoring</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see Tenant
  * @see Organization

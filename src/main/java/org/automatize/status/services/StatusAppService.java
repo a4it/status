@@ -27,15 +27,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing status applications.
  * <p>
- * Status apps represent monitored applications or services in the status monitoring system.
- * This service provides CRUD operations for status apps, including tenant and organization
- * associations, status management, health check configuration, and cascading status updates.
+ * Service responsible for managing status applications.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status application entities</li>
+ *   <li>Manage health check configuration and status updates</li>
+ *   <li>Handle tenant and organization associations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

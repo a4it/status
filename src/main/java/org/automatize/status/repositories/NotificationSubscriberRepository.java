@@ -11,13 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link NotificationSubscriber} entities.
  * <p>
- * Provides data access operations for notification subscribers within the system.
- * Subscribers are associated with status applications and receive email notifications
- * when incidents occur.
+ * Repository interface for managing {@link NotificationSubscriber} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for notification subscriber data</li>
+ *   <li>Support filtering by application, verification status, and active status</li>
+ *   <li>Enable verification token lookups for email confirmation</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see NotificationSubscriber
  * @see org.automatize.status.models.StatusApp
  */

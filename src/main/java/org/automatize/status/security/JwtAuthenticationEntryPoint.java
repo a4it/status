@@ -16,22 +16,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Custom authentication entry point for handling unauthorized access attempts in JWT-based authentication.
  * <p>
- * This component is invoked whenever an unauthenticated user attempts to access a protected resource.
- * Instead of redirecting to a login page (as in traditional form-based authentication), it returns
- * a JSON response with HTTP 401 Unauthorized status, making it suitable for REST API authentication.
+ * Custom authentication entry point for handling unauthorized access attempts.
  * </p>
+ *
  * <p>
- * The error response includes:
+ * Responsibilities:
  * <ul>
- *     <li>HTTP status code (401)</li>
- *     <li>Error type ("Unauthorized")</li>
- *     <li>Detailed error message from the authentication exception</li>
- *     <li>The requested path that triggered the error</li>
+ *   <li>Handle unauthenticated access to protected resources</li>
+ *   <li>Return JSON error responses for REST API authentication</li>
+ *   <li>Log unauthorized access attempts for security monitoring</li>
  * </ul>
  * </p>
  *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see AuthenticationEntryPoint
  */
 @Component

@@ -6,11 +6,25 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating a status component.
  * <p>
- * Components represent individual parts or services within a status application
- * that can be monitored independently.
+ * Request object for creating or updating a status component.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate component data for create and update operations</li>
+ *   <li>Validate required fields such as app ID and component name</li>
+ *   <li>Configure health check settings including URL, interval, and thresholds</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class StatusComponentRequest {
 

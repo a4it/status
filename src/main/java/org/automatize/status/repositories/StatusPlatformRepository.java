@@ -11,13 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link StatusPlatform} entities.
  * <p>
- * Provides data access operations for status platforms within the system.
- * Status platforms represent higher-level groupings that can contain
- * multiple status applications.
+ * Repository interface for managing {@link StatusPlatform} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for platform data</li>
+ *   <li>Support ordering platforms by position for display purposes</li>
+ *   <li>Enable filtering by tenant, organization, and visibility</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusPlatform
  * @see StatusAppRepository
  */

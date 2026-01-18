@@ -17,13 +17,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for organization management operations.
  * <p>
- * This controller provides endpoints for managing organizations within the multi-tenant
- * hierarchy. Organizations belong to tenants and contain users. Access to endpoints
- * is controlled based on user roles (ADMIN, MANAGER).
+ * REST API controller for organization management operations.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for organizations</li>
+ *   <li>Handle organization filtering by tenant and status</li>
+ *   <li>Manage organization status updates and role-based access control</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see OrganizationService
  * @see Organization
  */

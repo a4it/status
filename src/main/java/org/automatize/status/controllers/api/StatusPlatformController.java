@@ -18,13 +18,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for status platform management.
  * <p>
- * This controller provides CRUD operations for status platforms, which are
- * higher-level entities that can group multiple status applications together.
- * Access is controlled based on user authentication and roles.
+ * REST API controller for status platform management.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status platforms</li>
+ *   <li>Handle platform filtering by tenant and organization</li>
+ *   <li>Manage role-based access control for platform operations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusPlatformService
  * @see StatusPlatformResponse
  */

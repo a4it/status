@@ -11,14 +11,25 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository interface for managing {@link Tenant} entities.
  * <p>
- * Provides data access operations for tenants, which represent the top level of the
- * multi-tenant hierarchy. Each tenant can contain multiple organizations, which in turn
- * contain users and status applications. Tenants provide data isolation and access control
- * boundaries within the system.
+ * Repository interface for managing {@link Tenant} entities.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for tenant data</li>
+ *   <li>Support searching and filtering tenants by name and active status</li>
+ *   <li>Enable existence checks for unique constraints</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see Tenant
  * @see OrganizationRepository
  */

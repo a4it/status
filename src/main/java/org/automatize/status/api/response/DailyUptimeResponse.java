@@ -6,11 +6,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Response object containing uptime statistics for a single day.
  * <p>
- * Provides uptime percentage, status, and counts of incidents and
- * maintenance events for a specific date.
+ * Response object containing uptime statistics for a single day.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide uptime percentage for a specific date</li>
+ *   <li>Track incident and maintenance counts for the day</li>
+ *   <li>Reference incident IDs occurring on the date</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class DailyUptimeResponse {
 

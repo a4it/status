@@ -17,14 +17,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for status application management.
  * <p>
- * This controller provides CRUD operations for status applications, which are
- * the top-level entities representing monitored services or platforms. Each
- * status application can contain multiple components and track incidents and
- * maintenance windows. Access is controlled based on user authentication and roles.
+ * REST API controller for status application management.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for status applications</li>
+ *   <li>Handle filtering by tenant, organization, and search terms</li>
+ *   <li>Manage application status updates with role-based access control</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusAppService
  * @see StatusAppResponse
  */

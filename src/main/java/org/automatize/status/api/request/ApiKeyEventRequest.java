@@ -6,11 +6,25 @@ import jakarta.validation.constraints.Pattern;
 import java.time.ZonedDateTime;
 
 /**
- * Request object for creating a platform event using API key authentication.
  * <p>
- * This request is used by external platforms and components to log events
- * without requiring JWT authentication. The API key identifies the source.
+ * Request object for creating a platform event using API key authentication.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate event data for API key-based event submission</li>
+ *   <li>Validate required fields such as severity and message</li>
+ *   <li>Enable external platforms to log events without JWT authentication</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class ApiKeyEventRequest {
 

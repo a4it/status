@@ -16,14 +16,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for managing notification subscribers.
  * <p>
- * Handles CRUD operations for notification subscribers who want to receive
- * email notifications when incidents occur on specific platforms.
+ * Service responsible for managing notification subscribers.
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for subscriber entities</li>
+ *   <li>Manage subscriber verification and active status</li>
+ *   <li>Retrieve active subscribers for incident notifications</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional

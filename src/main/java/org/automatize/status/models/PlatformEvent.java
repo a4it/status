@@ -5,12 +5,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
- * Entity representing an event logged by a platform or component.
  * <p>
- * PlatformEvent stores log entries from monitored platforms and their components.
- * Events can be logged via API and are searchable in the admin interface.
+ * Entity representing an event logged by a platform or component.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Store log entries from monitored platforms and components</li>
+ *   <li>Capture event severity, source, and detailed messages</li>
+ *   <li>Enable searchable event history in the admin interface</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see StatusApp
  * @see StatusComponent
  */

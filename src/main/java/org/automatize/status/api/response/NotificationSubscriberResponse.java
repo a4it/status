@@ -4,11 +4,25 @@ import java.time.ZonedDateTime;
 import java.util.UUID;
 
 /**
- * Response object containing notification subscriber details.
  * <p>
- * Provides information about a notification subscriber including
- * their email, verification status, and associated application.
+ * Response object containing notification subscriber details.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide subscriber information including email and name</li>
+ *   <li>Track verification and activation status</li>
+ *   <li>Include associated application details</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class NotificationSubscriberResponse {
 

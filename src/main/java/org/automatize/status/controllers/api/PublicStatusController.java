@@ -11,14 +11,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for public status page endpoints.
  * <p>
- * This controller provides unauthenticated access to status information intended
- * for public consumption. It exposes read-only endpoints for viewing application
- * status, components, incidents, maintenance schedules, and uptime statistics.
- * All endpoints support CORS for cross-origin access from public status pages.
+ * REST API controller for public status page endpoints.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide unauthenticated access to status information</li>
+ *   <li>Expose read-only endpoints for applications, components, and incidents</li>
+ *   <li>Support CORS for cross-origin access from public status pages</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see PublicStatusService
  */
 @RestController

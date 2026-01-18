@@ -21,25 +21,25 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * Service responsible for providing public status information without requiring authentication.
  * <p>
- * This service exposes read-only endpoints for public status pages, allowing external users
- * to view the status of applications, components, incidents, and scheduled maintenance.
- * All methods only return data marked as public.
+ * Service responsible for providing public status information without authentication.
  * </p>
+ *
  * <p>
- * Features include:
+ * Responsibilities:
  * <ul>
- *   <li>Public app and component status retrieval</li>
- *   <li>Active and historical incident information</li>
- *   <li>Scheduled and active maintenance windows</li>
- *   <li>Uptime history and statistics</li>
- *   <li>Overall system status summaries</li>
+ *   <li>Provide read-only public status page data</li>
+ *   <li>Calculate uptime history and statistics</li>
+ *   <li>Aggregate overall system status summaries</li>
  * </ul>
  * </p>
  *
- * @author Status Monitoring Team
- * @since 1.0
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 @Service
 @Transactional(readOnly = true)

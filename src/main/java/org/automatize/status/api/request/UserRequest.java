@@ -7,11 +7,25 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
- * Request object for creating or updating a user.
  * <p>
- * Contains all user account information including credentials, profile data,
- * and organizational associations.
+ * Request object for creating or updating a user account.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate user account data for create and update operations</li>
+ *   <li>Validate required fields such as username, email, and full name</li>
+ *   <li>Provide role assignment and organization association</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class UserRequest {
 

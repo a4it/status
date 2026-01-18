@@ -15,13 +15,25 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API controller for notification subscriber management.
  * <p>
- * This controller provides CRUD operations for notification subscribers who
- * receive email notifications when incidents occur on monitored platforms.
- * Access is controlled based on user authentication and roles.
+ * REST API controller for notification subscriber management.
  * </p>
  *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for notification subscribers</li>
+ *   <li>Handle subscriber filtering by application</li>
+ *   <li>Manage role-based access control for subscriber operations</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  * @see NotificationSubscriberService
  * @see NotificationSubscriberResponse
  */

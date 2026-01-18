@@ -7,11 +7,25 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
- * Request object for user registration.
  * <p>
- * Contains all required and optional information for creating a new user account
- * in the status monitoring system.
+ * Request object for user registration in the status monitoring system.
  * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate user registration data including credentials and profile information</li>
+ *   <li>Validate required fields such as username, email, password, and full name</li>
+ *   <li>Provide optional organization association and role assignment</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
  */
 public class RegisterRequest {
 
