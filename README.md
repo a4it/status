@@ -501,4 +501,6 @@ This project is licensed under the Creative Commons Attribution-NonCommercial 4.
 
 ---
 
-**Built with Spring Boot**
+**Made in Europe**
+
+Developed by [Tim De Smedt](https://www.linkedin.com/in/timdesmedta/) | [A4IT.BE](https://a4it.be)
