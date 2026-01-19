@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -156,4 +157,22 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @return true if the association exists, false otherwise
      */
     boolean existsByIncidentIdAndComponentId(UUID incidentId, UUID componentId);
+
+    /**
+     * Finds all public incidents that affected a specific component on a given date.
+     * Includes incidents that either started on that day or were ongoing from before.
+     * Only includes incidents that are publicly visible.
+     *
+     * @param componentId the unique identifier of the component
+     * @param dayStart the start of the day (midnight)
+     * @param dayEnd the end of the day (just before midnight)
+     * @return a list of incident-component associations for public incidents affecting the specified day
+     */
+    @Query("SELECT ic FROM StatusIncidentComponent ic WHERE ic.component.id = :componentId " +
+           "AND ic.incident.isPublic = true AND " +
+           "((ic.incident.startedAt BETWEEN :dayStart AND :dayEnd) OR " +
+           "(ic.incident.startedAt < :dayStart AND (ic.incident.resolvedAt IS NULL OR ic.incident.resolvedAt > :dayStart)))")
+    List<StatusIncidentComponent> findPublicIncidentsAffectingComponentOnDate(
+           @Param("componentId") UUID componentId,
+           @Param("dayStart") ZonedDateTime dayStart, @Param("dayEnd") ZonedDateTime dayEnd);
 }

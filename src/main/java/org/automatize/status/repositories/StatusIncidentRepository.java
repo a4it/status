@@ -194,4 +194,30 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.createdBy = :createdBy AND i.status != 'RESOLVED'")
     List<StatusIncident> findActiveAutomatedIncidents(@Param("appId") UUID appId, @Param("createdBy") String createdBy);
+
+    /**
+     * Finds recent public incidents for a status app that started on or after the specified date.
+     * Only includes incidents that are publicly visible.
+     *
+     * @param appId the unique identifier of the status app
+     * @param startDate the minimum start date for incidents to include
+     * @return a list of public incidents that started on or after the specified date
+     */
+    @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.startedAt >= :startDate AND i.isPublic = true")
+    List<StatusIncident> findRecentPublicIncidentsByAppId(@Param("appId") UUID appId, @Param("startDate") ZonedDateTime startDate);
+
+    /**
+     * Finds all public incidents that affected a specific date for a status app.
+     * Includes incidents that either started on that day or were ongoing from before.
+     *
+     * @param appId the unique identifier of the status app
+     * @param dayStart the start of the day (midnight)
+     * @param dayEnd the end of the day (just before midnight)
+     * @return a list of public incidents that affected the specified day
+     */
+    @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.isPublic = true AND " +
+           "((i.startedAt BETWEEN :dayStart AND :dayEnd) OR " +
+           "(i.startedAt < :dayStart AND (i.resolvedAt IS NULL OR i.resolvedAt > :dayStart)))")
+    List<StatusIncident> findPublicIncidentsAffectingDate(@Param("appId") UUID appId,
+           @Param("dayStart") ZonedDateTime dayStart, @Param("dayEnd") ZonedDateTime dayEnd);
 }

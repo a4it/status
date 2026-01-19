@@ -415,8 +415,8 @@ public class PublicStatusService {
         uptime.setDaysCalculated(days);
         
         ZonedDateTime startDate = ZonedDateTime.now().minusDays(days);
-        List<StatusIncident> incidents = statusIncidentRepository.findRecentIncidentsByAppId(appId, startDate);
-        
+        List<StatusIncident> incidents = statusIncidentRepository.findRecentPublicIncidentsByAppId(appId, startDate);
+
         uptime.setTotalIncidents(incidents.size());
         
         int totalMinutes = days * 24 * 60;
