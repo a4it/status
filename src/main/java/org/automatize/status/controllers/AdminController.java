@@ -157,4 +157,30 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/health-checks";
     }
+
+    /**
+     * Displays the tenants management page.
+     *
+     * @param model the model for template rendering
+     * @return the tenants template view name
+     */
+    @GetMapping("/tenants")
+    public String tenants(Model model) {
+        model.addAttribute("activeNav", "tenants");
+        addCommonAttributes(model);
+        return "admin/tenants";
+    }
+
+    /**
+     * Displays the organizations management page.
+     *
+     * @param model the model for template rendering
+     * @return the organizations template view name
+     */
+    @GetMapping("/organizations")
+    public String organizations(Model model) {
+        model.addAttribute("activeNav", "organizations");
+        addCommonAttributes(model);
+        return "admin/organizations";
+    }
 }

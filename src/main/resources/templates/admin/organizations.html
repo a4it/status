@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Component Management - Status Monitor</title>
+    <title>Organization Management - Status Monitor</title>
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
     <link rel="stylesheet" href="/static/css/tabler.min.css">
     <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
@@ -52,7 +52,7 @@
                                     <span class="nav-link-title">Platforms</span>
                                 </a>
                             </li>
-                            <li class="nav-item active">
+                            <li class="nav-item">
                                 <a class="nav-link" href="/admin/components">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-puzzle"></i>
@@ -92,7 +92,7 @@
                                     <span class="nav-link-title">Health Checks</span>
                                 </a>
                             </li>
-                            <li class="nav-item dropdown">
+                            <li class="nav-item dropdown active">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-building"></i>
@@ -103,7 +103,7 @@
                                     <a class="dropdown-item" href="/admin/tenants">
                                         <i class="ti ti-building me-2"></i>Tenants
                                     </a>
-                                    <a class="dropdown-item" href="/admin/organizations">
+                                    <a class="dropdown-item active" href="/admin/organizations">
                                         <i class="ti ti-building-community me-2"></i>Organizations
                                     </a>
                                 </div>
@@ -118,17 +118,20 @@
                 <div class="container-xl">
                     <div class="row align-items-center">
                         <div class="col">
-                            <h2 class="page-title">Component Management</h2>
+                            <h2 class="page-title">Organization Management</h2>
+                            <div class="text-muted mt-1">Manage organizations within your tenants</div>
                         </div>
-                        <div class="col-auto">
-                            <div class="d-flex gap-2">
-                                <select class="form-select" id="platformFilter" onchange="filterByPlatform()">
-                                    <option value="">All Platforms</option>
-                                </select>
-                                <button class="btn btn-primary" onclick="openAddComponentModal()">
-                                    <i class="ti ti-plus"></i> Add Component
-                                </button>
+                        <div class="col-auto d-flex align-items-center gap-2">
+                            <select class="form-select" id="tenantFilter" style="width: 200px;">
+                                <option value="">All Tenants</option>
+                            </select>
+                            <div class="input-group" style="width: 250px;">
+                                <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search organizations...">
                             </div>
+                            <button class="btn btn-primary" onclick="openAddOrganizationModal()">
+                                <i class="ti ti-plus"></i> Add Organization
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -140,21 +143,25 @@
                             <table class="table table-vcenter">
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Platform</th>
-                                        <th>Group</th>
+                                        <th>Organization</th>
+                                        <th>Tenant</th>
+                                        <th>Type</th>
+                                        <th>Contact</th>
                                         <th>Status</th>
-                                        <th>Health Check</th>
-                                        <th>Position</th>
+                                        <th>Created</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="componentsTable">
+                                <tbody id="organizationsTable">
                                     <tr>
                                         <td colspan="7" class="text-center text-muted">Loading...</td>
                                     </tr>
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="card-footer d-flex align-items-center">
+                            <p class="m-0 text-muted">Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalEntries">0</span> entries</p>
+                            <ul class="pagination m-0 ms-auto" id="pagination"></ul>
                         </div>
                     </div>
                 </div>
@@ -183,142 +190,141 @@
         </div>
     </div>
 
-    <!-- Component Create/Edit Modal -->
-    <div class="modal" id="componentModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+    <!-- Organization Create/Edit Modal -->
+    <div class="modal" id="organizationModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Component</h5>
+                    <h5 class="modal-title">Add Organization</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="componentForm">
-                        <input type="hidden" id="componentId">
-                        <div class="mb-3">
-                            <label class="form-label required">Platform</label>
-                            <select class="form-select" id="componentAppId" required>
-                                <option value="">Select platform...</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label required">Name</label>
-                            <input type="text" class="form-control" id="componentName" required>
+                    <form id="organizationForm">
+                        <input type="hidden" id="organizationId">
+
+                        <!-- Basic Information -->
+                        <h4 class="mb-3">Basic Information</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required">Organization Name</label>
+                                <input type="text" class="form-control" id="organizationName" required placeholder="My Organization">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label required">Tenant</label>
+                                <select class="form-select" id="organizationTenant" required>
+                                    <option value="">Select a tenant...</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Description</label>
-                            <textarea class="form-control" id="componentDescription" rows="3"></textarea>
+                            <textarea class="form-control" id="organizationDescription" rows="2" placeholder="A brief description of this organization"></textarea>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Group Name</label>
-                                <input type="text" class="form-control" id="componentGroupName" placeholder="e.g., Infrastructure, API, etc.">
+                                <label class="form-label required">Organization Type</label>
+                                <select class="form-select" id="organizationOrgType" required>
+                                    <option value="">Select type...</option>
+                                    <option value="ENTERPRISE">Enterprise</option>
+                                    <option value="SMALL_BUSINESS">Small Business</option>
+                                    <option value="STARTUP">Startup</option>
+                                    <option value="NON_PROFIT">Non-Profit</option>
+                                    <option value="GOVERNMENT">Government</option>
+                                    <option value="EDUCATION">Education</option>
+                                    <option value="INDIVIDUAL">Individual</option>
+                                </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Position</label>
-                                <input type="number" class="form-control" id="componentPosition" value="0" min="0">
+                                <label class="form-label">Status</label>
+                                <select class="form-select" id="organizationStatus">
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="INACTIVE">Inactive</option>
+                                    <option value="SUSPENDED">Suspended</option>
+                                    <option value="PENDING">Pending</option>
+                                </select>
                             </div>
                         </div>
+
+                        <!-- Contact Information -->
+                        <h4 class="mb-3 mt-4">Contact Information</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" id="organizationEmail" placeholder="contact@organization.com">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="organizationPhone" placeholder="+1 234 567 8900">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Website</label>
+                                <input type="url" class="form-control" id="organizationWebsite" placeholder="https://example.com">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Logo URL</label>
+                                <input type="url" class="form-control" id="organizationLogoUrl" placeholder="https://example.com/logo.png">
+                            </div>
+                        </div>
+
+                        <!-- Address Information -->
+                        <h4 class="mb-3 mt-4">Address Information</h4>
                         <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select class="form-select" id="componentStatus">
-                                <option value="OPERATIONAL">Operational</option>
-                                <option value="DEGRADED_PERFORMANCE">Degraded Performance</option>
-                                <option value="PARTIAL_OUTAGE">Partial Outage</option>
-                                <option value="MAJOR_OUTAGE">Major Outage</option>
-                                <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-                            </select>
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" id="organizationAddress" rows="2" placeholder="Street address"></textarea>
                         </div>
-
-                        <!-- Health Check Configuration -->
-                        <div class="card mt-3">
-                            <div class="card-header">
-                                <h4 class="card-title mb-0">
-                                    <a class="text-decoration-none" data-bs-toggle="collapse" href="#componentHealthCheckSection">
-                                        <i class="ti ti-heartbeat me-2"></i>Health Check Configuration
-                                    </a>
-                                </h4>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Postal Code</label>
+                                <input type="text" class="form-control" id="organizationPostalCode" placeholder="12345">
                             </div>
-                            <div class="collapse" id="componentHealthCheckSection">
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label class="form-check">
-                                            <input type="checkbox" class="form-check-input" id="componentCheckInheritFromApp" checked onchange="toggleComponentCheckInherit()">
-                                            <span class="form-check-label">Inherit health check settings from platform</span>
-                                        </label>
-                                    </div>
-                                    <div id="componentHealthCheckFields" style="display: none;">
-                                        <div class="mb-3">
-                                            <label class="form-check">
-                                                <input type="checkbox" class="form-check-input" id="componentCheckEnabled">
-                                                <span class="form-check-label">Enable Health Checking</span>
-                                            </label>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Check Type</label>
-                                            <select class="form-select" id="componentCheckType" onchange="toggleComponentCheckFields()">
-                                                <option value="NONE">None (Manual)</option>
-                                                <option value="PING">Ping</option>
-                                                <option value="HTTP_GET">HTTP GET</option>
-                                                <option value="SPRING_BOOT_HEALTH">Spring Boot Health</option>
-                                                <option value="TCP_PORT">TCP Port</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label">Check URL / Host</label>
-                                            <input type="text" class="form-control" id="componentCheckUrl" placeholder="https://example.com or host:port">
-                                            <small class="text-muted" id="componentCheckUrlHelp">Enter URL for HTTP/Health checks, hostname for Ping, host:port for TCP</small>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Check Interval (seconds)</label>
-                                                <input type="number" class="form-control" id="componentCheckInterval" value="60" min="10">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Timeout (seconds)</label>
-                                                <input type="number" class="form-control" id="componentCheckTimeout" value="10" min="1" max="60">
-                                            </div>
-                                        </div>
-                                        <div class="row" id="componentHttpStatusRow">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Expected HTTP Status</label>
-                                                <input type="number" class="form-control" id="componentCheckExpectedStatus" value="200">
-                                            </div>
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Failure Threshold</label>
-                                                <input type="number" class="form-control" id="componentCheckFailureThreshold" value="3" min="1">
-                                                <small class="text-muted">Number of consecutive failures before status change</small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Community/City</label>
+                                <input type="text" class="form-control" id="organizationCommunity" placeholder="City name">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Country</label>
+                                <input type="text" class="form-control" id="organizationCountry" placeholder="Country">
                             </div>
                         </div>
 
-                        <!-- API Key Section (shown only when editing) -->
-                        <div class="card mt-3" id="apiKeySection" style="display: none;">
-                            <div class="card-header">
-                                <h4 class="card-title mb-0">
-                                    <i class="ti ti-key me-2"></i>API Key for Event Logging
-                                </h4>
+                        <!-- Business Information -->
+                        <h4 class="mb-3 mt-4">Business Information</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">VAT Number</label>
+                                <input type="text" class="form-control" id="organizationVatNumber" placeholder="VAT123456789">
                             </div>
-                            <div class="card-body">
-                                <div class="input-group">
-                                    <input type="text" class="form-control font-monospace" id="componentApiKey" readonly>
-                                    <button class="btn btn-outline-secondary" type="button" onclick="copyApiKey()" title="Copy to clipboard">
-                                        <i class="ti ti-copy"></i>
-                                    </button>
-                                    <button class="btn btn-outline-warning" type="button" onclick="regenerateApiKey()" title="Regenerate API key">
-                                        <i class="ti ti-refresh"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted mt-2 d-block">Use this API key in the X-API-Key header when logging events via POST /api/events/log</small>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Type</label>
+                                <input type="text" class="form-control" id="organizationType" placeholder="Additional type classification">
+                            </div>
+                        </div>
+
+                        <!-- Configuration -->
+                        <h4 class="mb-3 mt-4">Configuration</h4>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" id="organizationSubscriptionExempt">
+                                    <span class="form-check-label">Subscription Exempt</span>
+                                </label>
+                                <small class="text-muted d-block">Exempt from subscription requirements</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" id="organizationThrottlingEnabled" checked>
+                                    <span class="form-check-label">API Throttling Enabled</span>
+                                </label>
+                                <small class="text-muted d-block">Enable rate limiting for API calls</small>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="saveComponent()">Save</button>
+                    <button type="button" class="btn btn-primary" onclick="saveOrganization()">Save</button>
                 </div>
             </div>
         </div>
@@ -332,7 +338,7 @@
                 <div class="modal-body text-center py-4">
                     <i class="ti ti-alert-triangle text-danger mb-2" style="font-size: 3rem;"></i>
                     <h3>Are you sure?</h3>
-                    <p class="text-muted" id="deleteMessage">Do you really want to delete this component? This action cannot be undone.</p>
+                    <p class="text-muted" id="deleteMessage">Do you really want to delete this organization? This action cannot be undone.</p>
                 </div>
                 <div class="modal-footer">
                     <div class="w-100">
@@ -353,6 +359,6 @@
     <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
     <script src="/static/js/shared/auth.js"></script>
     <script src="/static/js/shared/api.js"></script>
-    <script src="/static/js/admin/components/components.js"></script>
+    <script src="/static/js/admin/organizations/organizations.js"></script>
 </body>
 </html>

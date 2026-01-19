@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Admin Dashboard - Status Monitor</title>
+    <title>Tenant Management - Status Monitor</title>
     <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
     <link rel="stylesheet" href="/static/css/tabler.min.css">
     <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
@@ -36,7 +36,7 @@
                 <div class="navbar navbar-light">
                     <div class="container-xl">
                         <ul class="navbar-nav">
-                            <li class="nav-item active">
+                            <li class="nav-item">
                                 <a class="nav-link" href="/admin">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-dashboard"></i>
@@ -92,7 +92,7 @@
                                     <span class="nav-link-title">Health Checks</span>
                                 </a>
                             </li>
-                            <li class="nav-item dropdown">
+                            <li class="nav-item dropdown active">
                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
                                         <i class="ti ti-building"></i>
@@ -100,7 +100,7 @@
                                     <span class="nav-link-title">Multi-Tenant</span>
                                 </a>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="/admin/tenants">
+                                    <a class="dropdown-item active" href="/admin/tenants">
                                         <i class="ti ti-building me-2"></i>Tenants
                                     </a>
                                     <a class="dropdown-item" href="/admin/organizations">
@@ -114,132 +114,50 @@
             </div>
         </header>
         <div class="page-wrapper">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Tenant Management</h2>
+                            <div class="text-muted mt-1">Manage tenants in your multi-tenant architecture</div>
+                        </div>
+                        <div class="col-auto">
+                            <div class="input-group me-2 d-inline-flex" style="width: 250px;">
+                                <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Search tenants...">
+                            </div>
+                            <button class="btn btn-primary" onclick="openAddTenantModal()">
+                                <i class="ti ti-plus"></i> Add Tenant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="page-body">
                 <div class="container-xl">
-                    <div class="row row-cards">
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="subheader">Total Platforms</div>
-                                    </div>
-                                    <div class="h1 mb-3" id="totalPlatforms">-</div>
-                                </div>
-                            </div>
+                    <div class="card">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Tenant Name</th>
+                                        <th>Status</th>
+                                        <th>Organizations</th>
+                                        <th>Created</th>
+                                        <th>Last Modified</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tenantsTable">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Loading...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="subheader">Operational</div>
-                                    </div>
-                                    <div class="h1 mb-3 text-green" id="onlinePlatforms">-</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="subheader">Issues</div>
-                                    </div>
-                                    <div class="h1 mb-3 text-red" id="offlinePlatforms">-</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6 col-lg-3">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <div class="subheader">Active Incidents</div>
-                                    </div>
-                                    <div class="h1 mb-3 text-orange" id="activeIssues">-</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Overall Status Banner -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card" id="overall-status-card">
-                                <div class="card-body text-center py-4">
-                                    <div id="overall-status-loading">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="text-muted mt-2">Loading status...</p>
-                                    </div>
-                                    <div id="overall-status-content" style="display: none;">
-                                        <div id="status-icon" class="mb-3"></div>
-                                        <h2 id="status-title" class="mb-2"></h2>
-                                        <p id="status-description" class="text-muted mb-0"></p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Active Incidents -->
-                    <div id="active-incidents-section" class="mt-4" style="display: none;">
-                        <h3 class="mb-3">Active Incidents</h3>
-                        <div id="active-incidents-list" class="mb-4"></div>
-                    </div>
-
-                    <!-- Scheduled Maintenance -->
-                    <div id="scheduled-maintenance-section" class="mt-4" style="display: none;">
-                        <h3 class="mb-3">Scheduled Maintenance</h3>
-                        <div id="scheduled-maintenance-list" class="mb-4"></div>
-                    </div>
-
-                    <!-- Platforms Status -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">Platforms Status</h3>
-                                </div>
-                                <div class="card-body" id="platforms-loading">
-                                    <div class="text-center py-4">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Loading...</span>
-                                        </div>
-                                        <p class="text-muted mt-2">Loading platforms...</p>
-                                    </div>
-                                </div>
-                                <div class="list-group list-group-flush" id="platforms-list" style="display: none;"></div>
-                                <div class="card-body" id="platforms-empty" style="display: none;">
-                                    <p class="text-muted text-center mb-0">No platforms configured.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">Recent Incidents</h3>
-                                </div>
-                                <div class="table-responsive">
-                                    <table class="table card-table table-vcenter">
-                                        <thead>
-                                            <tr>
-                                                <th>Platform</th>
-                                                <th>Issue</th>
-                                                <th>Severity</th>
-                                                <th>Time</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="recentIssues">
-                                            <tr>
-                                                <td colspan="5" class="text-center text-muted">Loading...</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="card-footer d-flex align-items-center">
+                            <p class="m-0 text-muted">Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalEntries">0</span> entries</p>
+                            <ul class="pagination m-0 ms-auto" id="pagination"></ul>
                         </div>
                     </div>
                 </div>
@@ -267,9 +185,71 @@
             </footer>
         </div>
     </div>
+
+    <!-- Tenant Create/Edit Modal -->
+    <div class="modal" id="tenantModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Tenant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="tenantForm">
+                        <input type="hidden" id="tenantId">
+                        <div class="mb-3">
+                            <label class="form-label required">Tenant Name</label>
+                            <input type="text" class="form-control" id="tenantName" required placeholder="My Tenant">
+                            <small class="text-muted">A unique name for this tenant</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <div class="mt-2">
+                                <label class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" id="tenantIsActive" checked>
+                                    <span class="form-check-label">Active</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveTenant()">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal modal-blur" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-status bg-danger"></div>
+                <div class="modal-body text-center py-4">
+                    <i class="ti ti-alert-triangle text-danger mb-2" style="font-size: 3rem;"></i>
+                    <h3>Are you sure?</h3>
+                    <p class="text-muted" id="deleteMessage">Do you really want to delete this tenant? This will also delete all associated organizations. This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <div class="w-100">
+                        <div class="row">
+                            <div class="col">
+                                <button type="button" class="btn w-100" data-bs-dismiss="modal">Cancel</button>
+                            </div>
+                            <div class="col">
+                                <button type="button" class="btn btn-danger w-100" id="confirmDeleteBtn">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
     <script src="/static/js/shared/auth.js"></script>
     <script src="/static/js/shared/api.js"></script>
-    <script src="/static/js/admin/dashboard/dashboard.js"></script>
+    <script src="/static/js/admin/tenants/tenants.js"></script>
 </body>
 </html>

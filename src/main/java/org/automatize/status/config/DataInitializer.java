@@ -8,6 +8,7 @@ import org.automatize.status.repositories.TenantRepository;
 import org.automatize.status.repositories.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -38,6 +39,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class DataInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
+
+    @Value("${data.initializer.enabled:true}")
+    private boolean enabled;
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
@@ -73,6 +77,11 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        if (!enabled) {
+            logger.info("Data initializer is disabled (data.initializer.enabled=false)");
+            return;
+        }
+
         if (userRepository.existsByUsername("admin")) {
             logger.info("Admin user already exists, skipping initialization");
             return;
