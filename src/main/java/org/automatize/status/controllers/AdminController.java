@@ -183,4 +183,69 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/organizations";
     }
+
+    /**
+     * Displays the Logs Hub search and explore page.
+     *
+     * @param model the model for template rendering
+     * @return the logs template view name
+     */
+    @GetMapping("/logs")
+    public String logs(Model model) {
+        model.addAttribute("activeNav", "logs");
+        addCommonAttributes(model);
+        return "admin/logs";
+    }
+
+    /**
+     * Displays the drop rules management page.
+     *
+     * @param model the model for template rendering
+     * @return the drop-rules template view name
+     */
+    @GetMapping("/drop-rules")
+    public String dropRules(Model model) {
+        model.addAttribute("activeNav", "drop-rules");
+        addCommonAttributes(model);
+        return "admin/drop-rules";
+    }
+
+    /**
+     * Displays the log metrics dashboard page.
+     *
+     * @param model the model for template rendering
+     * @return the log-metrics template view name
+     */
+    @GetMapping("/log-metrics")
+    public String logMetrics(Model model) {
+        model.addAttribute("activeNav", "log-metrics");
+        addCommonAttributes(model);
+        return "admin/log-metrics";
+    }
+
+    /**
+     * Displays the alert rules management page.
+     *
+     * @param model the model for template rendering
+     * @return the alert-rules template view name
+     */
+    @GetMapping("/alert-rules")
+    public String alertRules(Model model) {
+        model.addAttribute("activeNav", "alert-rules");
+        addCommonAttributes(model);
+        return "admin/alert-rules";
+    }
+
+    /**
+     * Displays the log API keys management page.
+     *
+     * @param model the model for template rendering
+     * @return the log-api-keys template view name
+     */
+    @GetMapping("/log-api-keys")
+    public String logApiKeys(Model model) {
+        model.addAttribute("activeNav", "log-api-keys");
+        addCommonAttributes(model);
+        return "admin/log-api-keys";
+    }
 }

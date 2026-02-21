@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Logs Hub - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    Status Monitor Admin
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">A</span>
+                            <div class="d-none d-xl-block ps-2"><div>Admin</div></div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item"><a class="nav-link" href="/admin"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-dashboard"></i></span><span class="nav-link-title">Dashboard</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/platforms"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-server"></i></span><span class="nav-link-title">Platforms</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/components"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-puzzle"></i></span><span class="nav-link-title">Components</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/issues"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-alert-circle"></i></span><span class="nav-link-title">Issues</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/events"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-list"></i></span><span class="nav-link-title">Events</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/subscribers"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-mail"></i></span><span class="nav-link-title">Subscribers</span></a></li>
+                            <li class="nav-item"><a class="nav-link" href="/admin/health-checks"><span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-heartbeat"></i></span><span class="nav-link-title">Health Checks</span></a></li>
+                            <li class="nav-item dropdown active">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-terminal-2"></i></span>
+                                    <span class="nav-link-title">Logs Hub</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item active" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
+                                    <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
+                                    <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
+                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
+                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-building"></i></span>
+                                    <span class="nav-link-title">Multi-Tenant</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/admin/tenants"><i class="ti ti-building me-2"></i>Tenants</a>
+                                    <a class="dropdown-item" href="/admin/organizations"><i class="ti ti-building-community me-2"></i>Organizations</a>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="page-wrapper">
+            <div class="page-header">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <h2 class="page-title">Explore Logs</h2>
+                            <div class="text-muted mt-1">Search, filter, and tail live log entries</div>
+                        </div>
+                        <div class="col-auto ms-auto">
+                            <button class="btn btn-outline-secondary me-2" id="tailToggleBtn" onclick="toggleTail()">
+                                <i class="ti ti-player-play me-1"></i>Live Tail
+                            </button>
+                            <a href="/admin/log-api-keys" class="btn btn-outline-primary">
+                                <i class="ti ti-key me-1"></i>API Keys
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="container-xl">
+                    <!-- Filters -->
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Level</label>
+                                    <select class="form-select" id="filterLevel" onchange="applyFilters()">
+                                        <option value="">All Levels</option>
+                                        <option value="DEBUG">Debug</option>
+                                        <option value="INFO">Info</option>
+                                        <option value="WARNING">Warning</option>
+                                        <option value="ERROR">Error</option>
+                                        <option value="CRITICAL">Critical</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Service</label>
+                                    <select class="form-select" id="filterService" onchange="applyFilters()">
+                                        <option value="">All Services</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">From</label>
+                                    <input type="datetime-local" class="form-control" id="filterStartDate" onchange="applyFilters()">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">To</label>
+                                    <input type="datetime-local" class="form-control" id="filterEndDate" onchange="applyFilters()">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Search message</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="ti ti-search"></i></span>
+                                        <input type="text" class="form-control" id="filterSearch" placeholder="Search..." onkeyup="handleSearchKeyup(event)">
+                                    </div>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button class="btn btn-outline-secondary w-100" onclick="clearFilters()" title="Clear filters">
+                                        <i class="ti ti-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Logs Table -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Log Entries</div>
+                            <div class="card-options">
+                                <span class="badge bg-azure-lt" id="tailStatus" style="display:none;">
+                                    <span class="status-dot status-dot-animated bg-azure"></span> LIVE
+                                </span>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-vcenter table-sm">
+                                <thead>
+                                    <tr>
+                                        <th style="width:160px">Timestamp</th>
+                                        <th style="width:90px">Level</th>
+                                        <th style="width:140px">Service</th>
+                                        <th>Message</th>
+                                        <th style="width:120px">Trace ID</th>
+                                        <th style="width:60px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="logsTable">
+                                    <tr><td colspan="6" class="text-center text-muted">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer d-flex align-items-center">
+                            <p class="m-0 text-muted">Showing <span id="showingStart">0</span>–<span id="showingEnd">0</span> of <span id="totalItems">0</span></p>
+                            <ul class="pagination m-0 ms-auto" id="pagination"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">Powered by <a href="/" class="link-secondary" th:text="${applicationName}">status</a></li>
+                                <li class="list-inline-item">&copy; <span th:text="${copyright}"></span></li>
+                                <li class="list-inline-item">Build <span th:text="${buildNumber}">0</span> - <span th:text="${buildDate}">unknown</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Log Detail Modal -->
+    <div class="modal" id="logDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Log Entry Detail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="logDetailBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/admin/logs/logs.js"></script>
+</body>
+</html>
