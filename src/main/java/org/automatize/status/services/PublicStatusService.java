@@ -116,9 +116,7 @@ public class PublicStatusService {
             apps = statusAppRepository.findByIsPublic(true);
         }
 
-        return apps.stream()
-                .map(this::mapToStatusAppResponse)
-                .collect(Collectors.toList());
+        return mapAppsToResponses(apps);
     }
 
     /**
@@ -166,7 +164,7 @@ public class PublicStatusService {
         List<StatusComponent> components = statusComponentRepository.findByAppIdOrderByPosition(appId);
         return components.stream()
                 .map(this::mapToStatusComponentResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -191,7 +189,7 @@ public class PublicStatusService {
         return incidents.stream()
                 .filter(StatusIncident::getIsPublic)
                 .map(this::mapToStatusIncidentResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -201,12 +199,10 @@ public class PublicStatusService {
      * @return a list of StatusIncidentResponse objects for active public incidents
      */
     public List<StatusIncidentResponse> getCurrentIncidents(UUID appId) {
-        List<StatusIncident> incidents = statusIncidentRepository.findByAppIdAndStatus(appId, "RESOLVED");
-        
-        return incidents.stream()
-                .filter(incident -> !incident.getStatus().equals("RESOLVED") && incident.getIsPublic())
+        return statusIncidentRepository.findByAppIdAndStatusNot(appId, "RESOLVED").stream()
+                .filter(StatusIncident::getIsPublic)
                 .map(this::mapToStatusIncidentResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -245,7 +241,7 @@ public class PublicStatusService {
         List<StatusIncidentUpdate> updates = statusIncidentUpdateRepository.findByIncidentIdOrderByUpdateTimeDesc(incidentId);
         return updates.stream()
                 .map(this::mapToStatusIncidentUpdateResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -276,7 +272,7 @@ public class PublicStatusService {
         return maintenances.stream()
                 .filter(StatusMaintenance::getIsPublic)
                 .map(this::mapToStatusMaintenanceResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -320,24 +316,25 @@ public class PublicStatusService {
 
         StatusSummaryResponse summary = new StatusSummaryResponse();
         summary.setTotalApps(apps.size());
-        
+
         long operationalCount = apps.stream()
                 .filter(app -> "OPERATIONAL".equals(app.getStatus()))
                 .count();
         summary.setOperationalApps((int) operationalCount);
         summary.setAppsWithIssues(apps.size() - (int) operationalCount);
 
-        int activeIncidents = 0;
-        int upcomingMaintenances = 0;
-        
-        for (StatusApp app : apps) {
-            activeIncidents += statusIncidentRepository.countActiveIncidentsByAppId(app.getId()).intValue();
-            upcomingMaintenances += statusMaintenanceRepository.countActiveMaintenanceByAppId(app.getId()).intValue();
-        }
-        
+        List<UUID> appIds = apps.stream().map(StatusApp::getId).toList();
+
+        // Bulk count active incidents and maintenance across all apps
+        int activeIncidents = appIds.isEmpty() ? 0 :
+                statusIncidentRepository.findActivePublicIncidentsByAppIdIn(appIds).size();
+        ZonedDateTime now = ZonedDateTime.now();
+        int upcomingMaintenances = appIds.isEmpty() ? 0 :
+                statusMaintenanceRepository.findUpcomingMaintenanceByAppIdIn(appIds, now).size();
+
         summary.setActiveIncidents(activeIncidents);
         summary.setUpcomingMaintenances(upcomingMaintenances);
-        
+
         if (apps.isEmpty() || operationalCount == apps.size()) {
             summary.setOverallStatus("OPERATIONAL");
         } else if (operationalCount > apps.size() / 2) {
@@ -345,11 +342,9 @@ public class PublicStatusService {
         } else {
             summary.setOverallStatus("MAJOR_OUTAGE");
         }
-        
-        summary.setApps(apps.stream()
-                .map(this::mapToStatusAppResponse)
-                .collect(Collectors.toList()));
-        
+
+        summary.setApps(mapAppsToResponses(apps));
+
         return summary;
     }
 
@@ -433,12 +428,49 @@ public class PublicStatusService {
     }
 
     /**
-     * Maps a StatusApp entity to a StatusAppResponse DTO.
-     *
-     * @param app the StatusApp entity to map
-     * @return the mapped StatusAppResponse
+     * Bulk-maps a list of StatusApp entities to StatusAppResponse objects, fetching all
+     * related data (components, active incidents, upcoming maintenance) in 3 queries total
+     * instead of 3*N queries.
      */
-    private StatusAppResponse mapToStatusAppResponse(StatusApp app) {
+    private List<StatusAppResponse> mapAppsToResponses(List<StatusApp> apps) {
+        if (apps.isEmpty()) {
+            return List.of();
+        }
+
+        List<UUID> appIds = apps.stream().map(StatusApp::getId).toList();
+        ZonedDateTime now = ZonedDateTime.now();
+
+        Map<UUID, List<StatusComponent>> componentsByApp =
+                statusComponentRepository.findByAppIdInOrderByPosition(appIds).stream()
+                        .collect(Collectors.groupingBy(c -> c.getApp().getId()));
+
+        Map<UUID, StatusIncident> activeIncidentByApp =
+                statusIncidentRepository.findActivePublicIncidentsByAppIdIn(appIds).stream()
+                        .collect(Collectors.toMap(
+                                i -> i.getApp().getId(),
+                                i -> i,
+                                (existing, replacement) -> existing));
+
+        Map<UUID, List<StatusMaintenance>> maintenanceByApp =
+                statusMaintenanceRepository.findUpcomingMaintenanceByAppIdIn(appIds, now).stream()
+                        .collect(Collectors.groupingBy(m -> m.getApp().getId()));
+
+        return apps.stream()
+                .map(app -> mapToStatusAppResponse(app,
+                        componentsByApp.getOrDefault(app.getId(), List.of()),
+                        activeIncidentByApp.get(app.getId()),
+                        maintenanceByApp.getOrDefault(app.getId(), List.of())))
+                .toList();
+    }
+
+    /**
+     * Maps a StatusApp entity to a StatusAppResponse DTO using pre-fetched related data.
+     * Used by bulk mapping to avoid N+1 queries.
+     */
+    private StatusAppResponse mapToStatusAppResponse(StatusApp app,
+                                                     List<StatusComponent> components,
+                                                     StatusIncident activeIncident,
+                                                     List<StatusMaintenance> upcomingMaintenances) {
         StatusAppResponse response = new StatusAppResponse();
         response.setId(app.getId());
         response.setName(app.getName());
@@ -447,25 +479,41 @@ public class PublicStatusService {
         response.setStatus(app.getStatus());
         response.setIsPublic(app.getIsPublic());
         response.setLastUpdated(app.getLastModifiedDate());
-        
-        List<StatusComponent> components = statusComponentRepository.findByAppIdOrderByPosition(app.getId());
+
         response.setComponents(components.stream()
                 .map(this::mapToStatusComponentResponse)
-                .collect(Collectors.toList()));
-        
-        List<StatusIncident> activeIncidents = statusIncidentRepository.findByAppIdAndStatus(app.getId(), "RESOLVED");
-        if (!activeIncidents.isEmpty()) {
-            response.setCurrentIncident(mapToStatusIncidentResponse(activeIncidents.get(0)));
+                .toList());
+
+        if (activeIncident != null) {
+            response.setCurrentIncident(mapToStatusIncidentResponse(activeIncident));
         }
-        
-        List<StatusMaintenance> upcomingMaintenances = statusMaintenanceRepository
-                .findUpcomingMaintenanceByAppId(app.getId(), ZonedDateTime.now());
+
         response.setUpcomingMaintenances(upcomingMaintenances.stream()
                 .limit(3)
                 .map(this::mapToStatusMaintenanceResponse)
-                .collect(Collectors.toList()));
-        
+                .toList());
+
         return response;
+    }
+
+    /**
+     * Maps a StatusApp entity to a StatusAppResponse DTO.
+     * Issues per-app queries — use only for single-app lookups (e.g. getAppBySlug).
+     * For list endpoints, use {@link #mapAppsToResponses(List)} instead.
+     *
+     * @param app the StatusApp entity to map
+     * @return the mapped StatusAppResponse
+     */
+    private StatusAppResponse mapToStatusAppResponse(StatusApp app) {
+        List<StatusComponent> components = statusComponentRepository.findByAppIdOrderByPosition(app.getId());
+        StatusIncident activeIncident = statusIncidentRepository
+                .findByAppIdAndStatusNot(app.getId(), "RESOLVED").stream()
+                .filter(StatusIncident::getIsPublic)
+                .findFirst()
+                .orElse(null);
+        List<StatusMaintenance> upcomingMaintenances = statusMaintenanceRepository
+                .findUpcomingMaintenanceByAppId(app.getId(), ZonedDateTime.now());
+        return mapToStatusAppResponse(app, components, activeIncident, upcomingMaintenances);
     }
 
     /**
@@ -506,13 +554,13 @@ public class PublicStatusService {
                 .findByIncidentIdOrderByUpdateTimeDesc(incident.getId());
         response.setUpdates(updates.stream()
                 .map(this::mapToStatusIncidentUpdateResponse)
-                .collect(Collectors.toList()));
+                .toList());
         
         List<StatusIncidentComponent> incidentComponents = statusIncidentComponentRepository
                 .findByIncidentId(incident.getId());
         response.setAffectedComponents(incidentComponents.stream()
                 .map(ic -> mapToStatusComponentResponse(ic.getComponent()))
-                .collect(Collectors.toList()));
+                .toList());
         
         return response;
     }
@@ -552,7 +600,7 @@ public class PublicStatusService {
                 .findByMaintenanceId(maintenance.getId());
         response.setAffectedComponents(maintenanceComponents.stream()
                 .map(mc -> mapToStatusComponentResponse(mc.getComponent()))
-                .collect(Collectors.toList()));
+                .toList());
         
         return response;
     }

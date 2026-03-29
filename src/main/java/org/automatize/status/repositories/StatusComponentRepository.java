@@ -168,4 +168,24 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return an Optional containing the component if found, or empty if not found
      */
     Optional<StatusComponent> findByApiKey(String apiKey);
+
+    /**
+     * Finds all components that are eligible for health checks (not inheriting from app).
+     * Pushes the enabled/type/URL filter to the database to avoid full table scans.
+     *
+     * @return a list of components with independent health checking enabled
+     */
+    @Query("SELECT c FROM StatusComponent c WHERE (c.checkInheritFromApp IS NULL OR c.checkInheritFromApp = false) " +
+           "AND c.checkEnabled = true AND c.checkType IS NOT NULL AND c.checkType != 'NONE' " +
+           "AND c.checkUrl IS NOT NULL AND c.checkUrl != ''")
+    List<StatusComponent> findCheckEnabledComponents();
+
+    /**
+     * Finds all components belonging to any of the given app IDs, ordered by position.
+     * Used for bulk-loading to avoid N+1 queries.
+     *
+     * @param appIds the list of app IDs to fetch components for
+     * @return a list of components ordered by position
+     */
+    List<StatusComponent> findByAppIdInOrderByPosition(List<UUID> appIds);
 }

@@ -9,8 +9,7 @@ let currentUptimeDetailData = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     loadStatusSummary();
-    loadPlatforms();
-    loadRecentEvents();
+    loadPlatforms();  // loadPlatforms calls loadUptimeData and loadRecentEvents with shared apps
     initUptimeDetailModal();
 });
 
@@ -142,7 +141,9 @@ async function loadPlatforms() {
 
         platformsCache = apps;
         displayPlatforms(apps);
+        // Pass the already-fetched apps to both functions to avoid duplicate /public/status/apps requests
         loadUptimeData(apps);
+        loadRecentEvents(apps);
     } catch (error) {
         console.error('Failed to load platforms:', error);
         displayPlatformsError(error.message || 'Failed to load platforms');
@@ -257,30 +258,21 @@ function displayPlatformComponents(platformId, components) {
     `).join('');
 }
 
-async function loadRecentEvents() {
+async function loadRecentEvents(apps) {
     try {
-        const apps = await api.get('/public/status/apps');
-
         if (!apps || apps.length === 0) {
             document.getElementById('events-loading').style.display = 'none';
             document.getElementById('events-empty').style.display = 'block';
             return;
         }
 
-        // Load recent incidents for all apps
-        let allIncidents = [];
-        for (const app of apps) {
-            try {
-                const incidents = await api.get(`/public/status/apps/${app.id}/incidents?days=7`);
-                if (incidents && incidents.length > 0) {
-                    allIncidents = allIncidents.concat(incidents);
-                }
-            } catch (incidentError) {
-                console.warn(`Failed to load incidents for app ${app.name}:`, incidentError);
-            }
-        }
+        // Fetch incidents for all apps in parallel instead of sequentially
+        const incidentPromises = apps.map(app =>
+            api.get(`/public/status/apps/${app.id}/incidents?days=7`).catch(() => [])
+        );
+        const results = await Promise.all(incidentPromises);
 
-        // Sort by date and take latest 5
+        let allIncidents = results.flat().filter(Boolean);
         allIncidents.sort((a, b) => new Date(b.startedAt) - new Date(a.startedAt));
         allIncidents = allIncidents.slice(0, 5);
 
@@ -386,18 +378,18 @@ async function loadUptimeData(apps) {
         const containerEl = document.getElementById('uptime-cards-container');
         const loadingEl = document.getElementById('uptime-loading');
 
+        // Fetch uptime for all apps in parallel instead of sequentially
+        const uptimePromises = apps.map(app =>
+            api.get(`/public/status/apps/${app.id}/uptime-history?days=90`)
+                .then(appUptime => ({ app, appUptime }))
+                .catch(() => null)
+        );
+        const results = (await Promise.all(uptimePromises)).filter(Boolean);
+
         let uptimeHtml = '';
-
-        for (const app of apps) {
-            try {
-                // Load platform uptime
-                const appUptime = await api.get(`/public/status/apps/${app.id}/uptime-history?days=90`);
-                uptimeDataCache[app.id] = { appUptime, componentUptimes: null };
-
-                uptimeHtml += renderPlatformUptimeCard(app, appUptime);
-            } catch (appError) {
-                console.warn(`Failed to load uptime for app ${app.name}:`, appError);
-            }
+        for (const { app, appUptime } of results) {
+            uptimeDataCache[app.id] = { appUptime, componentUptimes: null };
+            uptimeHtml += renderPlatformUptimeCard(app, appUptime);
         }
 
         loadingEl.style.display = 'none';

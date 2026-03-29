@@ -178,4 +178,15 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      */
     @Query("SELECT COUNT(m) FROM StatusMaintenance m WHERE m.app.id = :appId AND m.status IN ('SCHEDULED', 'IN_PROGRESS')")
     Long countActiveMaintenanceByAppId(@Param("appId") UUID appId);
+
+    /**
+     * Finds upcoming public maintenance windows across multiple apps in a single query.
+     * Used for bulk-loading to avoid N+1 queries when rendering the public status page.
+     *
+     * @param appIds the list of app IDs to load maintenance for
+     * @param now the current time; only windows starting after this time are included
+     * @return a list of upcoming public maintenance windows for the given apps, ordered by start time
+     */
+    @Query("SELECT m FROM StatusMaintenance m WHERE m.app.id IN :appIds AND m.startsAt > :now AND m.isPublic = true ORDER BY m.startsAt")
+    List<StatusMaintenance> findUpcomingMaintenanceByAppIdIn(@Param("appIds") List<UUID> appIds, @Param("now") ZonedDateTime now);
 }

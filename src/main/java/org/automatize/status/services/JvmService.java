@@ -2,29 +2,18 @@ package org.automatize.status.services;
 
 import org.automatize.status.api.request.GcScheduleRequest;
 import org.automatize.status.api.response.JvmStatsResponse;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
-import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Service;
 
 import java.lang.management.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
 
 @Service
 public class JvmService {
 
-    private final ThreadPoolTaskScheduler taskScheduler;
-    private ScheduledFuture<?> gcFuture;
-    private volatile boolean gcEnabled = false;
-    private volatile String gcCron = "0 0 * * * *";
     private volatile Long lastGcRunAt = null;
 
     public JvmService() {
-        taskScheduler = new ThreadPoolTaskScheduler();
-        taskScheduler.setPoolSize(1);
-        taskScheduler.setThreadNamePrefix("gc-scheduler-");
-        taskScheduler.initialize();
     }
 
     public JvmStatsResponse getStats() {
@@ -74,10 +63,10 @@ public class JvmService {
         }
         response.setGcCollectors(collectors);
 
-        // Schedule info
+        // Schedule info — scheduled GC is disabled; manual trigger is still available
         JvmStatsResponse.GcScheduleInfo scheduleInfo = new JvmStatsResponse.GcScheduleInfo();
-        scheduleInfo.setEnabled(gcEnabled);
-        scheduleInfo.setCron(gcCron);
+        scheduleInfo.setEnabled(false);
+        scheduleInfo.setCron(null);
         scheduleInfo.setLastRunAtMs(lastGcRunAt);
         response.setGcSchedule(scheduleInfo);
 
@@ -86,30 +75,14 @@ public class JvmService {
 
     public GcScheduleRequest getScheduleConfig() {
         GcScheduleRequest req = new GcScheduleRequest();
-        req.setEnabled(gcEnabled);
-        req.setCron(gcCron);
+        req.setEnabled(false);
+        req.setCron(null);
         return req;
     }
 
     public void updateSchedule(boolean enabled, String cron) {
-        // Cancel any existing scheduled task
-        if (gcFuture != null && !gcFuture.isCancelled()) {
-            gcFuture.cancel(false);
-            gcFuture = null;
-        }
-
-        gcEnabled = enabled;
-        if (cron != null && !cron.isBlank()) {
-            gcCron = cron;
-        }
-
-        if (enabled && gcCron != null && !gcCron.isBlank()) {
-            Runnable gcTask = () -> {
-                System.gc();
-                lastGcRunAt = System.currentTimeMillis();
-            };
-            gcFuture = taskScheduler.schedule(gcTask, new CronTrigger(gcCron));
-        }
+        // Scheduled GC is disabled — the JVM manages its own GC heuristics.
+        // Manual trigger is still available via triggerGcNow().
     }
 
     public void triggerGcNow() {

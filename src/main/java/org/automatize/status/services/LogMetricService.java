@@ -1,23 +1,19 @@
 package org.automatize.status.services;
 
-import org.automatize.status.models.Log;
 import org.automatize.status.models.LogMetric;
 import org.automatize.status.repositories.LogMetricRepository;
 import org.automatize.status.repositories.LogRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for querying log metrics and triggering aggregation.
@@ -62,7 +58,8 @@ public class LogMetricService {
     }
 
     /**
-     * Aggregates raw logs from the last two minutes into log_metrics buckets.
+     * Aggregates raw logs from the last minute into log_metrics buckets.
+     * Uses a SQL GROUP BY aggregate to avoid materialising individual log rows.
      * Intended to be called by LogMetricScheduler every minute.
      */
     public void aggregateRecentLogs() {
@@ -72,20 +69,16 @@ public class LogMetricService {
         ZonedDateTime windowStart = bucketTime;
         ZonedDateTime windowEnd = bucketTime.plusMinutes(1);
 
-        // Query raw logs in the previous minute window
-        PageRequest all = PageRequest.of(0, Integer.MAX_VALUE);
-        logRepository.searchLogs(null, null, null, windowStart, windowEnd, null, all)
-                .stream()
-                .collect(Collectors.groupingBy(
-                        log -> new ServiceLevelKey(
-                                log.getTenant() != null ? log.getTenant().getId() : null,
-                                log.getService(),
-                                log.getLevel()),
-                        Collectors.counting()))
-                .forEach((key, count) -> upsertMetric(key.tenantId(), key.service(), key.level(),
-                        bucketTime, "MINUTE", count));
+        List<Object[]> rows = logRepository.aggregateByServiceLevel(windowStart, windowEnd);
+        for (Object[] row : rows) {
+            UUID tenantId = row[0] != null ? UUID.fromString(row[0].toString()) : null;
+            String service = (String) row[1];
+            String level = (String) row[2];
+            long count = ((Number) row[3]).longValue();
+            upsertMetric(tenantId, service, level, bucketTime, "MINUTE", count);
+        }
 
-        logger.debug("Log metrics aggregated for bucket: {}", bucketTime);
+        logger.debug("Log metrics aggregated for bucket: {} ({} groups)", bucketTime, rows.size());
     }
 
     // -------------------------------------------------------------------------
@@ -117,5 +110,4 @@ public class LogMetricService {
         }
     }
 
-    private record ServiceLevelKey(UUID tenantId, String service, String level) {}
 }

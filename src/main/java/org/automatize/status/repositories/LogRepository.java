@@ -68,4 +68,16 @@ public interface LogRepository extends JpaRepository<Log, UUID> {
     @Modifying
     @Query("DELETE FROM Log l WHERE l.service IN :serviceNames")
     int deleteByServiceIn(@Param("serviceNames") List<String> serviceNames);
+
+    /**
+     * Aggregates log counts by (tenant_id, service, level) for a time window.
+     * Returns one row per unique combination — never materializes individual log rows.
+     * Each row is Object[]{tenant_id (UUID), service (String), level (String), count (Long)}.
+     */
+    @Query(value = "SELECT l.tenant_id, l.service, l.level, COUNT(*) as cnt " +
+                   "FROM logs l WHERE l.log_timestamp >= :start AND l.log_timestamp < :end " +
+                   "GROUP BY l.tenant_id, l.service, l.level",
+           nativeQuery = true)
+    List<Object[]> aggregateByServiceLevel(@Param("start") ZonedDateTime start,
+                                            @Param("end") ZonedDateTime end);
 }

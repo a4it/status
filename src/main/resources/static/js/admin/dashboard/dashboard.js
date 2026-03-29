@@ -4,12 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!auth.requireAuth()) return;
 
     updateUserInfo();
-    loadDashboardData();
+    loadDashboardData();  // loads platforms + incidents + renders platform list
     loadStatusSummary();
-    loadPlatforms();
     setInterval(loadDashboardData, 30000);
     setInterval(loadStatusSummary, 30000);
-    setInterval(loadPlatforms, 30000);
 });
 
 function updateUserInfo() {
@@ -32,6 +30,7 @@ async function loadDashboardData() {
         platformsCache = platforms;
         updateStats(platforms, incidents);
         updateRecentIssues(incidents, platforms);
+        displayPlatforms(platforms);
     } catch (error) {
         console.error('Failed to load dashboard data:', error);
     }
@@ -258,24 +257,6 @@ function displayScheduledMaintenance(maintenances) {
 // Platforms Functions (with expandable components)
 // ============================================
 
-async function loadPlatforms() {
-    try {
-        const response = await API.get('/status-apps?size=100');
-        const platforms = response.content || response;
-
-        if (!platforms || platforms.length === 0) {
-            document.getElementById('platforms-loading').style.display = 'none';
-            document.getElementById('platforms-empty').style.display = 'block';
-            return;
-        }
-
-        platformsCache = platforms;
-        displayPlatforms(platforms);
-    } catch (error) {
-        console.error('Failed to load platforms:', error);
-        displayPlatformsError(error.message || 'Failed to load platforms');
-    }
-}
 
 function displayPlatformsError(message) {
     const loadingEl = document.getElementById('platforms-loading');

@@ -125,18 +125,8 @@ public class HealthCheckScheduler {
     public int triggerAllChecks() {
         logger.info("Manual trigger: Running all health checks");
 
-        List<StatusApp> apps = statusAppRepository.findAll().stream()
-                .filter(app -> Boolean.TRUE.equals(app.getCheckEnabled()))
-                .filter(app -> app.getCheckType() != null && !"NONE".equals(app.getCheckType()))
-                .filter(app -> app.getCheckUrl() != null && !app.getCheckUrl().isBlank())
-                .toList();
-
-        List<StatusComponent> components = statusComponentRepository.findAll().stream()
-                .filter(component -> !Boolean.TRUE.equals(component.getCheckInheritFromApp()))
-                .filter(component -> Boolean.TRUE.equals(component.getCheckEnabled()))
-                .filter(component -> component.getCheckType() != null && !"NONE".equals(component.getCheckType()))
-                .filter(component -> component.getCheckUrl() != null && !component.getCheckUrl().isBlank())
-                .toList();
+        List<StatusApp> apps = statusAppRepository.findCheckEnabledApps();
+        List<StatusComponent> components = statusComponentRepository.findCheckEnabledComponents();
 
         for (StatusApp app : apps) {
             executorService.submit(() -> checkApp(app));
@@ -255,35 +245,22 @@ public class HealthCheckScheduler {
 
     /**
      * Retrieves all status apps that are due for a health check.
+     * Uses a targeted DB query to avoid loading all apps, then filters by interval in Java.
      */
     private List<StatusApp> getAppsDueForCheck() {
-        List<StatusApp> allApps = statusAppRepository.findAll();
         ZonedDateTime now = ZonedDateTime.now();
-
-        return allApps.stream()
-                .filter(app -> Boolean.TRUE.equals(app.getCheckEnabled()))
-                .filter(app -> app.getCheckType() != null && !"NONE".equals(app.getCheckType()))
-                .filter(app -> app.getCheckUrl() != null && !app.getCheckUrl().isBlank())
+        return statusAppRepository.findCheckEnabledApps().stream()
                 .filter(app -> isDueForCheck(app.getLastCheckAt(), app.getCheckIntervalSeconds(), now))
                 .toList();
     }
 
     /**
      * Retrieves all status components that are due for a health check.
+     * Uses a targeted DB query to avoid loading all components, then filters by interval in Java.
      */
     private List<StatusComponent> getComponentsDueForCheck() {
-        List<StatusComponent> allComponents = statusComponentRepository.findAll();
         ZonedDateTime now = ZonedDateTime.now();
-
-        return allComponents.stream()
-                .filter(component -> {
-                    if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
-                        return false;
-                    }
-                    return Boolean.TRUE.equals(component.getCheckEnabled());
-                })
-                .filter(component -> component.getCheckType() != null && !"NONE".equals(component.getCheckType()))
-                .filter(component -> component.getCheckUrl() != null && !component.getCheckUrl().isBlank())
+        return statusComponentRepository.findCheckEnabledComponents().stream()
                 .filter(component -> isDueForCheck(component.getLastCheckAt(), component.getCheckIntervalSeconds(), now))
                 .toList();
     }

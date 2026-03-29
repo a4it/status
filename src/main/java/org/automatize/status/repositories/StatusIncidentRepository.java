@@ -80,6 +80,26 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
     List<StatusIncident> findByAppIdAndStatus(UUID appId, String status);
 
     /**
+     * Finds all incidents belonging to a status app that do NOT have the specified status.
+     * Used to retrieve active (non-resolved) incidents.
+     *
+     * @param appId the unique identifier of the status app
+     * @param status the status to exclude
+     * @return a list of incidents for the app excluding the given status
+     */
+    List<StatusIncident> findByAppIdAndStatusNot(UUID appId, String status);
+
+    /**
+     * Finds active (non-resolved) public incidents across multiple apps in a single query.
+     * Used for bulk-loading to avoid N+1 queries when rendering the public status page.
+     *
+     * @param appIds the list of app IDs to load incidents for
+     * @return a list of active public incidents for the given apps
+     */
+    @Query("SELECT i FROM StatusIncident i WHERE i.app.id IN :appIds AND i.status != 'RESOLVED' AND i.isPublic = true")
+    List<StatusIncident> findActivePublicIncidentsByAppIdIn(@Param("appIds") List<UUID> appIds);
+
+    /**
      * Finds all incidents belonging to a status app with a specific visibility setting.
      *
      * @param appId the unique identifier of the status app

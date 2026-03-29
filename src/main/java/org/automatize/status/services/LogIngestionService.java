@@ -22,7 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for ingesting logs via the REST API.
@@ -121,11 +125,23 @@ public class LogIngestionService {
         List<DropRule> activeRules = dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc();
         List<Log> toSave = new ArrayList<>();
 
+        // Pre-load all unique tenant IDs in one query to avoid N per-entry lookups
+        Set<UUID> tenantIds = entries.stream()
+                .map(LogEntry::tenantId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, Tenant> tenantMap = tenantIds.isEmpty() ? Map.of() :
+                tenantRepository.findAllById(tenantIds).stream()
+                        .collect(Collectors.toMap(Tenant::getId, t -> t));
+
         for (LogEntry entry : entries) {
             if (!isDropped(activeRules, entry.level(), entry.service(), entry.message())) {
                 Log log = new Log();
                 if (entry.tenantId() != null) {
-                    tenantRepository.findById(entry.tenantId()).ifPresent(log::setTenant);
+                    Tenant tenant = tenantMap.get(entry.tenantId());
+                    if (tenant != null) {
+                        log.setTenant(tenant);
+                    }
                 }
                 log.setLogTimestamp(entry.timestamp() != null ? entry.timestamp() : ZonedDateTime.now());
                 log.setLevel(entry.level().toUpperCase());

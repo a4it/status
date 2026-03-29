@@ -184,4 +184,15 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @return an Optional containing the status app if found, or empty if not found
      */
     Optional<StatusApp> findByApiKey(String apiKey);
+
+    /**
+     * Finds all status apps that are eligible for health checks.
+     * Pushes the enabled/type/URL filter to the database to avoid full table scans.
+     *
+     * @return a list of apps with health checking enabled and a valid check URL and type
+     */
+    @Query("SELECT a FROM StatusApp a WHERE a.checkEnabled = true " +
+           "AND a.checkType IS NOT NULL AND a.checkType != 'NONE' " +
+           "AND a.checkUrl IS NOT NULL AND a.checkUrl != ''")
+    List<StatusApp> findCheckEnabledApps();
 }

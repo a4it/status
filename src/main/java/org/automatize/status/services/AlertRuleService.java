@@ -14,6 +14,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,9 @@ import java.util.UUID;
 public class AlertRuleService {
 
     private static final Logger logger = LoggerFactory.getLogger(AlertRuleService.class);
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(10))
+            .build();
 
     @Autowired
     private AlertRuleRepository alertRuleRepository;
@@ -174,13 +178,12 @@ public class AlertRuleService {
 
     private void postJson(String url, String jsonBody) {
         try {
-            HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
             logger.info("Webhook response: {} {}", response.statusCode(), url);
         } catch (IOException | InterruptedException e) {
             logger.error("Webhook call failed to {}: {}", url, e.getMessage());

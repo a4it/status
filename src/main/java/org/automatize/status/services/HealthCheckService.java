@@ -66,18 +66,27 @@ public class HealthCheckService {
     private final StatusIncidentService statusIncidentService;
 
     /**
+     * Shared ObjectMapper for parsing JSON health check responses.
+     * Injected as a Spring bean to avoid per-call instantiation overhead.
+     */
+    private final ObjectMapper objectMapper;
+
+    /**
      * Constructs a new HealthCheckService with the required dependencies.
      *
      * @param statusAppRepository repository for status app operations
      * @param statusComponentRepository repository for status component operations
      * @param statusIncidentService service for automated incident management
+     * @param objectMapper shared Jackson ObjectMapper bean
      */
     public HealthCheckService(StatusAppRepository statusAppRepository,
                               StatusComponentRepository statusComponentRepository,
-                              StatusIncidentService statusIncidentService) {
+                              StatusIncidentService statusIncidentService,
+                              ObjectMapper objectMapper) {
         this.statusAppRepository = statusAppRepository;
         this.statusComponentRepository = statusComponentRepository;
         this.statusIncidentService = statusIncidentService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -237,7 +246,7 @@ public class HealthCheckService {
 
             if (responseCode >= 200 && responseCode < 300) {
                 String responseBody = new String(connection.getInputStream().readAllBytes());
-                JsonNode jsonNode = new ObjectMapper().readTree(responseBody);
+                JsonNode jsonNode = objectMapper.readTree(responseBody);
                 String status = jsonNode.has("status") ? jsonNode.get("status").asText() : "UNKNOWN";
 
                 if ("UP".equalsIgnoreCase(status)) {
