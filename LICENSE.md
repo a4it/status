@@ -1,6 +1,6 @@
 # Polyform Noncommercial License 1.0.0
 
-Copyright (c) 2024-2026 Automatize / Tim De Smedt
+Copyright (c) 2024-2026 Automatize / A4IT / Tim De Smedt
 
 This software is licensed under the **Polyform Noncommercial License 1.0.0**.
 
@@ -20,7 +20,7 @@ The licensor grants you an additional copyright license to distribute copies of 
 
 You must ensure that anyone who gets a copy of any part of the software from you also gets a copy of these terms or the URL for them above, as well as copies of any plain-text lines beginning with `Required Notice:` that the licensor provided with the software. For example:
 
-> Required Notice: Copyright (c) 2024-2026 Automatize / Tim De Smedt
+> Required Notice: Copyright (c) 2024-2026 Automatize / A4IT / Tim De Smedt
 
 ## Changes and New Works License
 

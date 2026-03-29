@@ -54,7 +54,9 @@ public class LogApiKeyController {
         r.setId(key.getId());
         r.setTenantId(key.getTenant() != null ? key.getTenant().getId() : null);
         r.setName(key.getName());
-        r.setApiKey(key.getApiKey());
+        // MED-03: only expose prefix in list; full key only present on creation (transient field)
+        r.setKeyPrefix(key.getKeyPrefix());
+        r.setRawKey(key.getRawKeyOnceOnly()); // null except immediately after create()
         r.setIsActive(key.getIsActive());
         r.setCreatedDate(key.getCreatedDate());
         return r;

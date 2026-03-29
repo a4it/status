@@ -58,8 +58,20 @@ public class LogIngestionService {
      */
     @Transactional(readOnly = true)
     public LogApiKey validateApiKey(String apiKey) {
-        return logApiKeyRepository.findByApiKeyAndIsActiveTrue(apiKey)
+        // MED-03: hash the incoming key and look up by hash — plaintext never stored
+        String keyHash = sha256Hex(apiKey);
+        return logApiKeyRepository.findByKeyHashAndIsActiveTrue(keyHash)
                 .orElseThrow(() -> new RuntimeException("Invalid or inactive API key"));
+    }
+
+    private String sha256Hex(String input) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.HexFormat.of().formatHex(hash);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 
     /**

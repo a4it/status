@@ -8,6 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,14 +40,31 @@ public class LogApiKeyService {
     }
 
     public LogApiKey create(UUID tenantId, String name) {
+        String rawKey = ApiKeyGenerator.generateApiKey();
         LogApiKey key = new LogApiKey();
         if (tenantId != null) {
             tenantRepository.findById(tenantId).ifPresent(key::setTenant);
         }
         key.setName(name);
-        key.setApiKey(ApiKeyGenerator.generateApiKey());
+        // MED-03: store SHA-256 hash + 8-char display prefix; never store the plaintext key
+        key.setKeyHash(sha256Hex(rawKey));
+        key.setKeyPrefix(rawKey.substring(0, 8));
         key.setIsActive(true);
-        return logApiKeyRepository.save(key);
+        LogApiKey saved = logApiKeyRepository.save(key);
+        // Pass the raw key via transient field so the controller can include it
+        // in the creation response exactly once.
+        saved.setRawKeyOnceOnly(rawKey);
+        return saved;
+    }
+
+    private String sha256Hex(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 
     public LogApiKey toggleActive(UUID id) {

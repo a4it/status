@@ -33,15 +33,7 @@ function renderTable(keys) {
         <tr>
             <td><strong>${escapeHtml(k.name)}</strong></td>
             <td>
-                <div class="input-group input-group-sm" style="max-width:380px">
-                    <input type="password" class="form-control form-control-sm font-monospace" id="key-${k.id}" value="${escapeHtml(k.apiKey)}" readonly>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="toggleKeyVisibility('${k.id}')" title="Show/hide">
-                        <i class="ti ti-eye" id="eye-${k.id}"></i>
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="copyKey('${k.id}')" title="Copy">
-                        <i class="ti ti-copy"></i>
-                    </button>
-                </div>
+                <span class="font-monospace text-muted small">${escapeHtml(k.keyPrefix)}••••••••••••••••••••••••••••••••••• <em class="text-secondary">(key shown only at creation)</em></span>
             </td>
             <td>
                 <span class="badge ${k.isActive ? 'bg-green-lt text-green' : 'bg-secondary-lt text-secondary'}">
@@ -71,13 +63,37 @@ async function createKey() {
     if (!name) { showError('Name is required'); return; }
 
     try {
-        await API.post('/log-api-keys', { name });
-        showSuccess('API key created');
+        const created = await API.post('/log-api-keys', { name });
         keyModal.hide();
         loadKeys();
+        // MED-03: show the full key exactly once — it cannot be retrieved again
+        if (created && created.rawKey) {
+            showKeyOnce(created.rawKey);
+        } else {
+            showSuccess('API key created');
+        }
     } catch (e) {
         showError(e.message || 'Failed to create API key');
     }
+}
+
+function showKeyOnce(rawKey) {
+    const msg = `<strong>Save your API key — it will not be shown again.</strong><br>
+        <code class="user-select-all">${escapeHtml(rawKey)}</code>`;
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1100';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-dark bg-warning border-0';
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+    container.appendChild(toast);
+    new bootstrap.Toast(toast, { autohide: false }).show();
 }
 
 async function toggleKey(id) {
@@ -104,24 +120,6 @@ async function deleteKey(id) {
     }
 }
 
-function toggleKeyVisibility(id) {
-    const input = document.getElementById(`key-${id}`);
-    const icon  = document.getElementById(`eye-${id}`);
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('ti-eye', 'ti-eye-off');
-    } else {
-        input.type = 'password';
-        icon.classList.replace('ti-eye-off', 'ti-eye');
-    }
-}
-
-function copyKey(id) {
-    const input = document.getElementById(`key-${id}`);
-    navigator.clipboard.writeText(input.value)
-        .then(() => showSuccess('API key copied to clipboard'))
-        .catch(() => showError('Failed to copy'));
-}
 
 function escapeHtml(text) {
     if (text == null) return '';

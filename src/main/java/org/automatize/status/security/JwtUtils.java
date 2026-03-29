@@ -3,7 +3,6 @@ package org.automatize.status.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.MacAlgorithm;
 
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
@@ -12,7 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.UUID;
 
@@ -78,7 +77,7 @@ public class JwtUtils {
      *
      * @return the signing key derived from the configured JWT secret
      */
-    private Key key() {
+    private SecretKey key() {
         return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret));
     }
 
@@ -194,7 +193,7 @@ public class JwtUtils {
      * @throws JwtException if the token is invalid or cannot be parsed
      */
     public String getUserNameFromJwtToken(String token) {
-        return Jwts.parser().verifyWith((SecretKey)key()).build()
+        return Jwts.parser().verifyWith(key()).build()
                 .parseSignedClaims(token).getPayload().getSubject();
     }
 
@@ -206,7 +205,7 @@ public class JwtUtils {
      * @throws JwtException if the token is invalid or cannot be parsed
      */
     public UUID getUserIdFromJwtToken(String token) {
-        Claims claims = Jwts.parser().verifyWith((SecretKey)key()).build()
+        Claims claims = Jwts.parser().verifyWith(key()).build()
                 .parseSignedClaims(token).getPayload();
         String userId = claims.get("userId", String.class);
         return userId != null ? UUID.fromString(userId) : null;
@@ -233,7 +232,7 @@ public class JwtUtils {
      */
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parser().verifyWith((SecretKey)key()).build().parse(authToken);
+            Jwts.parser().verifyWith(key()).build().parse(authToken);
             return true;
         } catch (MalformedJwtException e) {
             logger.warn("Invalid JWT token: {}", e.getMessage());
@@ -260,7 +259,7 @@ public class JwtUtils {
      * @throws JwtException if the token is invalid or cannot be parsed
      */
     public Claims getAllClaimsFromToken(String token) {
-        return Jwts.parser().verifyWith((SecretKey)key()).build()
+        return Jwts.parser().verifyWith(key()).build()
                 .parseSignedClaims(token).getPayload();
     }
 
