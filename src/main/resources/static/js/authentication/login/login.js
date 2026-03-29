@@ -1,4 +1,10 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Clear stale token if redirected here due to server-side session expiry/rejection
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('session_expired') === 'true') {
+        auth.clearToken();
+    }
+
     // If already authenticated, redirect to admin
     if (auth.isAuthenticated()) {
         window.location.href = '/admin';

@@ -1,6 +1,8 @@
 package org.automatize.status.controllers.api;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.automatize.status.api.request.LoginRequest;
 import org.automatize.status.api.request.RefreshTokenRequest;
@@ -46,6 +48,9 @@ public class AuthController {
     @Value("${app.registration.enabled:true}")
     private boolean registrationEnabled;
 
+    @Value("${jwt.expiration:86400000}")
+    private long jwtExpiration;
+
     @Autowired
     private AuthService authService;
 
@@ -61,14 +66,24 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest loginRequest,
-            HttpServletRequest request) {
+            HttpServletRequest request,
+            HttpServletResponse response) {
         // HIGH-04: rate limit login attempts per client IP
         String clientIp = request.getRemoteAddr();
         if (!loginRateLimiter.isAllowed(clientIp)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
         }
-        AuthResponse response = authService.authenticateUser(loginRequest);
-        return ResponseEntity.ok(response);
+        AuthResponse authResponse = authService.authenticateUser(loginRequest);
+
+        // Set HttpOnly jwt cookie so browser page navigations are authenticated
+        Cookie jwtCookie = new Cookie("jwt", authResponse.getAccessToken());
+        jwtCookie.setPath("/");
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(request.isSecure());
+        jwtCookie.setMaxAge((int) (jwtExpiration / 1000));
+        response.addCookie(jwtCookie);
+
+        return ResponseEntity.ok(authResponse);
     }
 
     /**

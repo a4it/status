@@ -1,6 +1,6 @@
 package org.automatize.status.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,6 +45,12 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
      */
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
 
+    private final ObjectMapper objectMapper;
+
+    public JwtAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
     /**
      * Handles unauthorized access attempts by returning a JSON error response.
      * <p>
@@ -65,6 +71,13 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException, ServletException {
         logger.error("Unauthorized error: {}", authException.getMessage());
 
+        // For browser navigation (non-API paths), redirect to login instead of returning JSON 401
+        String path = request.getServletPath();
+        if (!path.startsWith("/api/")) {
+            response.sendRedirect("/login?session_expired=true");
+            return;
+        }
+
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
@@ -72,9 +85,8 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         body.put("status", HttpServletResponse.SC_UNAUTHORIZED);
         body.put("error", "Unauthorized");
         body.put("message", authException.getMessage());
-        body.put("path", request.getServletPath());
+        body.put("path", path);
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(response.getOutputStream(), body);
+        objectMapper.writeValue(response.getOutputStream(), body);
     }
 }

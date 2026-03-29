@@ -182,6 +182,34 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 | `USER` | View and create incidents |
 | `VIEWER` | Read-only access |
 
+## License FAQ
+
+**Can I use this to monitor my company's internal services?**
+Yes. Running the platform internally for your own organization is permitted under the Noncommercial License.
+
+**Can I use this at a non-profit or educational institution?**
+Yes. Non-profit and educational use is allowed.
+
+**Can I offer this as a hosted/SaaS product to paying customers?**
+No. Hosting the platform and charging customers for access (or bundling it into a paid service) is commercial use and requires a separate commercial license.
+
+**Can I embed this in a product I sell?**
+No. Redistributing or incorporating this software into a commercial product requires a commercial license.
+
+**Can I modify the code and use it internally?**
+Yes, as long as the use remains non-commercial. You can adapt it to fit your internal needs.
+
+**Can I contribute improvements back to the project?**
+Yes, and it's encouraged. See the Contributing section below.
+
+**What counts as "commercial use"?**
+Any use where the software generates direct or indirect revenue — including SaaS products, paid support contracts built around this software, or selling products that include it.
+
+**How do I get a commercial license?**
+Contact [Tim De Smedt](https://www.linkedin.com/in/timdesmedta/) or visit [A4IT.BE](https://a4it.be).
+
+---
+
 ## Contributing
 
 1. Fork the repository

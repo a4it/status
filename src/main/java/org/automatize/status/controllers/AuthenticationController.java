@@ -1,6 +1,7 @@
 package org.automatize.status.controllers;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -77,18 +78,20 @@ public class AuthenticationController {
      * @return redirect to login page
      */
     @GetMapping("/logout")
-    public String logout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
+    public String logout(HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        boolean secure = request.isSecure();
+
         Cookie jwtCookie = new Cookie("jwt", null);
         jwtCookie.setPath("/");
         jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(true);
+        jwtCookie.setSecure(secure);
         jwtCookie.setMaxAge(0);
         response.addCookie(jwtCookie);
-        
+
         Cookie refreshCookie = new Cookie("refresh_token", null);
         refreshCookie.setPath("/");
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setSecure(true);
+        refreshCookie.setSecure(secure);
         refreshCookie.setMaxAge(0);
         response.addCookie(refreshCookie);
         
@@ -108,8 +111,8 @@ public class AuthenticationController {
      * @return redirect to login page
      */
     @PostMapping("/logout")
-    public String handleLogout(HttpServletResponse response, RedirectAttributes redirectAttributes) {
-        return logout(response, redirectAttributes);
+    public String handleLogout(HttpServletRequest request, HttpServletResponse response, RedirectAttributes redirectAttributes) {
+        return logout(request, response, redirectAttributes);
     }
 
     /**

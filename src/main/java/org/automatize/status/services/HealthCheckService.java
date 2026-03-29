@@ -1,7 +1,7 @@
 package org.automatize.status.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
 import org.automatize.status.repositories.StatusAppRepository;
