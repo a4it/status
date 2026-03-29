@@ -4,9 +4,10 @@
 
 A comprehensive, multi-tenant status monitoring solution built with Spring Boot. Monitor platform uptime, manage incidents, schedule maintenance windows, and provide public status pages for your services.
 
-![Java](https://img.shields.io/badge/Java-17+-orange)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue)
+![Java](https://img.shields.io/badge/Java-25-orange)
+![GraalVM](https://img.shields.io/badge/GraalVM-25-red)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
 ![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey)
 
 ## Overview
@@ -30,11 +31,12 @@ Status Monitoring Platform is a production-ready application designed to track s
 ### Backend
 | Technology | Version | Purpose |
 |------------|---------|---------|
-| Java | 17+ | Runtime |
-| Spring Boot | 3.2+ | Application framework |
-| Spring Security | 6 | Authentication & authorization |
+| Java | 25 | Runtime |
+| GraalVM | 25 | Native compilation |
+| Spring Boot | 4 | Application framework |
+| Spring Security | 7 | Authentication & authorization |
 | Spring Data JPA | - | Data persistence |
-| PostgreSQL | 15+ | Database |
+| PostgreSQL | 17 | Database |
 | Flyway | - | Database migrations |
 | JWT (io.jsonwebtoken) | 0.12.3 | Token-based authentication |
 | OpenAPI 3 | - | API documentation |
@@ -54,9 +56,9 @@ Status Monitoring Platform is a production-ready application designed to track s
 
 ### Prerequisites
 
-- Java 17 or higher
+- Java 25 (GraalVM 25 recommended)
 - Maven 3.8+
-- PostgreSQL 15+
+- PostgreSQL 17+
 
 ### Installation
 
