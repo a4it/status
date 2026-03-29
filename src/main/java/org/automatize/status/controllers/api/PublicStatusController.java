@@ -34,7 +34,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/public/status")
-@CrossOrigin(origins = "*")
+// MED-02: removed @CrossOrigin(origins = "*"); SecurityConfig registers open CORS for /api/public/**
 public class PublicStatusController {
 
     @Autowired

@@ -22,6 +22,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.UUID;
 
 /**
@@ -113,7 +117,8 @@ public class AuthService {
         User user = userRepository.findById(userPrincipal.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        user.setRefreshToken(refreshToken);
+        // HIGH-02: store hash of refresh token, never the plaintext
+        user.setRefreshToken(hashToken(refreshToken));
         userRepository.save(user);
 
         AuthResponse response = new AuthResponse();
@@ -156,7 +161,8 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setEmail(registerRequest.getEmail());
         user.setFullName(registerRequest.getFullName());
-        user.setRole(registerRequest.getRole() != null ? registerRequest.getRole() : "USER");
+        // HIGH-03: never trust client-supplied role; new registrations are always USER
+        user.setRole("USER");
         user.setEnabled(true);
         user.setStatus("ACTIVE");
         user.setCreatedBy(registerRequest.getUsername());
@@ -196,7 +202,8 @@ public class AuthService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!refreshToken.equals(user.getRefreshToken())) {
+        // HIGH-02: compare hash of incoming token against stored hash
+        if (!hashToken(refreshToken).equals(user.getRefreshToken())) {
             throw new RuntimeException("Refresh token mismatch");
         }
 
@@ -208,9 +215,14 @@ public class AuthService {
                 user.getRole()
         );
 
+        // LOW-02: rotate refresh token on each use to limit stolen-token window
+        String newRefreshToken = jwtUtils.generateRefreshToken(user.getUsername());
+        user.setRefreshToken(hashToken(newRefreshToken));
+        userRepository.save(user);
+
         AuthResponse response = new AuthResponse();
         response.setAccessToken(newAccessToken);
-        response.setRefreshToken(refreshToken);
+        response.setRefreshToken(newRefreshToken);
         response.setTokenType("Bearer");
         response.setExpiresIn(86400L); // 24 hours
         response.setUserId(user.getId());
@@ -232,6 +244,20 @@ public class AuthService {
      * @param token the Authorization header value containing the Bearer token
      * @return a MessageResponse indicating success or failure of the logout operation
      */
+    /**
+     * Returns the SHA-256 hex digest of the given token string.
+     * Used to store and compare refresh tokens without persisting plaintext.
+     */
+    private String hashToken(String token) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
     public MessageResponse logout(String token) {
         try {
             if (token == null || !token.startsWith("Bearer ")) {

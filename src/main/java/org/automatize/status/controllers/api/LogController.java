@@ -30,7 +30,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/logs")
-@CrossOrigin(origins = "*")
+// MED-02: removed @CrossOrigin(origins = "*"); global CORS policy in SecurityConfig applies
 public class LogController {
 
     @Autowired

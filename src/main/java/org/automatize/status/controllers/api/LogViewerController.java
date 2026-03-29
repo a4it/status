@@ -13,7 +13,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/log-viewer")
-@PreAuthorize("isAuthenticated()")
+// MED-05: log viewer restricted to admin roles only (reads sensitive system logs)
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 public class LogViewerController {
 
     @Autowired

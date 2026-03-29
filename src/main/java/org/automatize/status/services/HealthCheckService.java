@@ -6,6 +6,7 @@ import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
 import org.automatize.status.repositories.StatusAppRepository;
 import org.automatize.status.repositories.StatusComponentRepository;
+import org.automatize.status.security.SsrfValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -96,6 +97,15 @@ public class HealthCheckService {
             return new HealthCheckResult(true, "No check configured");
         }
 
+        // HIGH-01/MED-04: block SSRF by validating the target host before any network call
+        try {
+            String hostname = extractHostname(url);
+            SsrfValidator.validateHost(hostname);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Health check blocked (SSRF): url={}, reason={}", url, e.getMessage());
+            return new HealthCheckResult(false, "Blocked: " + e.getMessage());
+        }
+
         int timeoutMs = timeoutSeconds * 1000;
 
         return switch (checkType) {
@@ -145,9 +155,20 @@ public class HealthCheckService {
      * @return a HealthCheckResult indicating whether the request was successful
      */
     private HealthCheckResult performHttpGet(String urlString, int timeoutMs, int expectedStatus) {
+        // MED-04: validate scheme before opening connection
+        URI uri;
+        try {
+            uri = URI.create(urlString);
+        } catch (IllegalArgumentException e) {
+            return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
+        }
+        String scheme = uri.getScheme();
+        if (!"http".equals(scheme) && !"https".equals(scheme)) {
+            return new HealthCheckResult(false, "Unsupported URL scheme: " + scheme);
+        }
         HttpURLConnection connection = null;
         try {
-            URL url = URI.create(urlString).toURL();
+            URL url = uri.toURL();
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(timeoutMs);
@@ -185,16 +206,25 @@ public class HealthCheckService {
      * @return a HealthCheckResult indicating whether the application is healthy
      */
     private HealthCheckResult performSpringBootHealth(String urlString, int timeoutMs) {
+        String healthUrl = urlString.contains("/actuator/health")
+                ? urlString
+                : (urlString.endsWith("/") ? urlString + "actuator/health" : urlString + "/actuator/health");
+
+        // MED-04: validate scheme before opening connection
+        URI healthUri;
+        try {
+            healthUri = URI.create(healthUrl);
+        } catch (IllegalArgumentException e) {
+            return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
+        }
+        String scheme = healthUri.getScheme();
+        if (!"http".equals(scheme) && !"https".equals(scheme)) {
+            return new HealthCheckResult(false, "Unsupported URL scheme: " + scheme);
+        }
+
         HttpURLConnection connection = null;
         try {
-            String healthUrl = urlString.endsWith("/") ? urlString + "actuator/health" : urlString + "/actuator/health";
-            if (!urlString.contains("/actuator/health")) {
-                healthUrl = urlString.endsWith("/") ? urlString + "actuator/health" : urlString + "/actuator/health";
-            } else {
-                healthUrl = urlString;
-            }
-
-            URL url = URI.create(healthUrl).toURL();
+            URL url = healthUri.toURL();
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(timeoutMs);

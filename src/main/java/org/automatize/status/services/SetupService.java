@@ -6,8 +6,11 @@ import org.automatize.status.api.response.SetupStatusResponse;
 import org.automatize.status.config.SetupFilter;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.Tenant;
+import org.automatize.status.models.User;
 import org.automatize.status.repositories.OrganizationRepository;
 import org.automatize.status.repositories.TenantRepository;
+import org.automatize.status.repositories.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.slf4j.Logger;
@@ -44,6 +47,12 @@ public class SetupService {
 
     @Autowired
     private OrganizationRepository organizationRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private DataSource dataSource;
@@ -130,14 +139,31 @@ public class SetupService {
 
     @Transactional
     public MessageResponse createAdmin(SetupAdminRequest request) {
-        RegisterRequest reg = new RegisterRequest();
-        reg.setUsername(request.getUsername());
-        reg.setPassword(request.getPassword());
-        reg.setEmail(request.getEmail());
-        reg.setFullName(request.getFullName());
-        reg.setRole("SUPERADMIN");
-        reg.setOrganizationId(request.getOrganizationId());
-        return authService.registerUser(reg);
+        // HIGH-03: setup admin creation bypasses registerUser() to assign SUPERADMIN role
+        // directly, without going through the public registration path which now hard-codes
+        // the role to "USER".
+        if (userRepository.existsByUsername(request.getUsername())) {
+            return new MessageResponse("Username is already taken!", false);
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return new MessageResponse("Email is already in use!", false);
+        }
+        User admin = new User();
+        admin.setUsername(request.getUsername());
+        admin.setPassword(passwordEncoder.encode(request.getPassword()));
+        admin.setEmail(request.getEmail());
+        admin.setFullName(request.getFullName());
+        admin.setRole("SUPERADMIN");
+        admin.setEnabled(true);
+        admin.setStatus("ACTIVE");
+        admin.setCreatedBy(request.getUsername());
+        admin.setLastModifiedBy(request.getUsername());
+        if (request.getOrganizationId() != null) {
+            organizationRepository.findById(request.getOrganizationId())
+                    .ifPresent(admin::setOrganization);
+        }
+        userRepository.save(admin);
+        return new MessageResponse("User registered successfully!", true);
     }
 
     // -------------------------------------------------------------------------
@@ -194,7 +220,13 @@ public class SetupService {
         if (request.getProperties() == null || request.getProperties().isEmpty()) {
             return;
         }
+        Map<String, Boolean> sensitive = buildSensitiveKeys();
         for (Map.Entry<String, String> entry : request.getProperties().entrySet()) {
+            // CRIT-02: never write the masking placeholder back to disk
+            if (Boolean.TRUE.equals(sensitive.get(entry.getKey()))
+                    && SENSITIVE_MASK.equals(entry.getValue())) {
+                continue;
+            }
             writeProperty(entry.getKey(), entry.getValue());
         }
     }
@@ -203,16 +235,23 @@ public class SetupService {
     // Internal helpers
     // -------------------------------------------------------------------------
 
+    private static final String SENSITIVE_MASK = "********";
+
     private List<PropertyEntry> buildGroup(Properties props,
                                            Map<String, String> descriptions,
                                            Map<String, Boolean> sensitive,
                                            String... keys) {
         List<PropertyEntry> entries = new ArrayList<>();
         for (String key : keys) {
-            String value = props.getProperty(key, "");
-            entries.add(new PropertyEntry(key, value,
+            String rawValue = props.getProperty(key, "");
+            boolean isSensitive = Boolean.TRUE.equals(sensitive.get(key));
+            // CRIT-02: never return plaintext for sensitive keys
+            String displayValue = isSensitive
+                    ? (rawValue.isEmpty() ? "" : SENSITIVE_MASK)
+                    : rawValue;
+            entries.add(new PropertyEntry(key, displayValue,
                     descriptions.getOrDefault(key, ""),
-                    Boolean.TRUE.equals(sensitive.get(key))));
+                    isSensitive));
         }
         return entries;
     }

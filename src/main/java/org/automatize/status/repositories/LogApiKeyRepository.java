@@ -11,7 +11,8 @@ import java.util.UUID;
 @Repository
 public interface LogApiKeyRepository extends JpaRepository<LogApiKey, UUID> {
 
-    Optional<LogApiKey> findByApiKeyAndIsActiveTrue(String apiKey);
+    // MED-03: lookup by SHA-256 hash of the API key, not plaintext
+    Optional<LogApiKey> findByKeyHashAndIsActiveTrue(String keyHash);
 
     List<LogApiKey> findByTenantIdOrderByCreatedDateTechnicalDesc(UUID tenantId);
 

@@ -1,6 +1,6 @@
 # Status Monitoring Platform
 
-> **License:** This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). Free for non-commercial use. For commercial licensing, please contact [Tim De Smedt](https://www.linkedin.com/in/timdesmedta/) or visit [A4IT.BE](https://a4it.be).
+> **License:** This project is licensed under the [Polyform Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/). Free for non-commercial use. For commercial licensing, contact [Tim De Smedt](https://www.linkedin.com/in/timdesmedta/) or visit [A4IT.BE](https://a4it.be).
 
 A comprehensive, multi-tenant status monitoring solution built with Spring Boot. Monitor platform uptime, manage incidents, schedule maintenance windows, and provide public status pages for your services.
 
@@ -8,7 +8,7 @@ A comprehensive, multi-tenant status monitoring solution built with Spring Boot.
 ![GraalVM](https://img.shields.io/badge/GraalVM-25-red)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4-green)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
-![License](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey)
+![License](https://img.shields.io/badge/License-Polyform%20NC%201.0-blue)
 
 ## Overview
 
@@ -202,7 +202,13 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0) - see the [LICENSE](LICENSE.md) file for details.
+This project is licensed under the **[Polyform Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/)** — free for non-commercial use.
+
+For **commercial licensing** (SaaS, hosted products, commercial integrations), please contact:
+
+- **Tim De Smedt** — [LinkedIn](https://www.linkedin.com/in/timdesmedta/) | [A4IT.BE](https://a4it.be)
+
+See the [LICENSE](LICENSE.md) file for full terms.
 
 ## Acknowledgments
 

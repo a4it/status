@@ -70,11 +70,11 @@ function updateRecentIssues(incidents, platforms) {
                 <a href="/admin/issues" class="text-reset">${escapeHtml(incident.title)}</a>
             </td>
             <td>
-                <span class="badge bg-${getSeverityColor(incident.severity)}">${incident.severity}</span>
+                <span class="badge bg-${getSeverityColor(incident.severity)}">${escapeHtml(incident.severity || '')}</span>
             </td>
             <td>${formatTime(incident.startedAt)}</td>
             <td>
-                <span class="badge bg-${getStatusColor(incident.status)}">${formatStatus(incident.status)}</span>
+                <span class="badge bg-${getStatusColor(incident.status)}">${escapeHtml(formatStatus(incident.status))}</span>
             </td>
         </tr>
     `;

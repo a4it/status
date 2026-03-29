@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+// MED-03: api_key column replaced by key_hash (SHA-256) + key_prefix for display
+
 /**
  * Entity representing an API key used to authenticate log ingestion requests.
  */
@@ -23,8 +25,15 @@ public class LogApiKey {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
-    @Column(name = "api_key", nullable = false, length = 255, unique = true)
-    private String apiKey;
+    @Column(name = "key_hash", nullable = false, length = 64, unique = true)
+    private String keyHash;
+
+    @Column(name = "key_prefix", nullable = false, length = 8)
+    private String keyPrefix;
+
+    /** Transient: populated only in the creation response, never persisted. */
+    @Transient
+    private String rawKeyOnceOnly;
 
     @Column(name = "is_active")
     private Boolean isActive = true;
@@ -57,8 +66,14 @@ public class LogApiKey {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public String getApiKey() { return apiKey; }
-    public void setApiKey(String apiKey) { this.apiKey = apiKey; }
+    public String getKeyHash() { return keyHash; }
+    public void setKeyHash(String keyHash) { this.keyHash = keyHash; }
+
+    public String getKeyPrefix() { return keyPrefix; }
+    public void setKeyPrefix(String keyPrefix) { this.keyPrefix = keyPrefix; }
+
+    public String getRawKeyOnceOnly() { return rawKeyOnceOnly; }
+    public void setRawKeyOnceOnly(String rawKeyOnceOnly) { this.rawKeyOnceOnly = rawKeyOnceOnly; }
 
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }

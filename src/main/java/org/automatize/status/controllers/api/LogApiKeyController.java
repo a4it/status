@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/log-api-keys")
-@CrossOrigin(origins = "*")
+// MED-02: removed @CrossOrigin(origins = "*"); global CORS policy in SecurityConfig applies
 @PreAuthorize("isAuthenticated()")
 public class LogApiKeyController {
 

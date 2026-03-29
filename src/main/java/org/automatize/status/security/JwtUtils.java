@@ -3,6 +3,7 @@ package org.automatize.status.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.MacAlgorithm;
 
 import javax.crypto.SecretKey;
 import org.slf4j.Logger;
@@ -55,16 +56,18 @@ public class JwtUtils {
     /**
      * Access token expiration time in milliseconds.
      * Configured via the {@code jwt.expiration} application property.
+     * Declared as long to prevent int overflow for values above ~24 days.
      */
     @Value("${jwt.expiration}")
-    private int jwtExpirationMs;
+    private long jwtExpirationMs;
 
     /**
      * Refresh token expiration time in milliseconds.
      * Configured via the {@code jwt.refresh.expiration} application property.
+     * Declared as long to prevent int overflow for values above ~24 days.
      */
     @Value("${jwt.refresh.expiration}")
-    private int refreshTokenExpirationMs;
+    private long refreshTokenExpirationMs;
 
     /**
      * Creates the cryptographic signing key from the configured secret.
@@ -102,7 +105,7 @@ public class JwtUtils {
                 .claim("organizationId", userPrincipal.getOrganizationId() != null ? userPrincipal.getOrganizationId().toString() : null)
                 .claim("role", userPrincipal.getRole())
                 .claim("requiresContextSelection", isSuperadmin)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -131,7 +134,7 @@ public class JwtUtils {
                 .claim("organizationId", organizationId != null ? organizationId.toString() : null)
                 .claim("role", role)
                 .claim("requiresContextSelection", isSuperadmin)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -159,7 +162,7 @@ public class JwtUtils {
                 .claim("role", role)
                 .claim("tenantId", tenantId != null ? tenantId.toString() : null)
                 .claim("requiresContextSelection", false)
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -179,7 +182,7 @@ public class JwtUtils {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + refreshTokenExpirationMs))
-                .signWith(key(), SignatureAlgorithm.HS256)
+                .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
 

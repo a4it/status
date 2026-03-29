@@ -129,7 +129,7 @@ public class DataInitializer implements CommandLineRunner {
             admin.setLastModifiedBy("system");
 
             userRepository.save(admin);
-            logger.info("Admin account created successfully (username: admin, password: admin)");
+            logger.info("Admin account created successfully (username: admin)");
         }
 
         if (!userRepository.existsByUsername("superadmin")) {
@@ -147,7 +147,7 @@ public class DataInitializer implements CommandLineRunner {
             superAdmin.setLastModifiedBy("system");
 
             userRepository.save(superAdmin);
-            logger.info("Superadmin account created successfully (username: superadmin, password: superadmin)");
+            logger.info("Superadmin account created successfully (username: superadmin)");
         }
     }
 }

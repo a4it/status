@@ -102,11 +102,26 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // CSRF protection is intentionally disabled: this application uses stateless
+            // JWT Bearer token authentication with no cookie-based session state.
             .csrf(csrf -> csrf.disable())
             .headers(headers -> headers
-                .contentTypeOptions(contentTypeOptions -> {})
+                .contentTypeOptions(contentTypeOptions -> {}) // nosniff applied by default
                 .frameOptions(frameOptions -> frameOptions.sameOrigin())
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                .httpStrictTransportSecurity(hsts -> hsts
+                    .includeSubDomains(true)
+                    .preload(false)
+                    .maxAgeInSeconds(31536000))
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; " +
+                    "script-src 'self' 'unsafe-inline'; " +
+                    "style-src 'self' 'unsafe-inline'; " +
+                    "img-src 'self' data:; " +
+                    "font-src 'self'; " +
+                    "connect-src 'self'; " +
+                    "frame-ancestors 'self'"
+                ))
             )
             .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -119,11 +134,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/logs", "/api/logs/batch").permitAll()
                 .requestMatchers("/", "/login", "/logout", "/register", "/forgot-password").permitAll()
                 .requestMatchers("/admin/select-context").permitAll()
-                .requestMatchers("/admin/**").permitAll()
+                // CRIT-01: removed /admin/** permitAll — all admin routes require authentication
                 .requestMatchers("/incidents", "/incidents/**", "/maintenance", "/history").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/icons/**").permitAll()
                 .requestMatchers("/swagger/**", "/v3/api-docs/**", "/webjars/**", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/health", "/actuator/**").permitAll()
+                .requestMatchers("/health").permitAll()
+                // HIGH-05: actuator endpoints require admin role
+                .requestMatchers("/actuator/**").hasAnyRole("ADMIN", "SUPERADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
@@ -139,6 +156,7 @@ public class SecurityConfig {
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        // Restrictive policy for authenticated/private endpoints
         CorsConfiguration configuration = new CorsConfiguration();
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
         configuration.setAllowedOrigins(origins);
@@ -146,7 +164,14 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
         configuration.setExposedHeaders(Arrays.asList("Authorization"));
 
+        // MED-02: Open CORS only for genuinely public status endpoints (embeds, widgets)
+        CorsConfiguration publicConfig = new CorsConfiguration();
+        publicConfig.addAllowedOriginPattern("*");
+        publicConfig.setAllowedMethods(Arrays.asList("GET", "OPTIONS"));
+        publicConfig.setAllowedHeaders(Arrays.asList("Content-Type", "Accept"));
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/public/**", publicConfig);
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }

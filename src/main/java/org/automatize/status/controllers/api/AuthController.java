@@ -1,11 +1,13 @@
 package org.automatize.status.controllers.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.automatize.status.api.request.LoginRequest;
 import org.automatize.status.api.request.RefreshTokenRequest;
 import org.automatize.status.api.request.RegisterRequest;
 import org.automatize.status.api.response.AuthResponse;
 import org.automatize.status.api.response.MessageResponse;
+import org.automatize.status.security.LoginRateLimiter;
 import org.automatize.status.services.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +40,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
+// MED-02: @CrossOrigin(origins = "*") removed; global CORS policy in SecurityConfig applies
 public class AuthController {
 
     @Value("${app.registration.enabled:true}")
@@ -47,6 +49,9 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private LoginRateLimiter loginRateLimiter;
+
     /**
      * Authenticates a user with their credentials and returns JWT tokens.
      *
@@ -54,7 +59,14 @@ public class AuthController {
      * @return ResponseEntity containing the authentication response with access and refresh tokens
      */
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest loginRequest,
+            HttpServletRequest request) {
+        // HIGH-04: rate limit login attempts per client IP
+        String clientIp = request.getRemoteAddr();
+        if (!loginRateLimiter.isAllowed(clientIp)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
         AuthResponse response = authService.authenticateUser(loginRequest);
         return ResponseEntity.ok(response);
     }
