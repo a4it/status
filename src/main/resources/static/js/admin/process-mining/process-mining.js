@@ -42,24 +42,6 @@ function showToast(message, type = 'info') {
 
 async function initPage() {
     setDefaultDates();
-    const role = auth.getUserRole();
-    if (role === 'ROLE_SUPERADMIN' || role === 'SUPERADMIN') {
-        await loadTenants();
-        try {
-            const ctx = await api.get('/context/current');
-            if (ctx.tenantId) {
-                document.getElementById('pmTenant').value = ctx.tenantId;
-                await loadOrganizations();
-                if (ctx.organizationId) {
-                    document.getElementById('pmOrganization').value = ctx.organizationId;
-                }
-            }
-        } catch (e) {
-            console.warn('Failed to load current context', e);
-        }
-    } else {
-        await initAdminSelects();
-    }
     await loadScopeEntities();
     viz = new HighPerformanceTimelineVisualization();
     window.viz = viz;
@@ -76,72 +58,8 @@ function setDefaultDates() {
     document.getElementById('pmTo').value = toLocal(now);
 }
 
-async function loadTenants() {
-    try {
-        const data = await api.get('/tenants?size=500&sort=name,asc');
-        const select = document.getElementById('pmTenant');
-        (data.content || []).forEach(t => {
-            const opt = document.createElement('option');
-            opt.value = t.id;
-            opt.textContent = t.name;
-            select.appendChild(opt);
-        });
-    } catch (e) {
-        console.warn('Failed to load tenants', e);
-    }
-}
-
-async function initAdminSelects() {
-    try {
-        const org = await api.get('/organizations/current');
-        const tenantSelect = document.getElementById('pmTenant');
-        const orgSelect = document.getElementById('pmOrganization');
-
-        // Populate and lock tenant
-        if (org.tenant) {
-            const tOpt = document.createElement('option');
-            tOpt.value = org.tenant.id;
-            tOpt.textContent = org.tenant.name;
-            tenantSelect.appendChild(tOpt);
-            tenantSelect.value = org.tenant.id;
-        }
-        tenantSelect.disabled = true;
-
-        // Populate and lock organization
-        const oOpt = document.createElement('option');
-        oOpt.value = org.id;
-        oOpt.textContent = org.name;
-        orgSelect.appendChild(oOpt);
-        orgSelect.value = org.id;
-        orgSelect.disabled = true;
-    } catch (e) {
-        console.warn('Failed to load current organization', e);
-    }
-}
-
-async function onTenantChange() {
-    await loadOrganizations();
-    await loadScopeEntities();
-}
-
 async function loadOrganizations() {
-    const tenantId = document.getElementById('pmTenant').value;
-    const select = document.getElementById('pmOrganization');
-    select.innerHTML = '<option value="">All Organizations</option>';
-
-    if (!tenantId) return;
-
-    try {
-        const orgs = await api.get(`/organizations/tenant/${tenantId}`);
-        (orgs || []).forEach(o => {
-            const opt = document.createElement('option');
-            opt.value = o.id;
-            opt.textContent = o.name;
-            select.appendChild(opt);
-        });
-    } catch (e) {
-        console.warn('Failed to load organizations', e);
-    }
+    // No-op: tenant/org selects removed
 }
 
 function onScopeTypeChange() {
@@ -153,23 +71,16 @@ function onScopeTypeChange() {
 
 async function loadScopeEntities() {
     const scopeType = document.querySelector('input[name="scopeType"]:checked').value;
-    const tenantId = document.getElementById('pmTenant').value;
     const select = document.getElementById('pmScopeEntity');
     select.innerHTML = '<option value="">Loading…</option>';
 
     try {
         let items;
         if (scopeType === 'platform') {
-            items = tenantId
-                ? await api.get(`/status-platforms/tenant/${tenantId}`)
-                : await api.get('/status-platforms/all');
+            items = await api.get('/status-platforms/all');
         } else {
-            if (tenantId) {
-                items = await api.get(`/status-apps/tenant/${tenantId}`);
-            } else {
-                const resp = await api.get('/status-apps?size=500&sort=name,asc');
-                items = resp.content || [];
-            }
+            const resp = await api.get('/status-apps?size=500&sort=name,asc');
+            items = resp.content || [];
         }
 
         select.innerHTML = '<option value="">Select…</option>';
@@ -188,8 +99,6 @@ async function loadScopeEntities() {
 async function loadProcessMiningData() {
     const scopeType = document.querySelector('input[name="scopeType"]:checked').value;
     const scopeId = document.getElementById('pmScopeEntity').value;
-    const tenantId = document.getElementById('pmTenant').value;
-    const organizationId = document.getElementById('pmOrganization').value;
     const from = document.getElementById('pmFrom').value;
     const to = document.getElementById('pmTo').value;
     const maxCases = Math.min(1000, parseInt(document.getElementById('pmMaxCases').value) || 300);
@@ -210,8 +119,6 @@ async function loadProcessMiningData() {
 
     try {
         const params = new URLSearchParams({ scope: scopeType, scopeId, maxCases, minEvents });
-        if (tenantId) params.append('tenantId', tenantId);
-        if (organizationId) params.append('organizationId', organizationId);
         if (from) params.append('from', new Date(from).toISOString());
         if (to) params.append('to', new Date(to).toISOString());
 
@@ -1716,9 +1623,6 @@ function generateReport() {
     const scopeName = scopeSelect.options[scopeSelect.selectedIndex]?.text || '—';
     const fromVal = document.getElementById('pmFrom').value;
     const toVal = document.getElementById('pmTo').value;
-    const tenantSelect = document.getElementById('pmTenant');
-    const tenantName = tenantSelect.options[tenantSelect.selectedIndex]?.text || 'All Tenants';
-
     const topActivities = [...nodes].sort((a, b) => b.count - a.count).slice(0, 20);
     const topEdges = [...edges]
         .filter(e => e.source !== 'START' && e.target !== 'END')
@@ -1731,7 +1635,7 @@ function generateReport() {
     }
 
     win.document.write(buildReportHtml({
-        imageDataUrl, scopeType, scopeName, fromVal, toVal, tenantName,
+        imageDataUrl, scopeType, scopeName, fromVal, toVal,
         totalCases, nodeCount: nodes.length, edgeCount: edges.length, totalEvents,
         avgDuration, minDuration, maxDuration, medianDuration, p95Duration,
         errorRate, errorCasesUnique, levelCounts, levelCaseCounts, levelOrder, levelColors,
@@ -1740,7 +1644,7 @@ function generateReport() {
     win.document.close();
 }
 
-function buildReportHtml({ imageDataUrl, scopeType, scopeName, fromVal, toVal, tenantName,
+function buildReportHtml({ imageDataUrl, scopeType, scopeName, fromVal, toVal,
                             totalCases, nodeCount, edgeCount, totalEvents,
                             avgDuration, minDuration, maxDuration, medianDuration, p95Duration,
                             errorRate, errorCasesUnique, levelCounts, levelCaseCounts, levelOrder, levelColors,
@@ -1907,7 +1811,6 @@ function buildReportHtml({ imageDataUrl, scopeType, scopeName, fromVal, toVal, t
       <div class="report-title">Process Mining Report</div>
       <div class="report-subtitle">
         <strong>${esc(scopeType === 'platform' ? 'Platform' : 'Application')}:</strong> ${esc(scopeName)}<br>
-        <strong>Tenant:</strong> ${esc(tenantName)}<br>
         <strong>Period:</strong> ${esc(fmtDate(fromVal))} &ndash; ${esc(fmtDate(toVal))}
       </div>
     </div>
