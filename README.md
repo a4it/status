@@ -1,5 +1,7 @@
 # Status Monitoring Platform
 
+> **License:** This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/). Free for non-commercial use. For commercial licensing, please contact [Tim De Smedt](https://www.linkedin.com/in/timdesmedta/) or visit [A4IT.BE](https://a4it.be).
+
 A comprehensive, multi-tenant status monitoring solution built with Spring Boot. Monitor platform uptime, manage incidents, schedule maintenance windows, and provide public status pages for your services.
 
 ![Java](https://img.shields.io/badge/Java-17+-orange)
@@ -47,54 +49,6 @@ Status Monitoring Platform is a production-ready application designed to track s
 | Vanilla JavaScript (ES6+) | Client-side logic |
 
 > **Note:** All frontend assets are served locally - no CDN dependencies
-
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend        │    │   Database      │
-│                 │    │                  │    │                 │
-│ • Thymeleaf     │◄──►│ • MVC Controllers│◄──►│ • PostgreSQL    │
-│ • Bootstrap 5   │    │ • REST APIs      │    │ • Flyway        │
-│ • Tabler.io     │    │ • JWT Security   │    │   Migrations    │
-│ • Vanilla JS    │    │ • Services       │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                              │
-                              ▼
-                      ┌──────────────────┐
-                      │ Health Check     │
-                      │ Engine           │
-                      │                  │
-                      │ • PING           │
-                      │ • HTTP GET       │
-                      │ • Spring Actuator│
-                      │ • TCP Port       │
-                      └──────────────────┘
-```
-
-### Data Model Hierarchy
-
-```
-Tenant
-  └── Organization
-        └── User (ADMIN, MANAGER, USER, VIEWER)
-
-StatusPlatform
-  └── StatusApp (with API Key)
-        └── StatusComponent
-              └── Health Check Config
-              └── Uptime History
-
-StatusIncident
-  └── StatusIncidentUpdate
-  └── Affected Components
-
-StatusMaintenance
-  └── Affected Components
-
-NotificationSubscriber
-PlatformEvent
-```
 
 ## Getting Started
 
@@ -186,112 +140,6 @@ spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 ```
 
-## API Reference
-
-### Authentication Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/login` | User login, returns JWT tokens |
-| POST | `/api/auth/register` | User registration |
-| POST | `/api/auth/refresh` | Refresh access token |
-| POST | `/api/auth/logout` | Invalidate session |
-| GET | `/api/auth/me` | Get current user info |
-
-### Platform Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/status-platforms` | List platforms (paginated) |
-| GET | `/api/status-platforms/all` | Get all platforms |
-| GET | `/api/status-platforms/{id}` | Get platform by ID |
-| GET | `/api/status-platforms/slug/{slug}` | Get platform by slug |
-| POST | `/api/status-platforms` | Create platform |
-| PUT | `/api/status-platforms/{id}` | Update platform |
-| DELETE | `/api/status-platforms/{id}` | Delete platform |
-| PATCH | `/api/status-platforms/{id}/status` | Update status |
-
-### Application Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/status-apps` | List applications |
-| GET | `/api/status-apps/{id}` | Get application |
-| POST | `/api/status-apps` | Create application |
-| PUT | `/api/status-apps/{id}` | Update application |
-| DELETE | `/api/status-apps/{id}` | Delete application |
-
-### Component Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/status-components` | List components |
-| GET | `/api/status-components/{id}` | Get component |
-| POST | `/api/status-components` | Create component |
-| PUT | `/api/status-components/{id}` | Update component |
-| DELETE | `/api/status-components/{id}` | Delete component |
-
-### Incident Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/incidents` | List incidents (with filtering) |
-| GET | `/api/incidents/active` | Get active incidents |
-| GET | `/api/incidents/{id}` | Get incident details |
-| POST | `/api/incidents` | Create incident |
-| PUT | `/api/incidents/{id}` | Update incident |
-| DELETE | `/api/incidents/{id}` | Delete incident |
-| POST | `/api/incidents/{id}/updates` | Add incident update |
-| GET | `/api/incidents/{id}/updates` | Get incident updates |
-| PATCH | `/api/incidents/{id}/resolve` | Resolve incident |
-
-### Maintenance Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/maintenance` | List maintenance windows |
-| GET | `/api/maintenance/{id}` | Get maintenance details |
-| POST | `/api/maintenance` | Create maintenance |
-| PUT | `/api/maintenance/{id}` | Update maintenance |
-| DELETE | `/api/maintenance/{id}` | Delete maintenance |
-
-### Public Endpoints (No Authentication)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/public/status` | Public status summary |
-| GET | `/api/public/incidents` | Public incidents list |
-| GET | `/api/public/maintenance` | Public maintenance list |
-| GET | `/api/public/uptime/{slug}` | Public uptime history |
-
-### Event Logging (API Key Authentication)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/events/log` | Log platform event |
-| GET | `/api/events` | List events (admin only) |
-
-**Example event logging request:**
-```bash
-curl -X POST http://localhost:8080/api/events/log \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-api-key" \
-  -d '{
-    "appId": 1,
-    "severity": "ERROR",
-    "message": "Database connection timeout",
-    "details": "Connection pool exhausted after 30s"
-  }'
-```
-
-### Subscriber Management
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/subscribers` | List subscribers |
-| POST | `/api/subscribers` | Add subscriber |
-| DELETE | `/api/subscribers/{id}` | Remove subscriber |
-
 ## Status Values
 
 ### Component/Platform Status
@@ -321,119 +169,7 @@ curl -X POST http://localhost:8080/api/events/log \
 | `MINOR` | Limited impact on functionality |
 | `MAINTENANCE` | Planned maintenance activity |
 
-### Event Severity
-
-| Severity | Description |
-|----------|-------------|
-| `INFO` | Informational event |
-| `WARNING` | Warning condition |
-| `ERROR` | Error occurred |
-| `CRITICAL` | Critical failure |
-
-## Project Structure
-
-```
-src/
-├── main/
-│   ├── java/org/automatize/status/
-│   │   ├── api/
-│   │   │   ├── request/              # API request classes
-│   │   │   └── response/             # API response classes
-│   │   ├── config/
-│   │   │   ├── SecurityConfig.java   # JWT & CORS configuration
-│   │   │   ├── WebConfig.java        # Web configuration
-│   │   │   ├── WebMvcConfig.java     # MVC configuration
-│   │   │   └── SwaggerConfig.java    # OpenAPI configuration
-│   │   ├── controllers/
-│   │   │   ├── api/                  # REST API controllers
-│   │   │   ├── AdminController.java  # Admin MVC controller
-│   │   │   ├── AuthenticationController.java
-│   │   │   └── PublicController.java # Public pages controller
-│   │   ├── models/                   # JPA entities (14 entities)
-│   │   ├── repositories/             # Spring Data repositories
-│   │   ├── security/
-│   │   │   ├── JwtAuthenticationFilter.java
-│   │   │   ├── JwtTokenProvider.java
-│   │   │   └── UserDetailsServiceImpl.java
-│   │   ├── services/                 # Business logic (16 services)
-│   │   │   ├── AuthService.java
-│   │   │   ├── HealthCheckService.java
-│   │   │   ├── HealthCheckScheduler.java
-│   │   │   ├── StatusPlatformService.java
-│   │   │   ├── StatusIncidentService.java
-│   │   │   └── ...
-│   │   └── StatusApplication.java
-│   └── resources/
-│       ├── db/migration/             # Flyway migrations (V1-V9)
-│       ├── static/
-│       │   ├── css/                  # Bootstrap, Tabler, custom styles
-│       │   ├── js/
-│       │   │   ├── admin/            # Admin dashboard scripts
-│       │   │   ├── public/           # Public status page scripts
-│       │   │   ├── authentication/   # Login/register scripts
-│       │   │   ├── shared/           # Common utilities
-│       │   │   │   ├── api.js        # API client
-│       │   │   │   ├── auth.js       # Auth utilities
-│       │   │   │   └── notifications.js
-│       │   │   └── vendor/           # Third-party libraries
-│       │   └── images/
-│       └── templates/
-│           ├── admin/                # Admin Thymeleaf templates
-│           ├── public/               # Public status templates
-│           └── authentication/       # Auth page templates
-└── test/
-```
-
-## Development Commands
-
-```bash
-# Build the project
-mvn clean install
-
-# Run the application
-mvn spring-boot:run
-
-# Package as JAR
-mvn clean package
-
-# Run the packaged JAR
-java -jar target/status-*.jar
-
-# Run all tests
-mvn test
-
-# Run specific test class
-mvn test -Dtest=StatusApplicationTests
-
-# Build without tests
-mvn clean install -DskipTests
-
-# Run with specific profile
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
-```
-
 ## Security
-
-### Authentication Flow
-
-```
-1. Client POSTs credentials to /api/auth/login
-          │
-          ▼
-2. Server validates credentials
-          │
-          ▼
-3. Server returns JWT access token + refresh token
-          │
-          ▼
-4. Client includes "Authorization: Bearer <token>" in requests
-          │
-          ▼
-5. JwtAuthenticationFilter validates token on each request
-          │
-          ▼
-6. When access token expires, use /api/auth/refresh
-```
 
 ### Role-Based Access Control
 
@@ -443,33 +179,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | `MANAGER` | Manage platforms, incidents, maintenance |
 | `USER` | View and create incidents |
 | `VIEWER` | Read-only access |
-
-### Public Endpoints (No Auth Required)
-
-- `/`, `/login`, `/logout`, `/register`, `/forgot-password`
-- `/api/auth/**` - Authentication endpoints
-- `/api/public/**` - Public status data
-- `/api/events/log` - Event logging (API key validated)
-- `/admin/**`, `/incidents/**`, `/maintenance/**`, `/history`
-- `/static/**`, `/css/**`, `/js/**`, `/images/**`
-
-## Database Migrations
-
-Migrations are managed by Flyway and run automatically on startup:
-
-| Version | Description |
-|---------|-------------|
-| V1 | Initial schema |
-| V2 | Health check fields |
-| V3 | Uptime history |
-| V4 | Notification subscribers |
-| V5 | Status platforms and events |
-| V6 | API keys |
-| V7 | Generate existing API keys |
-| V8 | Platform health check fields |
-| V9 | Platform ID to uptime history |
-
-Migration files are located in `src/main/resources/db/migration/`
 
 ## Contributing
 
