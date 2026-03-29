@@ -248,4 +248,53 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/log-api-keys";
     }
+
+    @GetMapping("/users")
+    public String users(Model model) {
+        model.addAttribute("activeNav", "users");
+        addCommonAttributes(model);
+        return "admin/users";
+    }
+
+    @GetMapping("/process-mining")
+    public String processMining(Model model) {
+        model.addAttribute("activeNav", "process-mining");
+        addCommonAttributes(model);
+        return "admin/process-mining";
+    }
+
+    @GetMapping("/select-context")
+    public String selectContext(Model model) {
+        model.addAttribute("activeNav", "select-context");
+        addCommonAttributes(model);
+        return "admin/select-context";
+    }
+
+    @GetMapping("/help")
+    public String help(Model model) {
+        model.addAttribute("activeNav", "help");
+        addCommonAttributes(model);
+        return "admin/help";
+    }
+
+    @GetMapping("/jvm")
+    public String jvm(Model model) {
+        model.addAttribute("activeNav", "jvm");
+        addCommonAttributes(model);
+        return "admin/jvm";
+    }
+
+    @GetMapping("/log-viewer")
+    public String logViewer(Model model) {
+        model.addAttribute("activeNav", "log-viewer");
+        addCommonAttributes(model);
+        return "admin/log-viewer";
+    }
+
+    @GetMapping("/data-retention")
+    public String dataRetention(Model model) {
+        model.addAttribute("activeNav", "data-retention");
+        addCommonAttributes(model);
+        return "admin/data-retention";
+    }
 }

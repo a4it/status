@@ -135,15 +135,11 @@ public class OrganizationController {
 
     /**
      * Retrieves all organizations belonging to a specific tenant.
-     * <p>
-     * This endpoint is restricted to users with ADMIN role.
-     * </p>
      *
      * @param tenantId the UUID of the tenant
      * @return ResponseEntity containing a list of organizations
      */
     @GetMapping("/tenant/{tenantId}")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Organization>> getOrganizationsByTenant(@PathVariable UUID tenantId) {
         List<Organization> organizations = organizationService.getOrganizationsByTenant(tenantId);
         return ResponseEntity.ok(organizations);

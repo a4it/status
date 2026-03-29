@@ -171,4 +171,10 @@ public class StatusAppController {
         List<StatusAppResponse> apps = statusAppService.getStatusAppsByOrganization(organizationId);
         return ResponseEntity.ok(apps);
     }
+
+    @GetMapping("/platform/{platformId}")
+    public ResponseEntity<List<StatusAppResponse>> getStatusAppsByPlatform(@PathVariable UUID platformId) {
+        List<StatusAppResponse> apps = statusAppService.getStatusAppsByPlatform(platformId);
+        return ResponseEntity.ok(apps);
+    }
 }

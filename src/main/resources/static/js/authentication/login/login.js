@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const loginForm = document.getElementById('loginForm');
-    const emailInput = document.getElementById('email');
+    const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const rememberMeCheckbox = document.getElementById('rememberMe');
     const togglePassword = document.getElementById('togglePassword');
@@ -30,14 +30,14 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         // Reset validation states
-        emailInput.classList.remove('is-invalid');
+        usernameInput.classList.remove('is-invalid');
         passwordInput.classList.remove('is-invalid');
         
         // Validate inputs
         let isValid = true;
         
-        if (!emailInput.value.trim() || !emailInput.checkValidity()) {
-            emailInput.classList.add('is-invalid');
+        if (!usernameInput.value.trim()) {
+            usernameInput.classList.add('is-invalid');
             isValid = false;
         }
         
@@ -56,16 +56,20 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Signing in...';
         
         try {
-            const email = emailInput.value.trim();
+            const username = usernameInput.value.trim();
             const password = passwordInput.value;
             const rememberMe = rememberMeCheckbox.checked;
-            
-            const result = await auth.login(email, password, rememberMe);
-            
+
+            const result = await auth.login(username, password, rememberMe);
+
             notifications.show('Login successful! Redirecting...', 'success');
-            
+
             setTimeout(() => {
-                window.location.href = '/admin';
+                if (result.requiresContextSelection) {
+                    window.location.href = '/admin/select-context';
+                } else {
+                    window.location.href = '/admin';
+                }
             }, 1000);
             
         } catch (error) {
@@ -73,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             notifications.show(error.message || 'Invalid email or password', 'error');
             
             // Add invalid state to inputs on error
-            emailInput.classList.add('is-invalid');
+            usernameInput.classList.add('is-invalid');
             passwordInput.classList.add('is-invalid');
             
             submitButton.disabled = false;
@@ -81,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    emailInput.addEventListener('keypress', function(e) {
+    usernameInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && !passwordInput.value) {
             e.preventDefault();
             passwordInput.focus();

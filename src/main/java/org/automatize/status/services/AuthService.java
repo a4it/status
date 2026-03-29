@@ -126,6 +126,7 @@ public class AuthService {
         response.setEmail(user.getEmail());
         response.setRole(user.getRole());
         response.setOrganizationId(user.getOrganization() != null ? user.getOrganization().getId() : null);
+        response.setRequiresContextSelection("SUPERADMIN".equals(user.getRole()));
 
         return response;
     }
@@ -233,7 +234,10 @@ public class AuthService {
      */
     public MessageResponse logout(String token) {
         try {
-            String jwt = token.substring(7); // Remove "Bearer " prefix
+            if (token == null || !token.startsWith("Bearer ")) {
+                return new MessageResponse("Invalid authorization header", false);
+            }
+            String jwt = token.substring(7);
             UUID userId = jwtUtils.getUserIdFromJwtToken(jwt);
             
             User user = userRepository.findById(userId)
@@ -263,7 +267,10 @@ public class AuthService {
      * @throws RuntimeException if the user is not found
      */
     public AuthResponse getCurrentUser(String token) {
-        String jwt = token.substring(7); // Remove "Bearer " prefix
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid authorization header");
+        }
+        String jwt = token.substring(7);
         UUID userId = jwtUtils.getUserIdFromJwtToken(jwt);
         
         User user = userRepository.findById(userId)

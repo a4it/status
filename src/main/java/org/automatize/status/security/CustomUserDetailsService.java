@@ -88,4 +88,24 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         return UserPrincipal.create(user);
     }
+
+    /**
+     * Loads a user by their unique identifier with a specific tenant/organization context.
+     * Used by the JWT filter when the token contains context claims (SUPERADMIN with selected context).
+     *
+     * @param id             the unique identifier (UUID) of the user to load
+     * @param tenantId       the tenant UUID from the JWT context claims
+     * @param organizationId the organization UUID from the JWT context claims
+     * @return a fully populated {@link UserDetails} object with context information
+     * @throws UsernameNotFoundException if no user is found with the given ID
+     */
+    @Transactional
+    public UserDetails loadUserByIdWithContext(UUID id, UUID tenantId, UUID organizationId) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with id : " + id)
+                );
+
+        return UserPrincipal.createWithContext(user, tenantId, organizationId);
+    }
 }

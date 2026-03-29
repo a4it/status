@@ -40,8 +40,11 @@ public class DataInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
-    @Value("${data.initializer.enabled:true}")
+    @Value("${data.initializer.enabled:false}")
     private boolean enabled;
+
+    @Value("${app.setup.completed:false}")
+    private boolean setupCompleted;
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
@@ -82,50 +85,69 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        if (userRepository.existsByUsername("admin")) {
-            logger.info("Admin user already exists, skipping initialization");
+        if (!setupCompleted) {
+            logger.info("Skipping data initializer: setup wizard not yet complete (app.setup.completed=false)");
             return;
         }
 
-        logger.info("Initializing default admin account...");
+        if (!userRepository.existsByUsername("admin")) {
+            logger.info("Initializing default admin account...");
 
-        Tenant tenant = tenantRepository.findByName("Default Tenant")
-                .orElseGet(() -> {
-                    Tenant newTenant = new Tenant();
-                    newTenant.setName("Default Tenant");
-                    newTenant.setIsActive(true);
-                    newTenant.setCreatedBy("system");
-                    newTenant.setLastModifiedBy("system");
-                    return tenantRepository.save(newTenant);
-                });
+            Tenant tenant = tenantRepository.findByName("Default Tenant")
+                    .orElseGet(() -> {
+                        Tenant newTenant = new Tenant();
+                        newTenant.setName("Default Tenant");
+                        newTenant.setIsActive(true);
+                        newTenant.setCreatedBy("system");
+                        newTenant.setLastModifiedBy("system");
+                        return tenantRepository.save(newTenant);
+                    });
 
-        Organization organization = organizationRepository.findByName("Default Organization")
-                .orElseGet(() -> {
-                    Organization newOrg = new Organization();
-                    newOrg.setName("Default Organization");
-                    newOrg.setDescription("Default organization for system administrators");
-                    newOrg.setStatus("ACTIVE");
-                    newOrg.setOrganizationType("INTERNAL");
-                    newOrg.setTenant(tenant);
-                    newOrg.setCreatedBy("system");
-                    newOrg.setLastModifiedBy("system");
-                    return organizationRepository.save(newOrg);
-                });
+            Organization organization = organizationRepository.findByName("Default Organization")
+                    .orElseGet(() -> {
+                        Organization newOrg = new Organization();
+                        newOrg.setName("Default Organization");
+                        newOrg.setDescription("Default organization for system administrators");
+                        newOrg.setStatus("ACTIVE");
+                        newOrg.setOrganizationType("INTERNAL");
+                        newOrg.setTenant(tenant);
+                        newOrg.setCreatedBy("system");
+                        newOrg.setLastModifiedBy("system");
+                        return organizationRepository.save(newOrg);
+                    });
 
-        User admin = new User();
-        admin.setUsername("admin");
-        admin.setPassword(passwordEncoder.encode("admin"));
-        admin.setEmail("admin@status.local");
-        admin.setFullName("System Administrator");
-        admin.setRole("ADMIN");
-        admin.setEnabled(true);
-        admin.setStatus("ACTIVE");
-        admin.setOrganization(organization);
-        admin.setCreatedBy("system");
-        admin.setLastModifiedBy("system");
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setPassword(passwordEncoder.encode("admin"));
+            admin.setEmail("admin@status.local");
+            admin.setFullName("System Administrator");
+            admin.setRole("ADMIN");
+            admin.setEnabled(true);
+            admin.setStatus("ACTIVE");
+            admin.setOrganization(organization);
+            admin.setCreatedBy("system");
+            admin.setLastModifiedBy("system");
 
-        userRepository.save(admin);
+            userRepository.save(admin);
+            logger.info("Admin account created successfully (username: admin, password: admin)");
+        }
 
-        logger.info("Admin account created successfully (username: admin, password: admin)");
+        if (!userRepository.existsByUsername("superadmin")) {
+            logger.info("Initializing superadmin account...");
+
+            User superAdmin = new User();
+            superAdmin.setUsername("superadmin");
+            superAdmin.setPassword(passwordEncoder.encode("superadmin"));
+            superAdmin.setEmail("superadmin@status.local");
+            superAdmin.setFullName("Super Administrator");
+            superAdmin.setRole("SUPERADMIN");
+            superAdmin.setEnabled(true);
+            superAdmin.setStatus("ACTIVE");
+            superAdmin.setCreatedBy("system");
+            superAdmin.setLastModifiedBy("system");
+
+            userRepository.save(superAdmin);
+            logger.info("Superadmin account created successfully (username: superadmin, password: superadmin)");
+        }
     }
 }

@@ -58,7 +58,7 @@ public class UserPrincipal implements UserDetails {
     private String password;
 
     /**
-     * The user's role in the system (e.g., "ADMIN", "USER").
+     * The user's role in the system (e.g., "ADMIN", "USER", "SUPERADMIN").
      */
     private String role;
 
@@ -67,6 +67,23 @@ public class UserPrincipal implements UserDetails {
      * Supports multi-tenant architecture.
      */
     private UUID organizationId;
+
+    /**
+     * The unique identifier of the tenant the user is currently operating in.
+     * Set for SUPERADMIN users after context selection.
+     */
+    private UUID tenantId;
+
+    /**
+     * Whether the user needs to select a context before accessing the admin.
+     * True for SUPERADMIN users that have not yet selected a tenant/organization.
+     */
+    private boolean requiresContextSelection;
+
+    /**
+     * Whether the user account is enabled.
+     */
+    private boolean enabled;
 
     /**
      * The collection of granted authorities (permissions) for this user.
@@ -82,29 +99,25 @@ public class UserPrincipal implements UserDetails {
      * @param password       the user's encrypted password
      * @param role           the user's role in the system
      * @param organizationId the identifier of the user's organization (can be null)
+     * @param enabled        whether the user account is enabled
      * @param authorities    the collection of granted authorities for this user
      */
     public UserPrincipal(UUID id, String username, String email, String password,
-                        String role, UUID organizationId, Collection<? extends GrantedAuthority> authorities) {
+                        String role, UUID organizationId, boolean enabled,
+                        Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.password = password;
         this.role = role;
         this.organizationId = organizationId;
+        this.enabled = enabled;
         this.authorities = authorities;
     }
 
     /**
      * Factory method to create a UserPrincipal from a User entity.
-     * <p>
-     * This method converts a JPA User entity into a Spring Security compatible
-     * UserPrincipal. It automatically generates authorities based on the user's role,
-     * prefixing the role with "ROLE_" as per Spring Security conventions.
-     * </p>
-     * <p>
-     * If the user has no role defined, it defaults to "USER".
-     * </p>
+     * SUPERADMIN users get requiresContextSelection=true until they pick a context.
      *
      * @param user the User entity to convert
      * @return a new UserPrincipal populated with the user's data
@@ -114,15 +127,47 @@ public class UserPrincipal implements UserDetails {
             new SimpleGrantedAuthority("ROLE_" + (user.getRole() != null ? user.getRole() : "USER"))
         );
 
-        return new UserPrincipal(
+        UserPrincipal principal = new UserPrincipal(
             user.getId(),
             user.getUsername(),
             user.getEmail(),
             user.getPassword(),
             user.getRole(),
             user.getOrganization() != null ? user.getOrganization().getId() : null,
+            Boolean.TRUE.equals(user.getEnabled()),
             authorities
         );
+        principal.requiresContextSelection = "SUPERADMIN".equals(user.getRole());
+        return principal;
+    }
+
+    /**
+     * Factory method to create a UserPrincipal with a specific tenant/organization context.
+     * Used for SUPERADMIN users after they have selected a context.
+     *
+     * @param user           the User entity to convert
+     * @param tenantId       the selected tenant ID
+     * @param organizationId the selected organization ID
+     * @return a new UserPrincipal with context populated
+     */
+    public static UserPrincipal createWithContext(User user, UUID tenantId, UUID organizationId) {
+        List<GrantedAuthority> authorities = Collections.singletonList(
+            new SimpleGrantedAuthority("ROLE_" + (user.getRole() != null ? user.getRole() : "USER"))
+        );
+
+        UserPrincipal principal = new UserPrincipal(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getPassword(),
+            user.getRole(),
+            organizationId,
+            Boolean.TRUE.equals(user.getEnabled()),
+            authorities
+        );
+        principal.tenantId = tenantId;
+        principal.requiresContextSelection = false;
+        return principal;
     }
 
     /**
@@ -132,6 +177,33 @@ public class UserPrincipal implements UserDetails {
      */
     public UUID getId() {
         return id;
+    }
+
+    /**
+     * Returns the tenant ID the superadmin is currently operating in.
+     *
+     * @return the tenant's UUID, or null if no context selected
+     */
+    public UUID getTenantId() {
+        return tenantId;
+    }
+
+    /**
+     * Returns whether this user needs to select a tenant/org context before proceeding.
+     *
+     * @return true if context selection is required
+     */
+    public boolean isRequiresContextSelection() {
+        return requiresContextSelection;
+    }
+
+    /**
+     * Returns whether this user has a fully selected context (tenant + org).
+     *
+     * @return true if context is selected
+     */
+    public boolean hasSelectedContext() {
+        return !requiresContextSelection && tenantId != null;
     }
 
     /**
@@ -238,15 +310,11 @@ public class UserPrincipal implements UserDetails {
 
     /**
      * Indicates whether the user is enabled or disabled.
-     * <p>
-     * Currently always returns true, indicating all users are enabled.
-     * Override this behavior if user enable/disable logic is required.
-     * </p>
      *
-     * @return true, indicating the user is enabled
+     * @return true if the user's account is enabled in the database
      */
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
 }

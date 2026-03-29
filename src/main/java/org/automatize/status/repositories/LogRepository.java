@@ -47,7 +47,25 @@ public interface LogRepository extends JpaRepository<Log, UUID> {
     @Query("SELECT DISTINCT l.service FROM Log l ORDER BY l.service")
     List<String> findDistinctServices();
 
+    @Query("SELECT DISTINCT l.traceId FROM Log l WHERE l.traceId IS NOT NULL AND l.traceId <> '' " +
+           "AND (:tenantId IS NULL OR l.tenant.id = :tenantId) " +
+           "AND l.logTimestamp BETWEEN :from AND :to " +
+           "AND l.service IN :serviceNames")
+    List<String> findDistinctTraceIdsForServices(
+            @Param("tenantId") UUID tenantId,
+            @Param("from") ZonedDateTime from,
+            @Param("to") ZonedDateTime to,
+            @Param("serviceNames") List<String> serviceNames,
+            Pageable pageable);
+
+    @Query("SELECT l FROM Log l WHERE l.traceId IN :traceIds ORDER BY l.traceId, l.logTimestamp")
+    List<Log> findByTraceIdIn(@Param("traceIds") List<String> traceIds);
+
     @Modifying
     @Query("DELETE FROM Log l WHERE l.logTimestamp < :cutoff")
     int deleteOlderThan(@Param("cutoff") ZonedDateTime cutoff);
+
+    @Modifying
+    @Query("DELETE FROM Log l WHERE l.service IN :serviceNames")
+    int deleteByServiceIn(@Param("serviceNames") List<String> serviceNames);
 }

@@ -37,6 +37,18 @@ body {
     border-radius: 4px;
 }
 
+/* Context Indicator */
+.context-indicator .btn {
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.context-indicator .btn:hover {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    border-color: rgba(255, 255, 255, 0.8) !important;
+}
+
 /* Secondary Navbar */
 .navbar-light {
     background-color: #2d2d2d !important;
@@ -134,10 +146,12 @@ body {
 /* Status Badges - Monochrome */
 .badge-success, .bg-success {
     background-color: #222 !important;
+    color: #fff !important;
 }
 
 .badge-danger, .bg-danger {
     background-color: #666 !important;
+    color: #fff !important;
 }
 
 .badge-warning, .bg-warning {
@@ -147,10 +161,13 @@ body {
 
 .badge-info, .bg-info {
     background-color: #555 !important;
+    color: #fff !important;
 }
 
-.badge {
+.badge,
+.badge[class*="text-"] {
     font-weight: 500;
+    color: #fff !important;
 }
 
 /* Status Dot */

@@ -192,6 +192,7 @@ public class Organization {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "organizations"})
     private Tenant tenant;
 
     /**

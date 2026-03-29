@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>JVM &amp; GC Management - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <div class="page">
+        <header class="navbar navbar-expand-md navbar-light d-print-none">
+            <div class="container-xl">
+                <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                    Status Monitor Admin
+                </h1>
+                <div class="navbar-nav flex-row order-md-last">
+                    <div class="nav-item dropdown">
+                        <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                            <span class="avatar avatar-sm">A</span>
+                            <div class="d-none d-xl-block ps-2"><div>Admin</div></div>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end">
+                            <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <header class="navbar-expand-md">
+            <div class="collapse navbar-collapse" id="navbar-menu">
+                <div class="navbar navbar-light">
+                    <div class="container-xl">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-dashboard"></i></span>
+                                    <span class="nav-link-title">Dashboard</span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-server"></i></span>
+                                    <span class="nav-link-title">Monitoring</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/admin/platforms"><i class="ti ti-server me-2"></i>Platforms</a>
+                                    <a class="dropdown-item" href="/admin/components"><i class="ti ti-puzzle me-2"></i>Components</a>
+                                    <a class="dropdown-item" href="/admin/health-checks"><i class="ti ti-heartbeat me-2"></i>Health Checks</a>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-alert-circle"></i></span>
+                                    <span class="nav-link-title">Incidents</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/admin/issues"><i class="ti ti-alert-circle me-2"></i>Issues</a>
+                                    <a class="dropdown-item" href="/admin/events"><i class="ti ti-list me-2"></i>Events</a>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/subscribers">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-mail"></i></span>
+                                    <span class="nav-link-title">Subscribers</span>
+                                </a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-terminal-2"></i></span>
+                                    <span class="nav-link-title">Logs</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
+                                    <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
+                                    <a class="dropdown-item" href="/admin/process-mining"><i class="ti ti-git-branch me-2"></i>Process Mining</a>
+                                    <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
+                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
+                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
+                                    <a class="dropdown-item" href="/admin/data-retention"><i class="ti ti-clock-off me-2"></i>Data Retention</a>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown active">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>
+                                    <span class="nav-link-title">System</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item active" href="/admin/jvm"><i class="ti ti-cpu me-2"></i>JVM</a>
+                                    <a class="dropdown-item" href="/admin/log-viewer"><i class="ti ti-file-text me-2"></i>Log Viewer</a>
+                                </div>
+                            </li>
+                            <li class="nav-item dropdown" sec:authorize="hasRole('SUPERADMIN')">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-building"></i></span>
+                                    <span class="nav-link-title">Admin</span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="/admin/tenants"><i class="ti ti-building me-2"></i>Tenants</a>
+                                    <a class="dropdown-item" href="/admin/organizations"><i class="ti ti-building-community me-2"></i>Organizations</a>
+                                    <a class="dropdown-item" href="/admin/users"><i class="ti ti-users me-2"></i>Users</a>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/admin/help">
+                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-help"></i></span>
+                                    <span class="nav-link-title">Help</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-wrapper">
+            <div class="page-header d-print-none">
+                <div class="container-xl">
+                    <div class="row align-items-center">
+                        <div class="col">
+                            <div class="page-pretitle">System</div>
+                            <h2 class="page-title">JVM &amp; GC Management</h2>
+                        </div>
+                        <div class="col-auto ms-auto">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                                    <input class="form-check-input" type="checkbox" id="autoRefreshToggle">
+                                    <label class="form-check-label text-muted small" for="autoRefreshToggle">Auto-refresh (5s)</label>
+                                </div>
+                                <button class="btn btn-outline-secondary" id="btnRefresh" onclick="loadStats()">
+                                    <i class="ti ti-refresh me-1"></i>Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="page-body">
+                <div class="container-xl">
+
+                    <!-- Scheduled GC + GC Collectors -->
+                    <div class="row row-deck mt-3">
+
+                        <!-- Scheduled GC -->
+                        <div class="col-lg-5">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="ti ti-clock-play me-2 text-primary"></i>Scheduled GC
+                                    </h3>
+                                    <div class="card-options">
+                                        <label class="form-check form-switch mb-0 me-1">
+                                            <input class="form-check-input" type="checkbox" id="gcEnabled" onchange="toggleGcEnabled()">
+                                            <span class="form-check-label">Enabled</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="card-body d-flex flex-column">
+                                    <div id="lastGcRun" class="text-muted small mb-3"></div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium">Quick Preset</label>
+                                        <select class="form-select" id="cronPreset" onchange="applyPreset()">
+                                            <option value="">Custom...</option>
+                                            <option value="0 */30 * * * *">Every 30 minutes</option>
+                                            <option value="0 0 * * * *">Every hour</option>
+                                            <option value="0 0 */6 * * *">Every 6 hours</option>
+                                            <option value="0 0 0 * * *">Once daily (midnight)</option>
+                                            <option value="0 0 2 * * *">Once daily (2 AM)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-medium">
+                                            Cron Fields
+                                            <span class="badge bg-secondary-lt text-secondary ms-1 small">second · minute · hour · day · month · weekday</span>
+                                        </label>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Sec</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronSec" value="0" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Min</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronMin" value="0" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Hour</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronHour" value="*" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Day</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronDay" value="*" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Month</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronMonth" value="*" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                            <div class="col">
+                                                <div class="text-muted small text-center mb-1">Wday</div>
+                                                <input type="text" class="form-control form-control-sm text-center font-monospace" id="cronWday" value="*" maxlength="10" oninput="rebuildCron()">
+                                            </div>
+                                        </div>
+                                        <div class="input-group">
+                                            <span class="input-group-text text-muted"><i class="ti ti-calendar-event"></i></span>
+                                            <input type="text" class="form-control font-monospace" id="cronExpression" placeholder="0 0 * * * *" oninput="parseCronToFields()">
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-auto d-flex gap-2">
+                                        <button class="btn btn-primary" onclick="saveSchedule()">
+                                            <i class="ti ti-device-floppy me-1"></i>Save Schedule
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="triggerGcNow()">
+                                            <i class="ti ti-player-play me-1"></i>Run GC Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GC Collectors -->
+                        <div class="col-lg-7">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="ti ti-recycle me-2 text-green"></i>Garbage Collectors
+                                    </h3>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-vcenter card-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Collector</th>
+                                                <th class="text-end">Collections</th>
+                                                <th class="text-end">Total Time (ms)</th>
+                                                <th class="text-end">Avg Time (ms)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="gcTable">
+                                            <tr><td colspan="4" class="text-center text-muted py-5">
+                                                <div class="text-muted"><i class="ti ti-loader-2 me-1"></i>Loading...</div>
+                                            </td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stat Cards -->
+                    <div class="row row-deck row-cards mt-3">
+
+                        <!-- Heap Memory -->
+                        <div class="col-sm-6 col-lg">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="avatar avatar-md bg-blue-lt text-blue me-3">
+                                            <i class="ti ti-cpu fs-4"></i>
+                                        </span>
+                                        <div class="text-muted text-uppercase small fw-medium tracking-wide">Heap Memory</div>
+                                    </div>
+                                    <div class="h2 mb-1" id="heapUsed">—</div>
+                                    <div class="text-muted small mb-3">of <span id="heapMax">—</span> max</div>
+                                    <div class="progress progress-sm mb-1">
+                                        <div class="progress-bar bg-blue" id="heapProgress" style="width:0%"></div>
+                                    </div>
+                                    <div class="text-muted small" id="heapCommitted">Committed: —</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Non-Heap Memory -->
+                        <div class="col-sm-6 col-lg">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="avatar avatar-md bg-azure-lt text-azure me-3">
+                                            <i class="ti ti-device-desktop fs-4"></i>
+                                        </span>
+                                        <div class="text-muted text-uppercase small fw-medium">Non-Heap</div>
+                                    </div>
+                                    <div class="h2 mb-1" id="nonHeapUsed">—</div>
+                                    <div class="text-muted small" id="nonHeapCommitted">Committed: —</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threads -->
+                        <div class="col-sm-6 col-lg">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="avatar avatar-md bg-green-lt text-green me-3">
+                                            <i class="ti ti-activity fs-4"></i>
+                                        </span>
+                                        <div class="text-muted text-uppercase small fw-medium">Threads</div>
+                                    </div>
+                                    <div class="h2 mb-1" id="threadCount">—</div>
+                                    <div class="text-muted small">
+                                        Daemon: <span id="daemonCount">—</span>
+                                        <span class="mx-1">·</span>
+                                        Peak: <span id="peakCount">—</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- JVM Uptime -->
+                        <div class="col-sm-6 col-lg">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="avatar avatar-md bg-orange-lt text-orange me-3">
+                                            <i class="ti ti-clock fs-4"></i>
+                                        </span>
+                                        <div class="text-muted text-uppercase small fw-medium">JVM Uptime</div>
+                                    </div>
+                                    <div class="h2 mb-0" id="uptimeValue">—</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Process CPU Load -->
+                        <div class="col-sm-6 col-lg">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="avatar avatar-md bg-red-lt text-red me-3">
+                                            <i class="ti ti-cpu-2 fs-4"></i>
+                                        </span>
+                                        <div class="text-muted text-uppercase small fw-medium">CPU Load</div>
+                                    </div>
+                                    <div class="h2 mb-0" id="cpuLoad">—</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <footer class="footer footer-transparent d-print-none">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item">Powered by <a href="/" class="link-secondary" th:text="${applicationName}">status</a></li>
+                                <li class="list-inline-item">&copy; <span th:text="${copyright}"></span></li>
+                                <li class="list-inline-item">Build <span th:text="${buildNumber}">0</span> - <span th:text="${buildDate}">unknown</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/shared/auth.js"></script>
+    <script src="/static/js/shared/api.js"></script>
+    <script src="/static/js/admin/jvm/jvm.js"></script>
+</body>
+</html>

@@ -160,6 +160,13 @@ public class StatusAppService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<StatusAppResponse> getStatusAppsByPlatform(UUID platformId) {
+        return statusAppRepository.findByPlatformId(platformId).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     /**
      * Creates a new status app with the provided details.
      * <p>

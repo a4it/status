@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -36,94 +36,96 @@
                 <div class="navbar navbar-light">
                     <div class="container-xl">
                         <ul class="navbar-nav">
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-dashboard"></i>
-                                    </span>
-                                    <span class="nav-link-title">Dashboard</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin/platforms">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-server"></i>
-                                    </span>
-                                    <span class="nav-link-title">Platforms</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin/components">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-puzzle"></i>
-                                    </span>
-                                    <span class="nav-link-title">Components</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin/issues">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-alert-circle"></i>
-                                    </span>
-                                    <span class="nav-link-title">Issues</span>
-                                </a>
-                            </li>
-                            <li class="nav-item active">
-                                <a class="nav-link" href="/admin/events">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-list"></i>
-                                    </span>
-                                    <span class="nav-link-title">Events</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin/subscribers">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-mail"></i>
-                                    </span>
-                                    <span class="nav-link-title">Subscribers</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="/admin/health-checks">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-heartbeat"></i>
-                                    </span>
-                                    <span class="nav-link-title">Health Checks</span>
-                                </a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-terminal-2"></i>
-                                    </span>
-                                    <span class="nav-link-title">Logs Hub</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
-                                    <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
-                                    <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
-                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
-                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
-                                </div>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
-                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                        <i class="ti ti-building"></i>
-                                    </span>
-                                    <span class="nav-link-title">Multi-Tenant</span>
-                                </a>
-                                <div class="dropdown-menu">
-                                    <a class="dropdown-item" href="/admin/tenants">
-                                        <i class="ti ti-building me-2"></i>Tenants
-                                    </a>
-                                    <a class="dropdown-item" href="/admin/organizations">
-                                        <i class="ti ti-building-community me-2"></i>Organizations
-                                    </a>
-                                </div>
-                            </li>
-                        </ul>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-dashboard"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Dashboard</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-server"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Monitoring</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/platforms"><i class="ti ti-server me-2"></i>Platforms</a>
+                                                    <a class="dropdown-item" href="/admin/components"><i class="ti ti-puzzle me-2"></i>Components</a>
+                                                    <a class="dropdown-item" href="/admin/health-checks"><i class="ti ti-heartbeat me-2"></i>Health Checks</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown active">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-alert-circle"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Incidents</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/issues"><i class="ti ti-alert-circle me-2"></i>Issues</a>
+                                                    <a class="dropdown-item active" href="/admin/events"><i class="ti ti-list me-2"></i>Events</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin/subscribers">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-mail"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Subscribers</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-terminal-2"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Logs</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
+                                                    <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
+                                                    <a class="dropdown-item" href="/admin/process-mining"><i class="ti ti-git-branch me-2"></i>Process Mining</a>
+                                                    <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
+                                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
+                                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
+                                                    <a class="dropdown-item" href="/admin/data-retention"><i class="ti ti-clock-off me-2"></i>Data Retention</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>
+                                                    <span class="nav-link-title">System</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/jvm"><i class="ti ti-cpu me-2"></i>JVM</a>
+                                                    <a class="dropdown-item" href="/admin/log-viewer"><i class="ti ti-file-text me-2"></i>Log Viewer</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown" sec:authorize="hasRole('SUPERADMIN')">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-building"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Admin</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/tenants"><i class="ti ti-building me-2"></i>Tenants</a>
+                                                    <a class="dropdown-item" href="/admin/organizations"><i class="ti ti-building-community me-2"></i>Organizations</a>
+                                                    <a class="dropdown-item" href="/admin/users"><i class="ti ti-users me-2"></i>Users</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin/help">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-help"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Help</span>
+                                                </a>
+                                            </li>
+                                        </ul>
                     </div>
                 </div>
             </div>

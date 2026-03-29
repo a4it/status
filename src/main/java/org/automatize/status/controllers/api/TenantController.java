@@ -40,7 +40,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/tenants")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 public class TenantController {
 
     @Autowired

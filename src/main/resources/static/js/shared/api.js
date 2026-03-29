@@ -63,6 +63,13 @@ const API = {
         });
     },
 
+    patch(url, data) {
+        return this.request(url, {
+            method: 'PATCH',
+            body: data !== undefined ? JSON.stringify(data) : undefined
+        });
+    },
+
     delete(url) {
         return this.request(url, {
             method: 'DELETE'

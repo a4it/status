@@ -60,11 +60,6 @@ public class HealthCheckService {
     private final StatusComponentRepository statusComponentRepository;
 
     /**
-     * JSON object mapper for parsing health check responses.
-     */
-    private final ObjectMapper objectMapper;
-
-    /**
      * Service for managing automated incidents.
      */
     private final StatusIncidentService statusIncidentService;
@@ -74,16 +69,13 @@ public class HealthCheckService {
      *
      * @param statusAppRepository repository for status app operations
      * @param statusComponentRepository repository for status component operations
-     * @param objectMapper JSON mapper for parsing responses
      * @param statusIncidentService service for automated incident management
      */
     public HealthCheckService(StatusAppRepository statusAppRepository,
                               StatusComponentRepository statusComponentRepository,
-                              ObjectMapper objectMapper,
                               StatusIncidentService statusIncidentService) {
         this.statusAppRepository = statusAppRepository;
         this.statusComponentRepository = statusComponentRepository;
-        this.objectMapper = objectMapper;
         this.statusIncidentService = statusIncidentService;
     }
 
@@ -215,7 +207,7 @@ public class HealthCheckService {
 
             if (responseCode >= 200 && responseCode < 300) {
                 String responseBody = new String(connection.getInputStream().readAllBytes());
-                JsonNode jsonNode = objectMapper.readTree(responseBody);
+                JsonNode jsonNode = new ObjectMapper().readTree(responseBody);
                 String status = jsonNode.has("status") ? jsonNode.get("status").asText() : "UNKNOWN";
 
                 if ("UP".equalsIgnoreCase(status)) {

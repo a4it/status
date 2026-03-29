@@ -91,6 +91,7 @@ public class JwtUtils {
      */
     public String generateJwtToken(Authentication authentication) {
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        boolean isSuperadmin = "SUPERADMIN".equals(userPrincipal.getRole());
 
         return Jwts.builder()
                 .setSubject((userPrincipal.getUsername()))
@@ -98,8 +99,9 @@ public class JwtUtils {
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .claim("userId", userPrincipal.getId())
                 .claim("email", userPrincipal.getEmail())
-                .claim("organizationId", userPrincipal.getOrganizationId())
+                .claim("organizationId", userPrincipal.getOrganizationId() != null ? userPrincipal.getOrganizationId().toString() : null)
                 .claim("role", userPrincipal.getRole())
+                .claim("requiresContextSelection", isSuperadmin)
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -119,6 +121,7 @@ public class JwtUtils {
      * @return a signed JWT access token string
      */
     public String generateJwtTokenFromUserId(UUID userId, String username, String email, UUID organizationId, String role) {
+        boolean isSuperadmin = "SUPERADMIN".equals(role);
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date())
@@ -127,6 +130,35 @@ public class JwtUtils {
                 .claim("email", email)
                 .claim("organizationId", organizationId != null ? organizationId.toString() : null)
                 .claim("role", role)
+                .claim("requiresContextSelection", isSuperadmin)
+                .signWith(key(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    /**
+     * Generates a JWT access token that includes tenant and organization context.
+     * Used for SUPERADMIN users after they have selected a tenant/org context.
+     *
+     * @param userId         the user's UUID
+     * @param username       the username
+     * @param email          the user's email
+     * @param organizationId the selected organization UUID
+     * @param role           the user's role
+     * @param tenantId       the selected tenant UUID
+     * @return a signed JWT access token string with context claims
+     */
+    public String generateJwtTokenWithContext(UUID userId, String username, String email,
+                                               UUID organizationId, String role, UUID tenantId) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
+                .claim("userId", userId.toString())
+                .claim("email", email)
+                .claim("organizationId", organizationId != null ? organizationId.toString() : null)
+                .claim("role", role)
+                .claim("tenantId", tenantId != null ? tenantId.toString() : null)
+                .claim("requiresContextSelection", false)
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -201,13 +233,13 @@ public class JwtUtils {
             Jwts.parser().verifyWith((SecretKey)key()).build().parse(authToken);
             return true;
         } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
+            logger.warn("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            logger.error("JWT token is expired: {}", e.getMessage());
+            logger.debug("JWT token is expired: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            logger.error("JWT token is unsupported: {}", e.getMessage());
+            logger.warn("JWT token is unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.error("JWT claims string is empty: {}", e.getMessage());
+            logger.warn("JWT claims string is empty: {}", e.getMessage());
         }
 
         return false;
@@ -227,5 +259,41 @@ public class JwtUtils {
     public Claims getAllClaimsFromToken(String token) {
         return Jwts.parser().verifyWith((SecretKey)key()).build()
                 .parseSignedClaims(token).getPayload();
+    }
+
+    /**
+     * Extracts the tenant ID from a JWT token.
+     *
+     * @param token the JWT token string to parse
+     * @return the tenant's UUID from the token's tenantId claim, or null if not present
+     */
+    public UUID getTenantIdFromJwtToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        String tenantId = claims.get("tenantId", String.class);
+        return tenantId != null ? UUID.fromString(tenantId) : null;
+    }
+
+    /**
+     * Extracts the organization ID from a JWT token.
+     *
+     * @param token the JWT token string to parse
+     * @return the organization's UUID from the token's organizationId claim, or null if not present
+     */
+    public UUID getOrganizationIdFromJwtToken(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        String orgId = claims.get("organizationId", String.class);
+        return orgId != null ? UUID.fromString(orgId) : null;
+    }
+
+    /**
+     * Checks if a JWT token requires context selection (i.e., belongs to a SUPERADMIN without a selected context).
+     *
+     * @param token the JWT token string to parse
+     * @return true if context selection is required
+     */
+    public boolean requiresContextSelection(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        Boolean flag = claims.get("requiresContextSelection", Boolean.class);
+        return Boolean.TRUE.equals(flag);
     }
 }

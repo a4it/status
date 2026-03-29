@@ -280,10 +280,10 @@ public class OrganizationService {
      * @return the username, or "system" if no user is authenticated
      */
     private String getCurrentUsername() {
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        if (principal instanceof UserPrincipal) {
-            return ((UserPrincipal) principal).getUsername();
-        }
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return "system";
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserPrincipal up) return up.getUsername();
         return "system";
     }
 }

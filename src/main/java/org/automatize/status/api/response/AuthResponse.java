@@ -52,6 +52,9 @@ public class AuthResponse {
     /** The organization ID the user belongs to. */
     private UUID organizationId;
 
+    /** Whether the user needs to select a tenant/organization context (SUPERADMIN only). */
+    private boolean requiresContextSelection;
+
     /**
      * Default constructor.
      */
@@ -218,5 +221,23 @@ public class AuthResponse {
      */
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
+    }
+
+    /**
+     * Gets whether the user needs to select a context (SUPERADMIN only).
+     *
+     * @return true if context selection is required
+     */
+    public boolean isRequiresContextSelection() {
+        return requiresContextSelection;
+    }
+
+    /**
+     * Sets whether the user needs to select a context.
+     *
+     * @param requiresContextSelection the flag to set
+     */
+    public void setRequiresContextSelection(boolean requiresContextSelection) {
+        this.requiresContextSelection = requiresContextSelection;
     }
 }
