@@ -4,6 +4,9 @@ let allCases = [];
 let selectedCaseId = null;
 let compareMode = false;
 let selectedForCompare = []; // ordered array of caseId strings, max 4
+let bpmnViewer = null;
+let activeDetailTab = 'timeline';
+let currentCaseObj = null;
 
 // ─── Utilities ───────────────────────────────────────────────────────────────
 
@@ -14,6 +17,16 @@ function escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function escapeXml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
 }
 
 function formatDuration(ms) {
@@ -267,11 +280,242 @@ function renderEmptyDetail() {
 }
 
 function renderCaseDetail(caseObj) {
-    document.getElementById('tlDetail').innerHTML =
+    if (bpmnViewer) { bpmnViewer.destroy(); bpmnViewer = null; }
+    currentCaseObj = caseObj;
+    activeDetailTab = 'timeline';
+
+    const timelineContent =
         renderCaseStatsHtml(caseObj) +
         renderServicePathHtml(caseObj) +
         renderSwimlaneHtml(caseObj) +
         renderEventTableHtml(caseObj);
+
+    document.getElementById('tlDetail').innerHTML = `
+        <div class="tl-detail-tabs">
+            <button class="tl-detail-tab-btn active" id="tlTabTimeline"
+                    onclick="switchDetailTab('timeline')">
+                <i class="ti ti-chart-gantt me-1"></i>Timeline
+            </button>
+            <button class="tl-detail-tab-btn" id="tlTabBpmn"
+                    onclick="switchDetailTab('bpmn')">
+                <i class="ti ti-git-branch me-1"></i>BPMN Diagram
+            </button>
+        </div>
+        <div id="tlTimelinePanel">${timelineContent}</div>
+        <div id="tlBpmnPanel" style="display:none;">
+            <div id="tlBpmnContainer">
+                <div id="tlBpmnCanvas"></div>
+                <div class="tl-bpmn-loading" id="tlBpmnLoading" style="display:none;">
+                    <span class="spinner-border spinner-border-sm"></span> Rendering…
+                </div>
+            </div>
+        </div>`;
+}
+
+function switchDetailTab(tab) {
+    activeDetailTab = tab;
+    document.getElementById('tlTabTimeline').classList.toggle('active', tab === 'timeline');
+    document.getElementById('tlTabBpmn').classList.toggle('active', tab === 'bpmn');
+    document.getElementById('tlTimelinePanel').style.display = tab === 'timeline' ? '' : 'none';
+    document.getElementById('tlBpmnPanel').style.display     = tab === 'bpmn'     ? '' : 'none';
+    if (tab === 'bpmn' && currentCaseObj) renderBpmnDiagram(currentCaseObj);
+}
+
+function generateBpmnXml(caseObj) {
+    // ── Layout constants ──────────────────────────────────────────────────────
+    const POOL_HDR_W = 30;
+    const LANE_HDR_W = 120;
+    const LANE_H     = 110;
+    const TASK_W     = 140;
+    const TASK_H     = 50;
+    const SE_R       = 18;   // start/end event radius
+    const SE_D       = SE_R * 2;
+    const COL_W      = 170;
+    const L_PAD      = 20;
+    const R_PAD      = 40;
+    const CONTENT_X  = POOL_HDR_W + LANE_HDR_W; // 150
+
+    const events    = caseObj.events;
+    const N         = events.length;
+
+    // ── Derive lanes (unique services, in order of first appearance) ──────────
+    const laneNames = [...new Set(events.map(e => e.activity))];
+    const laneIdx   = Object.fromEntries(laneNames.map((n, i) => [n, i]));
+    const numLanes  = laneNames.length;
+
+    // ── Coordinate helpers ────────────────────────────────────────────────────
+    const taskX    = i  => CONTENT_X + L_PAD + SE_D + 10 + i * COL_W;
+    const taskTopY = li => li * LANE_H + Math.round((LANE_H - TASK_H) / 2);
+    const taskCtrY = li => li * LANE_H + Math.round(LANE_H / 2);
+
+    const firstLane = laneIdx[events[0].activity];
+    const lastLane  = laneIdx[events[N - 1].activity];
+
+    const startX    = CONTENT_X + L_PAD;
+    const startTopY = li => li * LANE_H + Math.round((LANE_H - SE_D) / 2);
+    const endX      = taskX(N - 1) + TASK_W + 10;
+
+    const POOL_W = endX + SE_D + R_PAD;
+    const POOL_H = numLanes * LANE_H;
+
+    // ── Level → bioc colors ───────────────────────────────────────────────────
+    const BIOC = {
+        CRITICAL: { fill: '#fde8e8', stroke: '#dc3545' },
+        ERROR:    { fill: '#fef0e6', stroke: '#fd7e14' },
+        WARNING:  { fill: '#fff8e1', stroke: '#ffc107' },
+        INFO:     { fill: '#e8f4fd', stroke: '#0d6efd' },
+        DEBUG:    { fill: '#f0f0f0', stroke: '#6c757d' },
+    };
+    const bioc = level => {
+        const c = BIOC[level] || BIOC.DEBUG;
+        return `bioc:fill="${c.fill}" bioc:stroke="${c.stroke}"`;
+    };
+
+    // ── Task display name ─────────────────────────────────────────────────────
+    const taskName = e => {
+        const msg = e.message || '';
+        const short = msg.length > 28 ? msg.slice(0, 28) + '…' : msg;
+        return escapeXml(e.level + ': ' + short);
+    };
+
+    // ── Build semantic XML ────────────────────────────────────────────────────
+    // Lane flowNodeRef lists
+    const laneRefs = laneNames.map(() => []);
+    laneRefs[firstLane].push('startEvt');
+    events.forEach((e, i) => laneRefs[laneIdx[e.activity]].push('t_' + i));
+    laneRefs[lastLane].push('endEvt');
+
+    const lanesXml = laneNames.map((name, li) =>
+        `<lane id="lane_${li}" name="${escapeXml(name)}">` +
+        laneRefs[li].map(ref => `<flowNodeRef>${ref}</flowNodeRef>`).join('') +
+        `</lane>`
+    ).join('');
+
+    const tasksXml = events.map((e, i) =>
+        `<task id="t_${i}" name="${taskName(e)}" ${bioc(e.level)}/>`
+    ).join('');
+
+    const flowsXml =
+        `<sequenceFlow id="sf_s" sourceRef="startEvt" targetRef="t_0"/>` +
+        events.slice(0, N - 1).map((_, i) =>
+            `<sequenceFlow id="sf_${i}" sourceRef="t_${i}" targetRef="t_${i + 1}"/>`
+        ).join('') +
+        `<sequenceFlow id="sf_e" sourceRef="t_${N - 1}" targetRef="endEvt"/>`;
+
+    // ── Build DI shapes ───────────────────────────────────────────────────────
+    const poolShape = `<bpmndi:BPMNShape id="pool1_di" bpmnElement="pool1" isHorizontal="true">
+      <dc:Bounds x="0" y="0" width="${POOL_W}" height="${POOL_H}"/>
+    </bpmndi:BPMNShape>`;
+
+    const laneShapes = laneNames.map((_, li) =>
+        `<bpmndi:BPMNShape id="lane_${li}_di" bpmnElement="lane_${li}" isHorizontal="true">
+      <dc:Bounds x="${POOL_HDR_W}" y="${li * LANE_H}" width="${POOL_W - POOL_HDR_W}" height="${LANE_H}"/>
+    </bpmndi:BPMNShape>`
+    ).join('');
+
+    const startShape = `<bpmndi:BPMNShape id="startEvt_di" bpmnElement="startEvt">
+      <dc:Bounds x="${startX}" y="${startTopY(firstLane)}" width="${SE_D}" height="${SE_D}"/>
+    </bpmndi:BPMNShape>`;
+
+    const taskShapes = events.map((e, i) => {
+        const li = laneIdx[e.activity];
+        return `<bpmndi:BPMNShape id="t_${i}_di" bpmnElement="t_${i}">
+      <dc:Bounds x="${taskX(i)}" y="${taskTopY(li)}" width="${TASK_W}" height="${TASK_H}"/>
+    </bpmndi:BPMNShape>`;
+    }).join('');
+
+    const endShape = `<bpmndi:BPMNShape id="endEvt_di" bpmnElement="endEvt">
+      <dc:Bounds x="${endX}" y="${startTopY(lastLane)}" width="${SE_D}" height="${SE_D}"/>
+    </bpmndi:BPMNShape>`;
+
+    // ── Build DI edges ────────────────────────────────────────────────────────
+    const wp = pts => pts.map(p => `<di:waypoint x="${Math.round(p.x)}" y="${Math.round(p.y)}"/>`).join('');
+
+    const crossLaneWp = (x1, y1, x2, y2) => {
+        if (y1 === y2) return [{ x: x1, y: y1 }, { x: x2, y: y2 }];
+        const midX = Math.round((x1 + x2) / 2);
+        return [{ x: x1, y: y1 }, { x: midX, y: y1 }, { x: midX, y: y2 }, { x: x2, y: y2 }];
+    };
+
+    const startEdge = `<bpmndi:BPMNEdge id="sf_s_di" bpmnElement="sf_s">
+      ${wp([{ x: startX + SE_D, y: taskCtrY(firstLane) }, { x: taskX(0), y: taskCtrY(firstLane) }])}
+    </bpmndi:BPMNEdge>`;
+
+    const taskEdges = events.slice(0, N - 1).map((e, i) => {
+        const srcLi = laneIdx[events[i].activity];
+        const tgtLi = laneIdx[events[i + 1].activity];
+        const x1 = taskX(i) + TASK_W, y1 = taskCtrY(srcLi);
+        const x2 = taskX(i + 1),      y2 = taskCtrY(tgtLi);
+        return `<bpmndi:BPMNEdge id="sf_${i}_di" bpmnElement="sf_${i}">
+      ${wp(crossLaneWp(x1, y1, x2, y2))}
+    </bpmndi:BPMNEdge>`;
+    }).join('');
+
+    const endEdge = `<bpmndi:BPMNEdge id="sf_e_di" bpmnElement="sf_e">
+      ${wp([{ x: taskX(N - 1) + TASK_W, y: taskCtrY(lastLane) }, { x: endX, y: taskCtrY(lastLane) }])}
+    </bpmndi:BPMNEdge>`;
+
+    // ── Assemble ──────────────────────────────────────────────────────────────
+    const shortId = caseObj.caseId.length > 20
+        ? caseObj.caseId.slice(0, 8) + '…' + caseObj.caseId.slice(-6)
+        : caseObj.caseId;
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+             xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+             xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+             xmlns:bioc="http://bpmn.io/schema/bpmn/biocolor/1.0"
+             targetNamespace="http://status-monitor/bpmn">
+  <collaboration id="collab1">
+    <participant id="pool1" name="Trace: ${escapeXml(shortId)}" processRef="proc1"/>
+  </collaboration>
+  <process id="proc1" isExecutable="false">
+    <laneSet id="ls1">${lanesXml}</laneSet>
+    <startEvent id="startEvt"/>
+    ${tasksXml}
+    <endEvent id="endEvt"/>
+    ${flowsXml}
+  </process>
+  <bpmndi:BPMNDiagram id="dia1">
+    <bpmndi:BPMNPlane id="plane1" bpmnElement="collab1">
+      ${poolShape}
+      ${laneShapes}
+      ${startShape}
+      ${taskShapes}
+      ${endShape}
+      ${startEdge}
+      ${taskEdges}
+      ${endEdge}
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>`;
+}
+
+async function renderBpmnDiagram(caseObj) {
+    const container = document.getElementById('tlBpmnContainer');
+    const loading   = document.getElementById('tlBpmnLoading');
+    if (!container) return;
+
+    if (typeof window.BpmnJS === 'undefined') {
+        container.innerHTML = '<div class="tl-bpmn-error">bpmn-viewer.production.min.js did not load — check the script tag.</div>';
+        return;
+    }
+
+    loading.style.display = 'flex';
+    if (bpmnViewer) { bpmnViewer.destroy(); bpmnViewer = null; }
+    bpmnViewer = new window.BpmnJS({ container: '#tlBpmnCanvas' });
+
+    try {
+        const xml = generateBpmnXml(caseObj);
+        await bpmnViewer.importXML(xml);
+        bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+    } catch (err) {
+        console.error('BPMN render error:', err);
+        container.innerHTML = `<div class="tl-bpmn-error">Failed to render BPMN: ${escapeHtml(err.message || String(err))}</div>`;
+    } finally {
+        loading.style.display = 'none';
+    }
 }
 
 function renderCaseStatsHtml(caseObj) {
