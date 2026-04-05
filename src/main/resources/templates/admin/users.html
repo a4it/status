@@ -69,30 +69,43 @@
                                                     <a class="dropdown-item" href="/admin/events"><i class="ti ti-list me-2"></i>Events</a>
                                                 </div>
                                             </li>
-                                            <li class="nav-item">
-                                                <a class="nav-link" href="/admin/subscribers">
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                                        <i class="ti ti-mail"></i>
+                                                        <i class="ti ti-bell"></i>
                                                     </span>
-                                                    <span class="nav-link-title">Subscribers</span>
+                                                    <span class="nav-link-title">Alerts</span>
                                                 </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
+                                                    <a class="dropdown-item" href="/admin/subscribers"><i class="ti ti-mail me-2"></i>Subscribers</a>
+                                                </div>
                                             </li>
                                             <li class="nav-item dropdown">
                                                 <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                                     <span class="nav-link-icon d-md-none d-lg-inline-block">
-                                                        <i class="ti ti-terminal-2"></i>
+                                                        <i class="ti ti-chart-bar"></i>
                                                     </span>
-                                                    <span class="nav-link-title">Logs</span>
+                                                    <span class="nav-link-title">Analytics</span>
                                                 </a>
                                                 <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
                                                     <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
                                                     <a class="dropdown-item" href="/admin/process-mining"><i class="ti ti-git-branch me-2"></i>Process Mining</a>
                                                     <a class="dropdown-item" href="/admin/process-timeline"><i class="ti ti-timeline me-2"></i>Timeline Explorer</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-adjustments"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Settings</span>
+                                                </a>
+                                                <div class="dropdown-menu">
                                                     <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
-                                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
-                                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
                                                     <a class="dropdown-item" href="/admin/data-retention"><i class="ti ti-clock-off me-2"></i>Data Retention</a>
+                                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
                                                 </div>
                                             </li>
                                             <li class="nav-item dropdown">

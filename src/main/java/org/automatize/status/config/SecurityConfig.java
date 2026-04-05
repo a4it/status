@@ -133,8 +133,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/events/log").permitAll()
                 .requestMatchers("/api/logs", "/api/logs/batch").permitAll()
                 .requestMatchers("/", "/login", "/logout", "/register", "/forgot-password").permitAll()
-                .requestMatchers("/admin/select-context").permitAll()
-                // CRIT-01: removed /admin/** permitAll — all admin routes require authentication
+                .requestMatchers("/admin/**").permitAll() // Admin MVC pages are client-side JWT protected; security enforced at /api/** level
                 .requestMatchers("/incidents", "/incidents/**", "/maintenance", "/history").permitAll()
                 .requestMatchers("/static/**", "/css/**", "/js/**", "/images/**", "/fonts/**", "/icons/**").permitAll()
                 .requestMatchers("/swagger/**", "/v3/api-docs/**", "/webjars/**", "/favicon.ico", "/error").permitAll()

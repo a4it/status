@@ -75,13 +75,12 @@ public class AuthController {
         }
         AuthResponse authResponse = authService.authenticateUser(loginRequest);
 
-        // Set HttpOnly jwt cookie so browser page navigations are authenticated
-        Cookie jwtCookie = new Cookie("jwt", authResponse.getAccessToken());
-        jwtCookie.setPath("/");
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(request.isSecure());
-        jwtCookie.setMaxAge((int) (jwtExpiration / 1000));
-        response.addCookie(jwtCookie);
+        // Expire any stale jwt cookie from old sessions
+        Cookie clearCookie = new Cookie("jwt", "");
+        clearCookie.setPath("/");
+        clearCookie.setHttpOnly(true);
+        clearCookie.setMaxAge(0);
+        response.addCookie(clearCookie);
 
         return ResponseEntity.ok(authResponse);
     }

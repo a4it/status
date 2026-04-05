@@ -128,7 +128,7 @@ const auth = {
 
     requireAuth() {
         if (!this.isAuthenticated()) {
-            window.location.href = '/login';
+            window.location.href = '/login?session_expired=true';
             return false;
         }
         // Redirect SUPERADMIN to context selection if they haven't selected one yet
