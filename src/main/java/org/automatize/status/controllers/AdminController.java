@@ -263,6 +263,13 @@ public class AdminController {
         return "admin/process-mining";
     }
 
+    @GetMapping("/process-timeline")
+    public String processTimeline(Model model) {
+        model.addAttribute("activeNav", "process-timeline");
+        addCommonAttributes(model);
+        return "admin/process-timeline";
+    }
+
     @GetMapping("/select-context")
     public String selectContext(Model model) {
         model.addAttribute("activeNav", "select-context");

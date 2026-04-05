@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Timeline Explorer - Status Monitor</title>
+    <link rel="icon" type="image/svg+xml" href="/static/logo.svg"/>
+    <link rel="stylesheet" href="/static/css/tabler.min.css">
+    <link rel="stylesheet" href="/static/css/tabler-icons.min.css">
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <style>
+        .page-wrapper { display: flex; flex-direction: column; flex: 1; }
+        .page-body { flex: 1; display: flex; flex-direction: column; padding-bottom: 0 !important; }
+        .page-body > .container-fluid { flex: 1; display: flex; flex-direction: column; padding-bottom: 0; }
+
+        /* Main two-column layout */
+        .tl-layout {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        /* Left panel – cases list */
+        .tl-left {
+            width: 300px;
+            min-width: 300px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .tl-left-header {
+            padding: 12px 14px 8px;
+            border-bottom: 1px solid #f0f0f0;
+            flex-shrink: 0;
+        }
+
+        .tl-left-header .tl-count {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .tl-list-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tl-search {
+            flex: 1;
+            padding: 5px 9px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .tl-search:focus { outline: none; border-color: #2196f3; box-shadow: 0 0 0 2px rgba(33,150,243,.12); }
+
+        .tl-sort {
+            padding: 5px 7px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        #tlCaseList {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        #tlCaseList::-webkit-scrollbar { width: 5px; }
+        #tlCaseList::-webkit-scrollbar-track { background: #f5f5f5; }
+        #tlCaseList::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+        .tl-case-item {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 9px 11px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: border-color .12s, background .12s;
+        }
+        .tl-case-item:hover  { background: #f0f7ff; border-color: #90caf9; }
+        .tl-case-item.selected { background: #e3f2fd; border-color: #2196f3; }
+
+        .tl-case-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 170px;
+            display: inline-block;
+        }
+
+        .tl-case-meta {
+            display: flex;
+            gap: 12px;
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Right panel – case detail */
+        .tl-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            min-width: 0;
+        }
+
+        #tlDetail {
+            flex: 1;
+            padding: 16px 20px;
+        }
+
+        .tl-empty-state {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        /* Stats row */
+        .tl-stats-row {
+            display: flex;
+            gap: 0;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .tl-stat {
+            flex: 1;
+            padding: 12px 16px;
+            border-right: 1px solid #f0f0f0;
+        }
+        .tl-stat:last-child { border-right: none; }
+
+        .tl-stat-label {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .tl-stat-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .tl-mono { font-family: monospace; font-size: 12px !important; }
+
+        /* Sections */
+        .tl-section {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+
+        .tl-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+            margin-bottom: 12px;
+        }
+
+        /* Service path */
+        .tl-path-flow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tl-path-chip {
+            border: 1.5px solid;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            background: #fff;
+        }
+
+        .tl-path-arrow {
+            color: #adb5bd;
+            font-size: 14px;
+            padding: 0 2px;
+        }
+
+        /* Swimlane */
+        .tl-swimlane {
+            overflow-x: auto;
+        }
+
+        .tl-sw-row {
+            display: flex;
+            align-items: center;
+            height: 36px;
+            margin-bottom: 4px;
+        }
+
+        .tl-sw-label {
+            width: 140px;
+            min-width: 140px;
+            font-size: 12px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .tl-sw-track {
+            flex: 1;
+            position: relative;
+            height: 36px;
+        }
+
+        .tl-sw-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e9ecef;
+            transform: translateY(-50%);
+        }
+
+        .tl-dot {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,.2);
+            cursor: pointer;
+            transition: transform .1s;
+            z-index: 1;
+        }
+        .tl-dot:hover { transform: translateY(-50%) scale(1.4); z-index: 2; }
+
+        .tl-sw-axis {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #aaa;
+            padding-left: 152px;
+            padding-top: 4px;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- Top navbar -->
+    <header class="navbar navbar-expand-md navbar-light d-print-none">
+        <div class="container-xl">
+            <h1 class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3">
+                Status Monitor Admin
+            </h1>
+            <div class="navbar-nav flex-row order-md-last">
+                <div class="nav-item dropdown">
+                    <a href="#" class="nav-link d-flex lh-1 text-reset p-0 dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="avatar avatar-sm" id="userAvatar">A</span>
+                        <div class="d-none d-xl-block ps-2"><div>Admin</div></div>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <a href="#" class="dropdown-item" onclick="auth.logout(); return false;">Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Nav menu -->
+    <header class="navbar-expand-md">
+        <div class="collapse navbar-collapse" id="navbar-menu">
+            <div class="navbar navbar-light">
+                <div class="container-xl">
+                    <ul class="navbar-nav">
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-dashboard"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Dashboard</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-server"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Monitoring</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/platforms"><i class="ti ti-server me-2"></i>Platforms</a>
+                                                    <a class="dropdown-item" href="/admin/components"><i class="ti ti-puzzle me-2"></i>Components</a>
+                                                    <a class="dropdown-item" href="/admin/health-checks"><i class="ti ti-heartbeat me-2"></i>Health Checks</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-alert-circle"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Incidents</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/issues"><i class="ti ti-alert-circle me-2"></i>Issues</a>
+                                                    <a class="dropdown-item" href="/admin/events"><i class="ti ti-list me-2"></i>Events</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin/subscribers">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-mail"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Subscribers</span>
+                                                </a>
+                                            </li>
+                                            <li class="nav-item dropdown active">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-terminal-2"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Logs</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/logs"><i class="ti ti-search me-2"></i>Explore Logs</a>
+                                                    <a class="dropdown-item" href="/admin/log-metrics"><i class="ti ti-chart-bar me-2"></i>Log Metrics</a>
+                                                    <a class="dropdown-item" href="/admin/process-mining"><i class="ti ti-git-branch me-2"></i>Process Mining</a>
+                                                    <a class="dropdown-item active" href="/admin/process-timeline"><i class="ti ti-timeline me-2"></i>Timeline Explorer</a>
+                                                    <a class="dropdown-item" href="/admin/drop-rules"><i class="ti ti-filter-off me-2"></i>Drop Rules</a>
+                                                    <a class="dropdown-item" href="/admin/alert-rules"><i class="ti ti-bell me-2"></i>Alert Rules</a>
+                                                    <a class="dropdown-item" href="/admin/log-api-keys"><i class="ti ti-key me-2"></i>API Keys</a>
+                                                    <a class="dropdown-item" href="/admin/data-retention"><i class="ti ti-clock-off me-2"></i>Data Retention</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block"><i class="ti ti-settings"></i></span>
+                                                    <span class="nav-link-title">System</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/jvm"><i class="ti ti-cpu me-2"></i>JVM</a>
+                                                    <a class="dropdown-item" href="/admin/log-viewer"><i class="ti ti-file-text me-2"></i>Log Viewer</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item dropdown" sec:authorize="hasRole('SUPERADMIN')">
+                                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-building"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Admin</span>
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="/admin/tenants"><i class="ti ti-building me-2"></i>Tenants</a>
+                                                    <a class="dropdown-item" href="/admin/organizations"><i class="ti ti-building-community me-2"></i>Organizations</a>
+                                                    <a class="dropdown-item" href="/admin/users"><i class="ti ti-users me-2"></i>Users</a>
+                                                </div>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" href="/admin/help">
+                                                    <span class="nav-link-icon d-md-none d-lg-inline-block">
+                                                        <i class="ti ti-help"></i>
+                                                    </span>
+                                                    <span class="nav-link-title">Help</span>
+                                                </a>
+                                            </li>
+                                        </ul>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-wrapper">
+        <div class="page-body">
+            <div class="container-fluid">
+
+                <!-- Filter bar -->
+                <div class="card mb-2">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-auto">
+                                <label class="form-label mb-1" style="font-size:12px;">Scope</label>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="radio" name="scopeType" id="scopePlatform" value="platform" checked onchange="onScopeTypeChange()">
+                                        <label class="form-check-label" for="scopePlatform">Platform</label>
+                                    </div>
+                                    <div class="form-check mb-0">
+                                        <input class="form-check-input" type="radio" name="scopeType" id="scopeApplication" value="application" onchange="onScopeTypeChange()">
+                                        <label class="form-check-label" for="scopeApplication">Application</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label mb-1" style="font-size:12px;" id="tlScopeLabel">Platform</label>
+                                <select id="tlScopeEntity" class="form-select form-select-sm">
+                                    <option value="">Select…</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label mb-1" style="font-size:12px;">From</label>
+                                <input type="datetime-local" id="tlFrom" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label mb-1" style="font-size:12px;">To</label>
+                                <input type="datetime-local" id="tlTo" class="form-control form-control-sm">
+                            </div>
+                            <div class="col" style="max-width:100px;">
+                                <label class="form-label mb-1" style="font-size:12px;">Max cases</label>
+                                <input type="number" id="tlMaxCases" class="form-control form-control-sm" value="300" min="10" max="1000">
+                            </div>
+                            <div class="col" style="max-width:100px;">
+                                <label class="form-label mb-1" style="font-size:12px;">Min events</label>
+                                <input type="number" id="tlMinEvents" class="form-control form-control-sm" value="2" min="1">
+                            </div>
+                            <div class="col-auto">
+                                <button id="tlLoadBtn" class="btn btn-primary btn-sm" onclick="loadData()">
+                                    <i class="ti ti-player-play me-1"></i>Load
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Two-column layout -->
+                <div class="tl-layout">
+
+                    <!-- Left: cases list -->
+                    <div class="tl-left">
+                        <div class="tl-left-header">
+                            <div class="tl-count" id="tlCasesCount">No data loaded</div>
+                            <div class="tl-list-controls">
+                                <input type="text" id="tlSearch" class="tl-search" placeholder="Search trace ID…" oninput="renderCaseList()">
+                                <select id="tlSort" class="tl-sort" onchange="renderCaseList()">
+                                    <option value="events">Events</option>
+                                    <option value="duration">Duration</option>
+                                    <option value="severity">Severity</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="tlCaseList">
+                            <div class="text-center text-muted py-4 px-2" style="font-size:13px;">
+                                <i class="ti ti-player-play d-block mb-2" style="font-size:24px;"></i>
+                                Load data to see traces.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: case detail -->
+                    <div class="tl-right">
+                        <div id="tlDetail">
+                            <div class="tl-empty-state">
+                                <i class="ti ti-timeline-event" style="font-size:52px;color:#dee2e6;"></i>
+                                <div class="mt-3 text-muted" style="font-size:14px;">Select a trace from the list to explore its path</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="footer footer-transparent d-print-none">
+            <div class="container-xl">
+                <div class="row text-center align-items-center flex-row-reverse">
+                    <div class="col-lg-auto ms-lg-auto">
+                        <ul class="list-inline list-inline-dots mb-0">
+                            <li class="list-inline-item">
+                                <span th:text="${applicationName + ' v' + buildNumber}">Status Monitor</span>
+                            </li>
+                            <li class="list-inline-item">
+                                <span th:text="${copyright}">© Automatize BV</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<script src="/static/js/vendor/bootstrap.bundle.min.js"></script>
+<script src="/static/js/shared/auth.js"></script>
+<script src="/static/js/shared/api.js"></script>
+<script src="/static/js/admin/process-timeline/process-timeline.js"></script>
+</body>
+</html>
