@@ -3,11 +3,14 @@
 -- ================================================================================
 -- Run this file against a fresh PostgreSQL database to create the full schema.
 -- Database: uptime (PostgreSQL 14+)
--- Generated: 2026-03-29
+-- Auto-generated from Flyway migrations V1 through V18.
+-- Represents the final schema state after all migrations have been applied.
 -- ================================================================================
 
 -- Extension required for gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+-- Extension required for GIN trigram indexes
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ================================================================================
 -- SECTION 1: MULTI-TENANT CORE
@@ -169,10 +172,10 @@ CREATE INDEX idx_status_platforms_tenant ON public.status_platforms (tenant_id);
 CREATE INDEX idx_status_platforms_org    ON public.status_platforms (organization_id);
 CREATE INDEX idx_status_platforms_status ON public.status_platforms (status);
 
-COMMENT ON TABLE  public.status_platforms                       IS 'Higher-level platforms that can group multiple status applications together';
-COMMENT ON COLUMN public.status_platforms.slug                  IS 'URL-friendly slug for the platform (e.g., atlassian-cloud)';
-COMMENT ON COLUMN public.status_platforms.status                IS 'Aggregated current status (OPERATIONAL, DEGRADED, MAJOR_OUTAGE)';
-COMMENT ON COLUMN public.status_platforms.check_type            IS 'Type of health check: NONE, PING, HTTP_GET, SPRING_BOOT_HEALTH, TCP_PORT';
+COMMENT ON TABLE  public.status_platforms                         IS 'Higher-level platforms that can group multiple status applications together';
+COMMENT ON COLUMN public.status_platforms.slug                    IS 'URL-friendly slug for the platform (e.g., atlassian-cloud)';
+COMMENT ON COLUMN public.status_platforms.status                  IS 'Aggregated current status (OPERATIONAL, DEGRADED, MAJOR_OUTAGE)';
+COMMENT ON COLUMN public.status_platforms.check_type              IS 'Type of health check: NONE, PING, HTTP_GET, SPRING_BOOT_HEALTH, TCP_PORT';
 COMMENT ON COLUMN public.status_platforms.check_failure_threshold IS 'Number of consecutive failures before status change';
 
 -------------------------------------------------------------------------------
@@ -265,10 +268,10 @@ CREATE UNIQUE INDEX idx_status_components_api_key  ON public.status_components (
 CREATE INDEX idx_status_components_app    ON public.status_components (app_id);
 CREATE INDEX idx_status_components_status ON public.status_components (status);
 
-COMMENT ON TABLE  public.status_components                       IS 'Logical components or subsystems of a status application (e.g., API, Web UI, Database)';
-COMMENT ON COLUMN public.status_components.app_id               IS 'Reference to the status application to which this component belongs';
-COMMENT ON COLUMN public.status_components.group_name           IS 'Optional grouping label used to group related components on the status page';
-COMMENT ON COLUMN public.status_components.check_inherit_from_app IS 'Whether to inherit health check configuration from the parent app';
+COMMENT ON TABLE  public.status_components                         IS 'Logical components or subsystems of a status application (e.g., API, Web UI, Database)';
+COMMENT ON COLUMN public.status_components.app_id                  IS 'Reference to the status application to which this component belongs';
+COMMENT ON COLUMN public.status_components.group_name              IS 'Optional grouping label used to group related components on the status page';
+COMMENT ON COLUMN public.status_components.check_inherit_from_app  IS 'Whether to inherit health check configuration from the parent app';
 
 -- ================================================================================
 -- SECTION 3: INCIDENTS AND MAINTENANCE
@@ -297,9 +300,13 @@ CREATE TABLE public.status_incidents (
     last_modified_date_technical BIGINT       NOT NULL
 );
 
-CREATE INDEX idx_status_incidents_app     ON public.status_incidents (app_id);
-CREATE INDEX idx_status_incidents_status  ON public.status_incidents (status);
-CREATE INDEX idx_status_incidents_started ON public.status_incidents (started_at);
+CREATE INDEX idx_status_incidents_app    ON public.status_incidents (app_id);
+CREATE INDEX idx_status_incidents_status ON public.status_incidents (status);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_status_incidents_started
+    ON public.status_incidents USING BRIN (started_at) WITH (pages_per_range = 128);
+-- Composite index for app_id + status lookups on the public status page (V16)
+CREATE INDEX idx_status_incidents_app_status ON public.status_incidents (app_id, status);
 
 COMMENT ON TABLE  public.status_incidents          IS 'Incidents representing service disruptions or outages for an application';
 COMMENT ON COLUMN public.status_incidents.status   IS 'Current status of the incident (INVESTIGATING, IDENTIFIED, MONITORING, RESOLVED)';
@@ -325,7 +332,9 @@ CREATE TABLE public.status_incident_updates (
 );
 
 CREATE INDEX idx_status_incident_updates_incident ON public.status_incident_updates (incident_id);
-CREATE INDEX idx_status_incident_updates_time     ON public.status_incident_updates (update_time);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_status_incident_updates_time
+    ON public.status_incident_updates USING BRIN (update_time) WITH (pages_per_range = 128);
 
 COMMENT ON TABLE  public.status_incident_updates             IS 'Timeline of status updates and messages associated with an incident';
 COMMENT ON COLUMN public.status_incident_updates.incident_id IS 'Reference to the incident this update belongs to';
@@ -374,7 +383,9 @@ CREATE TABLE public.status_maintenance (
 
 CREATE INDEX idx_status_maintenance_app    ON public.status_maintenance (app_id);
 CREATE INDEX idx_status_maintenance_status ON public.status_maintenance (status);
-CREATE INDEX idx_status_maintenance_starts ON public.status_maintenance (starts_at);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_status_maintenance_starts
+    ON public.status_maintenance USING BRIN (starts_at) WITH (pages_per_range = 128);
 
 COMMENT ON TABLE  public.status_maintenance        IS 'Scheduled maintenance windows for an application';
 COMMENT ON COLUMN public.status_maintenance.status IS 'Current status (SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED)';
@@ -439,7 +450,9 @@ CREATE UNIQUE INDEX uk_uptime_history_component_date
 
 CREATE INDEX idx_uptime_history_app_date       ON public.status_uptime_history (app_id, record_date);
 CREATE INDEX idx_uptime_history_component_date ON public.status_uptime_history (component_id, record_date);
-CREATE INDEX idx_uptime_history_date           ON public.status_uptime_history (record_date);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_uptime_history_date
+    ON public.status_uptime_history USING BRIN (record_date) WITH (pages_per_range = 128);
 
 COMMENT ON TABLE  public.status_uptime_history                   IS 'Daily uptime history for apps and components — used to display the 90-day uptime chart';
 COMMENT ON COLUMN public.status_uptime_history.uptime_percentage IS 'Calculated uptime percentage for the day';
@@ -493,12 +506,16 @@ CREATE TABLE public.platform_events (
     created_date_technical BIGINT       NOT NULL
 );
 
-CREATE INDEX idx_platform_events_app_id                  ON public.platform_events (app_id);
-CREATE INDEX idx_platform_events_component_id            ON public.platform_events (component_id);
-CREATE INDEX idx_platform_events_severity                ON public.platform_events (severity);
-CREATE INDEX idx_platform_events_event_time              ON public.platform_events (event_time);
-CREATE INDEX idx_platform_events_created_date_technical  ON public.platform_events (created_date_technical);
-CREATE INDEX idx_platform_events_message_search          ON public.platform_events USING gin (to_tsvector('english', message));
+CREATE INDEX idx_platform_events_app_id       ON public.platform_events (app_id);
+CREATE INDEX idx_platform_events_component_id ON public.platform_events (component_id);
+CREATE INDEX idx_platform_events_severity     ON public.platform_events (severity);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_platform_events_event_time
+    ON public.platform_events USING BRIN (event_time) WITH (pages_per_range = 32);
+-- BRIN index for monotonically increasing epoch-millis timestamp (V18)
+CREATE INDEX idx_platform_events_created_date_technical
+    ON public.platform_events USING BRIN (created_date_technical) WITH (pages_per_range = 32);
+CREATE INDEX idx_platform_events_message_search ON public.platform_events USING gin (to_tsvector('english', message));
 
 COMMENT ON TABLE  public.platform_events          IS 'Events logged from platforms and components for monitoring and debugging';
 COMMENT ON COLUMN public.platform_events.severity IS 'Severity level: INFO, WARNING, ERROR, CRITICAL';
@@ -535,23 +552,28 @@ INSERT INTO public.health_check_settings (setting_key, setting_value, descriptio
 
 -------------------------------------------------------------------------------
 -- TABLE: log_api_keys
--- API keys used to authenticate log ingestion requests
+-- API keys used to authenticate log ingestion requests.
+-- NOTE: The plaintext api_key column was replaced in V15/V17 with a SHA-256
+-- hash (key_hash) plus an 8-character display prefix (key_prefix).
 -------------------------------------------------------------------------------
 CREATE TABLE public.log_api_keys (
     id                     UUID         PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
     tenant_id              UUID         REFERENCES public.tenants (id) ON UPDATE CASCADE ON DELETE CASCADE,
     name                   VARCHAR(255) NOT NULL,
-    api_key                VARCHAR(255) NOT NULL,
+    key_hash               VARCHAR(64)  NOT NULL,
+    key_prefix             VARCHAR(8)   NOT NULL,
     is_active              BOOLEAN      DEFAULT true,
     created_date           TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_date_technical BIGINT       NOT NULL
+    created_date_technical BIGINT       NOT NULL,
+    CONSTRAINT uq_log_api_keys_key_hash UNIQUE (key_hash)
 );
 
-CREATE UNIQUE INDEX idx_log_api_keys_key    ON public.log_api_keys (api_key);
-CREATE INDEX        idx_log_api_keys_tenant ON public.log_api_keys (tenant_id);
+CREATE INDEX idx_log_api_keys_tenant ON public.log_api_keys (tenant_id);
 
-COMMENT ON TABLE  public.log_api_keys         IS 'API keys used to authenticate log ingestion via REST API';
-COMMENT ON COLUMN public.log_api_keys.api_key IS 'The secret API key value sent in the X-Log-Api-Key request header';
+COMMENT ON TABLE  public.log_api_keys           IS 'API keys used to authenticate log ingestion via REST API';
+COMMENT ON COLUMN public.log_api_keys.key_hash  IS 'SHA-256 hex digest of the API key, used for secure lookup';
+COMMENT ON COLUMN public.log_api_keys.key_prefix IS 'First 8 characters of the original key for display purposes only';
+COMMENT ON COLUMN public.log_api_keys.is_active  IS 'Whether this key is currently valid for ingestion';
 
 -------------------------------------------------------------------------------
 -- TABLE: drop_rules
@@ -594,14 +616,19 @@ CREATE TABLE public.logs (
     created_date_technical BIGINT       NOT NULL
 );
 
-CREATE INDEX idx_logs_timestamp  ON public.logs (log_timestamp DESC);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_logs_timestamp
+    ON public.logs USING BRIN (log_timestamp) WITH (pages_per_range = 32);
 CREATE INDEX idx_logs_level      ON public.logs (level);
 CREATE INDEX idx_logs_service    ON public.logs (service);
 CREATE INDEX idx_logs_tenant     ON public.logs (tenant_id);
 CREATE INDEX idx_logs_trace_id   ON public.logs (trace_id)   WHERE trace_id IS NOT NULL;
 CREATE INDEX idx_logs_request_id ON public.logs (request_id) WHERE request_id IS NOT NULL;
+-- GIN trigram index for LIKE '%search%' queries (V16)
+CREATE INDEX idx_logs_message_trgm
+    ON public.logs USING gin (lower(message) gin_trgm_ops);
 
-COMMENT ON TABLE  public.logs              IS 'Main log entry storage — accepts logs via REST ingestion endpoint';
+COMMENT ON TABLE  public.logs               IS 'Main log entry storage — accepts logs via REST ingestion endpoint';
 COMMENT ON COLUMN public.logs.log_timestamp IS 'The timestamp of the log event (from the producing service)';
 COMMENT ON COLUMN public.logs.level         IS 'Severity level: DEBUG, INFO, WARNING, ERROR, CRITICAL';
 COMMENT ON COLUMN public.logs.metadata      IS 'Optional JSON object with arbitrary per-service fields';
@@ -623,10 +650,14 @@ CREATE TABLE public.log_metrics (
     created_date_technical BIGINT       NOT NULL
 );
 
-CREATE INDEX        idx_log_metrics_bucket  ON public.log_metrics (bucket DESC);
+-- BRIN index for append-ordered timeseries column (V18)
+CREATE INDEX idx_log_metrics_bucket
+    ON public.log_metrics USING BRIN (bucket) WITH (pages_per_range = 64);
 CREATE INDEX        idx_log_metrics_service ON public.log_metrics (service);
 CREATE INDEX        idx_log_metrics_tenant  ON public.log_metrics (tenant_id);
 CREATE UNIQUE INDEX idx_log_metrics_unique  ON public.log_metrics (tenant_id, service, level, bucket, bucket_type);
+-- Composite index for alert rule evaluation (V16)
+CREATE INDEX idx_log_metrics_service_level_bucket ON public.log_metrics (service, level, bucket DESC);
 
 COMMENT ON TABLE  public.log_metrics             IS 'Pre-aggregated log counts per service+level per time bucket for dashboards and alerting';
 COMMENT ON COLUMN public.log_metrics.bucket      IS 'Start of the time bucket (truncated to minute or hour)';
@@ -657,15 +688,15 @@ CREATE TABLE public.alert_rules (
 CREATE INDEX idx_alert_rules_tenant ON public.alert_rules (tenant_id);
 CREATE INDEX idx_alert_rules_active ON public.alert_rules (is_active);
 
-COMMENT ON TABLE  public.alert_rules                    IS 'Rules that fire notifications when log counts exceed thresholds';
-COMMENT ON COLUMN public.alert_rules.service            IS 'Service to watch. NULL matches all services.';
-COMMENT ON COLUMN public.alert_rules.level              IS 'Log level to watch. NULL matches all levels.';
-COMMENT ON COLUMN public.alert_rules.threshold_count    IS 'Fire alert when count exceeds this value within window_minutes';
-COMMENT ON COLUMN public.alert_rules.window_minutes     IS 'Rolling time window in minutes for threshold evaluation';
-COMMENT ON COLUMN public.alert_rules.cooldown_minutes   IS 'Minimum minutes between repeated alerts for the same rule';
-COMMENT ON COLUMN public.alert_rules.notification_type  IS 'Delivery channel: EMAIL, SLACK, or WEBHOOK';
+COMMENT ON TABLE  public.alert_rules                     IS 'Rules that fire notifications when log counts exceed thresholds';
+COMMENT ON COLUMN public.alert_rules.service             IS 'Service to watch. NULL matches all services.';
+COMMENT ON COLUMN public.alert_rules.level               IS 'Log level to watch. NULL matches all levels.';
+COMMENT ON COLUMN public.alert_rules.threshold_count     IS 'Fire alert when count exceeds this value within window_minutes';
+COMMENT ON COLUMN public.alert_rules.window_minutes      IS 'Rolling time window in minutes for threshold evaluation';
+COMMENT ON COLUMN public.alert_rules.cooldown_minutes    IS 'Minimum minutes between repeated alerts for the same rule';
+COMMENT ON COLUMN public.alert_rules.notification_type   IS 'Delivery channel: EMAIL, SLACK, or WEBHOOK';
 COMMENT ON COLUMN public.alert_rules.notification_target IS 'Email address, Slack webhook URL, or generic HTTP URL';
-COMMENT ON COLUMN public.alert_rules.last_fired_at      IS 'When this rule last triggered an alert (for cooldown check)';
+COMMENT ON COLUMN public.alert_rules.last_fired_at       IS 'When this rule last triggered an alert (for cooldown check)';
 
 -- ================================================================================
 -- SECTION 6: PROCESS MINING
@@ -676,11 +707,11 @@ COMMENT ON COLUMN public.alert_rules.last_fired_at      IS 'When this rule last 
 -- Per-platform log retention policies
 -------------------------------------------------------------------------------
 CREATE TABLE public.process_mining_retention_rules (
-    id                     UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id              UUID      REFERENCES public.tenants (id) ON DELETE CASCADE,
-    platform_id            UUID      REFERENCES public.status_platforms (id) ON DELETE CASCADE,
-    retention_days         INT       NOT NULL DEFAULT 30,
-    enabled                BOOLEAN   NOT NULL DEFAULT true,
+    id                     UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id              UUID        REFERENCES public.tenants (id) ON DELETE CASCADE,
+    platform_id            UUID        REFERENCES public.status_platforms (id) ON DELETE CASCADE,
+    retention_days         INT         NOT NULL DEFAULT 30,
+    enabled                BOOLEAN     NOT NULL DEFAULT true,
     last_run_at            TIMESTAMPTZ,
     last_run_deleted_count INT,
     created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -690,9 +721,9 @@ CREATE TABLE public.process_mining_retention_rules (
 CREATE INDEX idx_retention_rules_tenant   ON public.process_mining_retention_rules (tenant_id);
 CREATE INDEX idx_retention_rules_platform ON public.process_mining_retention_rules (platform_id);
 
-COMMENT ON TABLE  public.process_mining_retention_rules                  IS 'Per-platform log retention policies for process mining data';
-COMMENT ON COLUMN public.process_mining_retention_rules.retention_days   IS 'Number of days to retain logs for this platform';
-COMMENT ON COLUMN public.process_mining_retention_rules.last_run_at      IS 'Timestamp of the last retention cleanup run';
+COMMENT ON TABLE  public.process_mining_retention_rules                        IS 'Per-platform log retention policies for process mining data';
+COMMENT ON COLUMN public.process_mining_retention_rules.retention_days         IS 'Number of days to retain logs for this platform';
+COMMENT ON COLUMN public.process_mining_retention_rules.last_run_at            IS 'Timestamp of the last retention cleanup run';
 COMMENT ON COLUMN public.process_mining_retention_rules.last_run_deleted_count IS 'Number of records deleted in the last retention run';
 
 -- ================================================================================
