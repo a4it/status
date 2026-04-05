@@ -314,11 +314,34 @@ function renderCaseDetail(caseObj) {
 
 function switchDetailTab(tab) {
     activeDetailTab = tab;
+
+    const detail     = document.getElementById('tlDetail');
+    const rightPanel = document.querySelector('.tl-right');
+
     document.getElementById('tlTabTimeline').classList.toggle('active', tab === 'timeline');
     document.getElementById('tlTabBpmn').classList.toggle('active', tab === 'bpmn');
     document.getElementById('tlTimelinePanel').style.display = tab === 'timeline' ? '' : 'none';
-    document.getElementById('tlBpmnPanel').style.display     = tab === 'bpmn'     ? '' : 'none';
-    if (tab === 'bpmn' && currentCaseObj) renderBpmnDiagram(currentCaseObj);
+
+    if (tab === 'bpmn') {
+        // Stretch the flex chain so the canvas fills every pixel of the right panel
+        if (rightPanel) { rightPanel.style.overflow = 'hidden'; }
+        detail.style.padding       = '0';
+        detail.style.display       = 'flex';
+        detail.style.flexDirection = 'column';
+        detail.style.overflow      = 'hidden';
+        const bpmnPanel = document.getElementById('tlBpmnPanel');
+        bpmnPanel.style.cssText = 'display:flex;flex-direction:column;flex:1;min-height:0;padding:0 16px 16px;';
+        // Render after the browser has reflowed with the new flex dimensions
+        requestAnimationFrame(() => renderBpmnDiagram(currentCaseObj));
+    } else {
+        // Restore normal scrollable layout
+        if (rightPanel) { rightPanel.style.overflow = ''; }
+        detail.style.padding       = '';
+        detail.style.display       = '';
+        detail.style.flexDirection = '';
+        detail.style.overflow      = '';
+        document.getElementById('tlBpmnPanel').style.cssText = 'display:none;';
+    }
 }
 
 function generateBpmnXml(caseObj) {
@@ -509,7 +532,13 @@ async function renderBpmnDiagram(caseObj) {
     try {
         const xml = generateBpmnXml(caseObj);
         await bpmnViewer.importXML(xml);
-        bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+        // Defer zoom until after browser reflow so container dimensions are known
+        requestAnimationFrame(() => {
+            bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+        });
+        // Remove the bpmn.io watermark logo
+        const logo = container.querySelector('.bjs-powered-by');
+        if (logo) logo.remove();
     } catch (err) {
         console.error('BPMN render error:', err);
         container.innerHTML = `<div class="tl-bpmn-error">Failed to render BPMN: ${escapeHtml(err.message || String(err))}</div>`;
@@ -923,3 +952,13 @@ function drillDownSingle(caseId) {
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => initPage());
+
+// Re-fit the BPMN diagram when the window is resized
+let _bpmnResizeTimer = null;
+window.addEventListener('resize', () => {
+    if (activeDetailTab !== 'bpmn' || !bpmnViewer) return;
+    clearTimeout(_bpmnResizeTimer);
+    _bpmnResizeTimer = setTimeout(() => {
+        bpmnViewer.get('canvas').zoom('fit-viewport', 'auto');
+    }, 150);
+});
