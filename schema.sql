@@ -1,7 +1,7 @@
 -- ================================================================================
 -- Status Monitoring Application — Complete Database DDL
 -- ================================================================================
--- Auto-generated from Flyway migrations V1 through V18.
+-- Auto-generated from Flyway migrations V1 through V20.
 -- Represents the final schema state after all migrations have been applied.
 -- Target: PostgreSQL 14+
 -- ================================================================================
@@ -765,6 +765,256 @@ COMMENT ON TABLE  public.process_mining_retention_rules IS 'Per-platform log ret
 COMMENT ON COLUMN public.process_mining_retention_rules.retention_days IS 'Number of days to retain logs for this platform';
 COMMENT ON COLUMN public.process_mining_retention_rules.last_run_at IS 'Timestamp of the last retention cleanup run';
 COMMENT ON COLUMN public.process_mining_retention_rules.last_run_deleted_count IS 'Number of records deleted in the last retention run';
+
+-- ================================================================================
+-- SECTION 7: SCHEDULER ENGINE (V19 + V20)
+-- ================================================================================
+
+-- ================================================================================
+-- TABLE: public.scheduler_jdbc_datasources
+-- Reusable JDBC datasource configurations for SQL scheduler jobs
+-- ================================================================================
+
+CREATE TABLE public.scheduler_jdbc_datasources (
+    id                           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id                    UUID         NOT NULL REFERENCES public.tenants (id),
+    organization_id              UUID         REFERENCES public.organizations (id),
+    name                         VARCHAR(255) NOT NULL,
+    description                  TEXT,
+    db_type                      VARCHAR(50)  NOT NULL,
+    host                         VARCHAR(1024),
+    port                         INTEGER,
+    database_name                VARCHAR(255),
+    schema_name                  VARCHAR(255),
+    jdbc_url_override            VARCHAR(2048),
+    username                     VARCHAR(255),
+    password_enc                 VARCHAR(2048),
+    min_pool_size                INTEGER      NOT NULL DEFAULT 1,
+    max_pool_size                INTEGER      NOT NULL DEFAULT 5,
+    connection_timeout_ms        INTEGER      NOT NULL DEFAULT 5000,
+    extra_properties             TEXT,
+    enabled                      BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_by                   VARCHAR(255),
+    created_date                 TIMESTAMP WITH TIME ZONE,
+    created_date_technical       BIGINT,
+    last_modified_by             VARCHAR(255),
+    last_modified_date           TIMESTAMP WITH TIME ZONE,
+    last_modified_date_technical BIGINT
+);
+
+CREATE INDEX idx_scheduler_datasources_tenant ON public.scheduler_jdbc_datasources (tenant_id);
+
+COMMENT ON TABLE  public.scheduler_jdbc_datasources IS 'Reusable JDBC datasource configurations for SQL scheduler jobs';
+COMMENT ON COLUMN public.scheduler_jdbc_datasources.db_type IS 'Database type: POSTGRESQL, MYSQL, ORACLE, MSSQL, etc.';
+COMMENT ON COLUMN public.scheduler_jdbc_datasources.password_enc IS 'AES-256-GCM encrypted password; decrypted by service layer';
+COMMENT ON COLUMN public.scheduler_jdbc_datasources.jdbc_url_override IS 'If set, overrides host/port/database_name for full custom JDBC URL';
+COMMENT ON COLUMN public.scheduler_jdbc_datasources.extra_properties IS 'Additional key=value JDBC connection properties (one per line)';
+
+-- ================================================================================
+-- TABLE: public.scheduler_jobs
+-- Cron-scheduled jobs managed by the scheduler engine
+-- ================================================================================
+
+CREATE TABLE public.scheduler_jobs (
+    id                           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    tenant_id                    UUID         NOT NULL REFERENCES public.tenants (id),
+    organization_id              UUID         REFERENCES public.organizations (id),
+    name                         VARCHAR(255) NOT NULL,
+    description                  TEXT,
+    job_type                     VARCHAR(50)  NOT NULL,
+    cron_expression              VARCHAR(255) NOT NULL,
+    time_zone                    VARCHAR(100) NOT NULL DEFAULT 'UTC',
+    enabled                      BOOLEAN      NOT NULL DEFAULT TRUE,
+    allow_concurrent             BOOLEAN      NOT NULL DEFAULT FALSE,
+    status                       VARCHAR(50)  NOT NULL DEFAULT 'ACTIVE',
+    last_run_at                  TIMESTAMP WITH TIME ZONE,
+    next_run_at                  TIMESTAMP WITH TIME ZONE,
+    last_run_status              VARCHAR(50),
+    consecutive_failures         INTEGER      NOT NULL DEFAULT 0,
+    max_retry_attempts           INTEGER      NOT NULL DEFAULT 0,
+    retry_delay_seconds          INTEGER      NOT NULL DEFAULT 60,
+    timeout_seconds              INTEGER      NOT NULL DEFAULT 300,
+    max_output_bytes             INTEGER      NOT NULL DEFAULT 102400,
+    tags                         TEXT,
+    created_by                   VARCHAR(255),
+    created_date                 TIMESTAMP WITH TIME ZONE,
+    created_date_technical       BIGINT,
+    last_modified_by             VARCHAR(255),
+    last_modified_date           TIMESTAMP WITH TIME ZONE,
+    last_modified_date_technical BIGINT
+);
+
+CREATE INDEX idx_scheduler_jobs_tenant   ON public.scheduler_jobs (tenant_id);
+CREATE INDEX idx_scheduler_jobs_status   ON public.scheduler_jobs (tenant_id, status);
+CREATE INDEX idx_scheduler_jobs_next_run ON public.scheduler_jobs (next_run_at) WHERE enabled = TRUE;
+
+COMMENT ON TABLE  public.scheduler_jobs IS 'Cron-scheduled jobs managed by the scheduler engine';
+COMMENT ON COLUMN public.scheduler_jobs.job_type IS 'Execution type: PROGRAM, SQL, REST, SOAP';
+COMMENT ON COLUMN public.scheduler_jobs.cron_expression IS 'Standard 5-field cron expression (minute hour dom month dow)';
+COMMENT ON COLUMN public.scheduler_jobs.allow_concurrent IS 'When false, skips a run if the previous is still executing';
+COMMENT ON COLUMN public.scheduler_jobs.status IS 'ACTIVE, PAUSED, or DISABLED';
+COMMENT ON COLUMN public.scheduler_jobs.consecutive_failures IS 'Incremented on each failure; reset to 0 on success';
+COMMENT ON COLUMN public.scheduler_jobs.tags IS 'Comma-separated tags for filtering and grouping';
+
+-- ================================================================================
+-- TABLE: public.scheduler_job_runs
+-- Individual execution records for each scheduler job run
+-- ================================================================================
+
+CREATE TABLE public.scheduler_job_runs (
+    id                      UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id                  UUID    NOT NULL REFERENCES public.scheduler_jobs (id) ON DELETE CASCADE,
+    tenant_id               UUID    NOT NULL REFERENCES public.tenants (id),
+    trigger_type            VARCHAR(50),
+    status                  VARCHAR(50),
+    attempt_number          INTEGER NOT NULL DEFAULT 1,
+    started_at              TIMESTAMP WITH TIME ZONE,
+    finished_at             TIMESTAMP WITH TIME ZONE,
+    duration_ms             BIGINT,
+    stdout_output           TEXT,
+    stderr_output           TEXT,
+    exit_code               INTEGER,
+    http_status_code        INTEGER,
+    rows_affected           BIGINT,
+    response_body           TEXT,
+    error_message           TEXT,
+    triggered_by            VARCHAR(255),
+    created_date_technical  BIGINT
+);
+
+CREATE INDEX idx_scheduler_runs_job       ON public.scheduler_job_runs (job_id, started_at DESC);
+CREATE INDEX idx_scheduler_runs_tenant    ON public.scheduler_job_runs (tenant_id);
+CREATE INDEX idx_scheduler_runs_status    ON public.scheduler_job_runs (job_id, status);
+CREATE INDEX idx_scheduler_runs_technical ON public.scheduler_job_runs USING BRIN (created_date_technical);
+
+COMMENT ON TABLE  public.scheduler_job_runs IS 'Execution history for each scheduler job run';
+COMMENT ON COLUMN public.scheduler_job_runs.trigger_type IS 'SCHEDULED or MANUAL';
+COMMENT ON COLUMN public.scheduler_job_runs.status IS 'RUNNING, SUCCESS, FAILURE, TIMEOUT, SKIPPED';
+COMMENT ON COLUMN public.scheduler_job_runs.attempt_number IS 'Retry attempt number; 1 = first attempt';
+COMMENT ON COLUMN public.scheduler_job_runs.rows_affected IS 'Rows affected (SQL jobs only)';
+COMMENT ON COLUMN public.scheduler_job_runs.http_status_code IS 'HTTP response status code (REST/SOAP jobs only)';
+
+-- ================================================================================
+-- TABLE: public.scheduler_program_configs
+-- Program/command execution configuration for PROGRAM-type jobs
+-- ================================================================================
+
+CREATE TABLE public.scheduler_program_configs (
+    id                UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id            UUID    NOT NULL UNIQUE REFERENCES public.scheduler_jobs (id) ON DELETE CASCADE,
+    command           VARCHAR(2048),
+    arguments         TEXT,
+    working_directory VARCHAR(1024),
+    environment_vars  TEXT,
+    shell_wrap        BOOLEAN NOT NULL DEFAULT FALSE,
+    shell_path        VARCHAR(512) DEFAULT '/bin/bash',
+    run_as_user       VARCHAR(255)
+);
+
+COMMENT ON TABLE  public.scheduler_program_configs IS 'Program execution config for PROGRAM-type scheduler jobs';
+COMMENT ON COLUMN public.scheduler_program_configs.shell_wrap IS 'When true, wraps the command in a shell invocation';
+COMMENT ON COLUMN public.scheduler_program_configs.environment_vars IS 'KEY=VALUE pairs (one per line) injected into the process environment';
+
+-- ================================================================================
+-- TABLE: public.scheduler_sql_configs
+-- SQL execution configuration for SQL-type jobs
+-- ================================================================================
+
+CREATE TABLE public.scheduler_sql_configs (
+    id                    UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id                UUID    NOT NULL UNIQUE REFERENCES public.scheduler_jobs (id) ON DELETE CASCADE,
+    datasource_id         UUID    REFERENCES public.scheduler_jdbc_datasources (id),
+    inline_db_type        VARCHAR(50),
+    inline_jdbc_url       VARCHAR(2048),
+    inline_username       VARCHAR(255),
+    inline_password_enc   VARCHAR(2048),
+    sql_statement         TEXT,
+    sql_type              VARCHAR(50)  NOT NULL DEFAULT 'DML',
+    capture_result_set    BOOLEAN      NOT NULL DEFAULT FALSE,
+    max_result_rows       INTEGER      NOT NULL DEFAULT 100,
+    connection_timeout_ms INTEGER      NOT NULL DEFAULT 5000,
+    query_timeout_seconds INTEGER      NOT NULL DEFAULT 60
+);
+
+COMMENT ON TABLE  public.scheduler_sql_configs IS 'SQL execution config for SQL-type scheduler jobs';
+COMMENT ON COLUMN public.scheduler_sql_configs.datasource_id IS 'References a reusable datasource; mutually exclusive with inline_* fields';
+COMMENT ON COLUMN public.scheduler_sql_configs.sql_type IS 'DML (update/delete) or QUERY (SELECT with optional result capture)';
+COMMENT ON COLUMN public.scheduler_sql_configs.capture_result_set IS 'When true, stores the result set in the job run record';
+
+-- ================================================================================
+-- TABLE: public.scheduler_rest_configs
+-- REST/HTTP execution configuration for REST-type jobs
+-- ================================================================================
+
+CREATE TABLE public.scheduler_rest_configs (
+    id                                UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id                            UUID    NOT NULL UNIQUE REFERENCES public.scheduler_jobs (id) ON DELETE CASCADE,
+    http_method                       VARCHAR(10)  NOT NULL DEFAULT 'GET',
+    url                               VARCHAR(4096),
+    request_body                      TEXT,
+    content_type                      VARCHAR(255) DEFAULT 'application/json',
+    headers                           TEXT,
+    query_params                      TEXT,
+    auth_type                         VARCHAR(50)  NOT NULL DEFAULT 'NONE',
+    auth_username                     VARCHAR(255),
+    auth_password_enc                 VARCHAR(2048),
+    auth_token_enc                    VARCHAR(2048),
+    auth_api_key_name                 VARCHAR(255),
+    auth_api_key_value_enc            VARCHAR(2048),
+    auth_api_key_location             VARCHAR(50),
+    auth_oauth2_token_url             VARCHAR(4096),
+    auth_oauth2_client_id             VARCHAR(1024),
+    auth_oauth2_client_secret_enc     VARCHAR(2048),
+    auth_oauth2_scope                 VARCHAR(1024),
+    ssl_verify                        BOOLEAN NOT NULL DEFAULT TRUE,
+    ssl_truststore_path               VARCHAR(2048),
+    ssl_truststore_password_enc       VARCHAR(2048),
+    connect_timeout_ms                INTEGER NOT NULL DEFAULT 5000,
+    read_timeout_ms                   INTEGER NOT NULL DEFAULT 30000,
+    follow_redirects                  BOOLEAN NOT NULL DEFAULT TRUE,
+    max_response_bytes                INTEGER NOT NULL DEFAULT 102400,
+    assert_status_code                INTEGER,
+    assert_body_contains              TEXT,
+    assert_json_path                  VARCHAR(1024),
+    assert_json_value                 VARCHAR(1024)
+);
+
+COMMENT ON TABLE  public.scheduler_rest_configs IS 'REST/HTTP execution config for REST-type scheduler jobs';
+COMMENT ON COLUMN public.scheduler_rest_configs.auth_type IS 'NONE, BASIC, BEARER, API_KEY, or OAUTH2_CLIENT_CREDENTIALS';
+COMMENT ON COLUMN public.scheduler_rest_configs.assert_status_code IS 'Expected HTTP status code; job fails if response differs';
+COMMENT ON COLUMN public.scheduler_rest_configs.assert_body_contains IS 'Substring that must appear in the response body';
+COMMENT ON COLUMN public.scheduler_rest_configs.assert_json_path IS 'JSONPath expression to extract a value for assertion';
+
+-- ================================================================================
+-- TABLE: public.scheduler_soap_configs
+-- SOAP/WS execution configuration for SOAP-type jobs
+-- ================================================================================
+
+CREATE TABLE public.scheduler_soap_configs (
+    id                      UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_id                  UUID    NOT NULL UNIQUE REFERENCES public.scheduler_jobs (id) ON DELETE CASCADE,
+    wsdl_url                VARCHAR(4096),
+    endpoint_url            VARCHAR(4096),
+    service_name            VARCHAR(512),
+    port_name               VARCHAR(512),
+    operation_name          VARCHAR(512),
+    soap_action             VARCHAR(1024),
+    soap_version            VARCHAR(10)  NOT NULL DEFAULT '1.1',
+    soap_envelope           TEXT,
+    extra_headers           TEXT,
+    auth_type               VARCHAR(50)  NOT NULL DEFAULT 'NONE',
+    auth_username           VARCHAR(255),
+    auth_password_enc       VARCHAR(2048),
+    auth_token_enc          VARCHAR(2048),
+    ssl_verify              BOOLEAN NOT NULL DEFAULT TRUE,
+    connect_timeout_ms      INTEGER NOT NULL DEFAULT 5000,
+    read_timeout_ms         INTEGER NOT NULL DEFAULT 60000,
+    max_response_bytes      INTEGER NOT NULL DEFAULT 524288
+);
+
+COMMENT ON TABLE  public.scheduler_soap_configs IS 'SOAP/WS execution config for SOAP-type scheduler jobs';
+COMMENT ON COLUMN public.scheduler_soap_configs.soap_version IS '1.1 or 1.2';
+COMMENT ON COLUMN public.scheduler_soap_configs.soap_envelope IS 'Raw SOAP XML envelope template';
 
 -- ================================================================================
 -- END OF SCHEMA
