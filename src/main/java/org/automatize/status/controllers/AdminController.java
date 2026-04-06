@@ -304,4 +304,18 @@ public class AdminController {
         addCommonAttributes(model);
         return "admin/data-retention";
     }
+
+    @GetMapping("/scheduler")
+    public String scheduler(Model model) {
+        model.addAttribute("activeNav", "scheduler");
+        addCommonAttributes(model);
+        return "admin/scheduler/jobs";
+    }
+
+    @GetMapping("/scheduler/datasources")
+    public String schedulerDatasources(Model model) {
+        model.addAttribute("activeNav", "scheduler-datasources");
+        addCommonAttributes(model);
+        return "admin/scheduler/datasources";
+    }
 }
