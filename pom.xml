@@ -19,7 +19,7 @@
     <description>Status Monitoring Solution</description>
 
     <properties>
-        <revision>0.0.97-SNAPSHOT</revision>
+        <revision>0.0.98-SNAPSHOT</revision>
         <java.version>25</java.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
