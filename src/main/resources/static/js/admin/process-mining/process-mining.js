@@ -1031,6 +1031,20 @@ class HighPerformanceTimelineVisualization {
         const dx = tgt.x - src.x;
         const dy = tgt.y - src.y;
 
+        // ── Self-loop: arc above the node (matches drawEdge self-loop rendering) ──
+        if (src === tgt) {
+            const lift = 32;
+            const startX = src.x - hw * 0.35;
+            const startY = src.y - hh;
+            const endX   = src.x + hw * 0.35;
+            const endY   = src.y - hh;
+            return {
+                startX, startY, endX, endY,
+                cp1x: startX, cp1y: startY - lift,
+                cp2x: endX,   cp2y: endY   - lift
+            };
+        }
+
         if (dy > 20) {
             // ── Forward (downward) edge ──────────────────────────────────────
             // Always exit from bottom-center, enter top-center.
