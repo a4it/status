@@ -3,7 +3,7 @@
 -- ================================================================================
 -- Run this file against a fresh PostgreSQL database to create the full schema.
 -- Database: uptime (PostgreSQL 14+)
--- Auto-generated from Flyway migrations V1 through V18.
+-- Auto-generated from Flyway migrations V1 through V20.
 -- Represents the final schema state after all migrations have been applied.
 -- ================================================================================
 
