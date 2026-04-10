@@ -30,11 +30,12 @@
             <div class="card-body py-3">
                 <ul class="steps steps-counter">
                     <li class="step-item active" id="step-indicator-1">Welcome</li>
-                    <li class="step-item" id="step-indicator-2">Tenant</li>
-                    <li class="step-item" id="step-indicator-3">Organization</li>
-                    <li class="step-item" id="step-indicator-4">Admin Account</li>
-                    <li class="step-item" id="step-indicator-5">Configuration</li>
-                    <li class="step-item" id="step-indicator-6">Done</li>
+                    <li class="step-item" id="step-indicator-2">Database</li>
+                    <li class="step-item" id="step-indicator-3">Tenant</li>
+                    <li class="step-item" id="step-indicator-4">Organization</li>
+                    <li class="step-item" id="step-indicator-5">Admin Account</li>
+                    <li class="step-item" id="step-indicator-6">Configuration</li>
+                    <li class="step-item" id="step-indicator-7">Done</li>
                 </ul>
             </div>
         </div>
@@ -97,9 +98,69 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- STEP 2: Create Tenant -->
+        <!-- STEP 2: Database Connection -->
         <!-- ================================================================ -->
         <div class="step-panel d-none" id="step-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ti ti-database me-2 text-primary"></i>Database Connection
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Verify your PostgreSQL connection. Pre-filled from current configuration — edit if needed, then test before continuing.
+                    </p>
+                    <div class="alert alert-danger d-none" id="step2-error"></div>
+                    <div class="mb-3">
+                        <label class="form-label required">JDBC URL</label>
+                        <input type="text" id="dbUrl" class="form-control font-monospace"
+                               placeholder="jdbc:postgresql://localhost:5432/status" autocomplete="off">
+                        <div class="form-hint">Format: <code>jdbc:postgresql://host:port/database</code></div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label required">Username</label>
+                            <input type="text" id="dbUsername" class="form-control"
+                                   placeholder="postgres" autocomplete="off">
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">Password</label>
+                            <div class="input-group input-group-flat">
+                                <input type="password" id="dbPassword" class="form-control"
+                                       placeholder="(enter to re-test)" autocomplete="new-password">
+                                <span class="input-group-text">
+                                    <a href="#" id="toggleDbPw" class="link-secondary" title="Toggle password">
+                                        <i class="ti ti-eye"></i>
+                                    </a>
+                                </span>
+                            </div>
+                            <div class="form-hint">Leave blank to test without password or to keep existing.</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex align-items-center gap-3">
+                        <button class="btn btn-outline-primary" id="testConnectionBtn" type="button">
+                            <i class="ti ti-plug me-1"></i>Test Connection
+                        </button>
+                        <span id="connection-test-result" class="d-none"></span>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <button class="btn btn-secondary" id="step2-back">
+                        <i class="ti ti-arrow-left me-1"></i> Back
+                    </button>
+                    <button class="btn btn-primary" id="step2-next" disabled
+                            data-original-text="Continue <i class='ti ti-arrow-right ms-1'></i>">
+                        Continue <i class="ti ti-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- STEP 3: Create Tenant -->
+        <!-- ================================================================ -->
+        <div class="step-panel d-none" id="step-3">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">
@@ -111,7 +172,7 @@
                         A tenant is the top-level grouping that contains all organizations and users.
                         Typically this is your company or product name.
                     </p>
-                    <div class="alert alert-danger d-none" id="step2-error"></div>
+                    <div class="alert alert-danger d-none" id="step3-error"></div>
                     <div class="mb-3">
                         <label class="form-label required">Tenant Name</label>
                         <input type="text" id="tenantName" class="form-control form-control-lg"
@@ -119,10 +180,10 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="step2-back">
+                    <button class="btn btn-secondary" id="step3-back">
                         <i class="ti ti-arrow-left me-1"></i> Back
                     </button>
-                    <button class="btn btn-primary" id="step2-next" data-original-text="Continue <i class='ti ti-arrow-right ms-1'></i>">
+                    <button class="btn btn-primary" id="step3-next" data-original-text="Continue <i class='ti ti-arrow-right ms-1'></i>">
                         Continue <i class="ti ti-arrow-right ms-1"></i>
                     </button>
                 </div>
@@ -130,9 +191,9 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- STEP 3: Create Organization -->
+        <!-- STEP 4: Create Organization -->
         <!-- ================================================================ -->
-        <div class="step-panel d-none" id="step-3">
+        <div class="step-panel d-none" id="step-4">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">
@@ -143,7 +204,7 @@
                     <p class="text-muted mb-4">
                         Organizations belong to a tenant and group your users together.
                     </p>
-                    <div class="alert alert-danger d-none" id="step3-error"></div>
+                    <div class="alert alert-danger d-none" id="step4-error"></div>
                     <div class="mb-3">
                         <label class="form-label required">Organization Name</label>
                         <input type="text" id="orgName" class="form-control"
@@ -165,10 +226,10 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="step3-back">
+                    <button class="btn btn-secondary" id="step4-back">
                         <i class="ti ti-arrow-left me-1"></i> Back
                     </button>
-                    <button class="btn btn-primary" id="step3-next" data-original-text="Continue <i class='ti ti-arrow-right ms-1'></i>">
+                    <button class="btn btn-primary" id="step4-next" data-original-text="Continue <i class='ti ti-arrow-right ms-1'></i>">
                         Continue <i class="ti ti-arrow-right ms-1"></i>
                     </button>
                 </div>
@@ -176,9 +237,9 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- STEP 4: Create Superadmin -->
+        <!-- STEP 5: Create Superadmin -->
         <!-- ================================================================ -->
-        <div class="step-panel d-none" id="step-4">
+        <div class="step-panel d-none" id="step-5">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">
@@ -190,7 +251,7 @@
                         This account will have full access to all tenants and settings.
                         Use a strong password and store it securely.
                     </p>
-                    <div class="alert alert-danger d-none" id="step4-error"></div>
+                    <div class="alert alert-danger d-none" id="step5-error"></div>
                     <div class="row g-3">
                         <div class="col-12 col-md-6">
                             <label class="form-label required">Username</label>
@@ -227,10 +288,10 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="step4-back">
+                    <button class="btn btn-secondary" id="step5-back">
                         <i class="ti ti-arrow-left me-1"></i> Back
                     </button>
-                    <button class="btn btn-primary" id="step4-next"
+                    <button class="btn btn-primary" id="step5-next"
                             data-original-text="Create Account &amp; Continue <i class='ti ti-arrow-right ms-1'></i>">
                         Create Account &amp; Continue <i class="ti ti-arrow-right ms-1"></i>
                     </button>
@@ -239,9 +300,9 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- STEP 5: Review Configuration (optional) -->
+        <!-- STEP 6: Review Configuration (optional) -->
         <!-- ================================================================ -->
-        <div class="step-panel d-none" id="step-5">
+        <div class="step-panel d-none" id="step-6">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <h3 class="card-title mb-0">
@@ -268,10 +329,10 @@
                     </div>
                 </div>
                 <div class="card-footer d-flex justify-content-between">
-                    <button class="btn btn-secondary" id="step5-skip">
+                    <button class="btn btn-secondary" id="step6-skip">
                         Skip <i class="ti ti-chevron-right ms-1"></i>
                     </button>
-                    <button class="btn btn-primary" id="step5-save"
+                    <button class="btn btn-primary" id="step6-save"
                             data-original-text="Save &amp; Continue <i class='ti ti-arrow-right ms-1'></i>">
                         Save &amp; Continue <i class="ti ti-arrow-right ms-1"></i>
                     </button>
@@ -280,9 +341,9 @@
         </div>
 
         <!-- ================================================================ -->
-        <!-- STEP 6: Done -->
+        <!-- STEP 7: Done -->
         <!-- ================================================================ -->
-        <div class="step-panel d-none" id="step-6">
+        <div class="step-panel d-none" id="step-7">
             <div class="card">
                 <div class="card-body text-center py-5">
                     <div class="mb-4">

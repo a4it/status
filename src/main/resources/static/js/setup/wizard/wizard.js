@@ -5,10 +5,12 @@
 // ============================================================================
 const wizardState = {
     currentStep: 1,
+    dbTested: false,          // step 2: connection tested successfully
+    dbChanged: false,         // step 2: credentials differ from loaded values
     tenantId: null,
     organizationId: null,
     propertiesChanged: false,
-    propertiesData: null  // cached from GET /api/setup/properties
+    propertiesData: null      // cached from GET /api/setup/properties
 };
 
 // ============================================================================
@@ -27,10 +29,7 @@ function showStep(n) {
     const panel = document.getElementById(`step-${n}`);
     if (panel) panel.classList.remove('d-none');
 
-    // In Tabler's steps component: only the CURRENT step gets 'active'.
-    // CSS rule .step-item.active~.step-item grays out everything after it automatically.
-    // Steps before the current one render in the primary color (completed look) by default.
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 7; i++) {
         const ind = document.getElementById(`step-indicator-${i}`);
         if (!ind) continue;
         ind.classList.remove('active');
@@ -40,7 +39,7 @@ function showStep(n) {
     wizardState.currentStep = n;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    if (n === 5) loadProperties();
+    if (n === 6) loadProperties();
 }
 
 // ============================================================================
@@ -50,35 +49,50 @@ function bindButtons() {
     // Step 1
     document.getElementById('step1-next').addEventListener('click', () => showStep(2));
 
-    // Step 2
+    // Step 2 – DB connection
     document.getElementById('step2-back').addEventListener('click', () => showStep(1));
-    document.getElementById('step2-next').addEventListener('click', handleStep2);
+    document.getElementById('step2-next').addEventListener('click', () => showStep(3));
+    document.getElementById('testConnectionBtn').addEventListener('click', handleTestConnection);
+    document.getElementById('toggleDbPw').addEventListener('click', (e) => {
+        e.preventDefault();
+        const pw = document.getElementById('dbPassword');
+        const icon = e.currentTarget.querySelector('i');
+        if (pw.type === 'password') { pw.type = 'text'; icon.className = 'ti ti-eye-off'; }
+        else { pw.type = 'password'; icon.className = 'ti ti-eye'; }
+    });
+    // Re-require test when credentials are edited
+    ['dbUrl', 'dbUsername', 'dbPassword'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            wizardState.dbTested = false;
+            document.getElementById('step2-next').disabled = true;
+            setConnectionResult(null);
+        });
+    });
 
-    // Step 3
+    // Step 3 – Tenant
     document.getElementById('step3-back').addEventListener('click', () => showStep(2));
     document.getElementById('step3-next').addEventListener('click', handleStep3);
 
-    // Step 4
+    // Step 4 – Organization
     document.getElementById('step4-back').addEventListener('click', () => showStep(3));
     document.getElementById('step4-next').addEventListener('click', handleStep4);
 
-    // Step 5
-    document.getElementById('step5-skip').addEventListener('click', () => showStep(6));
-    document.getElementById('step5-save').addEventListener('click', handleStep5Save);
+    // Step 5 – Admin
+    document.getElementById('step5-back').addEventListener('click', () => showStep(4));
+    document.getElementById('step5-next').addEventListener('click', handleStep5);
+
+    // Step 6 – Configuration
+    document.getElementById('step6-skip').addEventListener('click', () => showStep(7));
+    document.getElementById('step6-save').addEventListener('click', handleStep6Save);
     document.getElementById('downloadPropsBtn').addEventListener('click', handleDownload);
 
-    // Password toggle
+    // Password toggle (admin)
     document.getElementById('togglePw').addEventListener('click', (e) => {
         e.preventDefault();
         const pw = document.getElementById('adminPassword');
-        const icon = document.getElementById('togglePw').querySelector('i');
-        if (pw.type === 'password') {
-            pw.type = 'text';
-            icon.className = 'ti ti-eye-off';
-        } else {
-            pw.type = 'password';
-            icon.className = 'ti ti-eye';
-        }
+        const icon = e.currentTarget.querySelector('i');
+        if (pw.type === 'password') { pw.type = 'text'; icon.className = 'ti ti-eye-off'; }
+        else { pw.type = 'password'; icon.className = 'ti ti-eye'; }
     });
 }
 
@@ -104,9 +118,9 @@ async function loadStatus() {
             ? `Schema version ${status.flywayVersion}`
             : 'No migrations applied');
 
-        // If setup was already completed (e.g. page refresh after step 4), jump to done
+        // If setup was already completed (page refresh after step 5), jump to done
         if (status.setupCompleted) {
-            showStep(6);
+            showStep(7);
             return;
         }
 
@@ -115,13 +129,20 @@ async function loadStatus() {
             document.getElementById('step1-next').disabled = false;
         }
 
+        // Pre-populate step 2 DB fields
+        if (status.dbUrl) document.getElementById('dbUrl').value = status.dbUrl;
+        if (status.dbUsername) document.getElementById('dbUsername').value = status.dbUsername;
+
+        // If DB already connected, mark step 2 as pre-tested
+        if (status.dbConnected) {
+            wizardState.dbTested = true;
+            document.getElementById('step2-next').disabled = false;
+            setConnectionResult({ success: true, message: 'Currently connected' });
+        }
+
         // Resumability: pre-load saved IDs
-        if (status.tenantCreated && status.tenantId) {
-            wizardState.tenantId = status.tenantId;
-        }
-        if (status.organizationCreated && status.organizationId) {
-            wizardState.organizationId = status.organizationId;
-        }
+        if (status.tenantCreated && status.tenantId) wizardState.tenantId = status.tenantId;
+        if (status.organizationCreated && status.organizationId) wizardState.organizationId = status.organizationId;
         if (status.tenantCreated || status.organizationCreated) {
             document.getElementById('step1-resume-notice').classList.remove('d-none');
         }
@@ -147,50 +168,92 @@ function setDetail(id, text) {
 }
 
 // ============================================================================
-// Step 2: create tenant
+// Step 2: database connection test
 // ============================================================================
-async function handleStep2() {
-    const name = document.getElementById('tenantName').value.trim();
-    if (!name) { showStepError(2, 'Tenant name is required.'); return; }
+async function handleTestConnection() {
+    const url = document.getElementById('dbUrl').value.trim();
+    const username = document.getElementById('dbUsername').value.trim();
+    const password = document.getElementById('dbPassword').value;
 
-    // If tenant already created (resume), skip creation
-    if (wizardState.tenantId) {
-        showStep(3);
+    if (!url) { showStepError(2, 'JDBC URL is required.'); return; }
+    if (!username) { showStepError(2, 'Username is required.'); return; }
+
+    clearStepError(2);
+    setLoading('testConnectionBtn', true);
+    setConnectionResult(null);
+
+    try {
+        const result = await apiPost('/api/setup/test-connection', {
+            url,
+            username,
+            password: password || null,
+            saveToProperties: false
+        });
+        wizardState.dbTested = true;
+        document.getElementById('step2-next').disabled = false;
+        setConnectionResult({ success: true, message: result.message });
+    } catch (err) {
+        wizardState.dbTested = false;
+        document.getElementById('step2-next').disabled = true;
+        setConnectionResult({ success: false, message: err.message || 'Connection failed' });
+    } finally {
+        setLoading('testConnectionBtn', false);
+    }
+}
+
+function setConnectionResult(result) {
+    const el = document.getElementById('connection-test-result');
+    if (!result) {
+        el.className = 'd-none';
+        el.innerHTML = '';
         return;
     }
-
-    setLoading('step2-next', true);
-    clearStepError(2);
-    try {
-        const tenant = await apiPost('/api/setup/tenant', { name });
-        wizardState.tenantId = tenant.id;
-        showStep(3);
-    } catch (err) {
-        showStepError(2, err.message || 'Failed to create tenant. Please try again.');
-    } finally {
-        setLoading('step2-next', false);
+    if (result.success) {
+        el.className = 'text-success fw-medium';
+        el.innerHTML = `<i class="ti ti-circle-check me-1"></i>${escapeHtml(result.message)}`;
+    } else {
+        el.className = 'text-danger fw-medium';
+        el.innerHTML = `<i class="ti ti-circle-x me-1"></i>${escapeHtml(result.message)}`;
     }
 }
 
 // ============================================================================
-// Step 3: create organization
+// Step 3: create tenant
 // ============================================================================
 async function handleStep3() {
+    const name = document.getElementById('tenantName').value.trim();
+    if (!name) { showStepError(3, 'Tenant name is required.'); return; }
+
+    if (wizardState.tenantId) { showStep(4); return; }
+
+    setLoading('step3-next', true);
+    clearStepError(3);
+    try {
+        const tenant = await apiPost('/api/setup/tenant', { name });
+        wizardState.tenantId = tenant.id;
+        showStep(4);
+    } catch (err) {
+        showStepError(3, err.message || 'Failed to create tenant. Please try again.');
+    } finally {
+        setLoading('step3-next', false);
+    }
+}
+
+// ============================================================================
+// Step 4: create organization
+// ============================================================================
+async function handleStep4() {
     const name = document.getElementById('orgName').value.trim();
     const email = document.getElementById('orgEmail').value.trim();
     const organizationType = document.getElementById('orgType').value;
 
-    if (!name) { showStepError(3, 'Organization name is required.'); return; }
-    if (!wizardState.tenantId) { showStepError(3, 'Tenant not found. Please go back and create the tenant first.'); return; }
+    if (!name) { showStepError(4, 'Organization name is required.'); return; }
+    if (!wizardState.tenantId) { showStepError(4, 'Tenant not found. Please go back and create the tenant first.'); return; }
 
-    // If org already created (resume), skip creation
-    if (wizardState.organizationId) {
-        showStep(4);
-        return;
-    }
+    if (wizardState.organizationId) { showStep(5); return; }
 
-    setLoading('step3-next', true);
-    clearStepError(3);
+    setLoading('step4-next', true);
+    clearStepError(4);
     try {
         const org = await apiPost('/api/setup/organization', {
             name,
@@ -199,55 +262,52 @@ async function handleStep3() {
             tenantId: wizardState.tenantId
         });
         wizardState.organizationId = org.id;
-        showStep(4);
-    } catch (err) {
-        showStepError(3, err.message || 'Failed to create organization. Please try again.');
-    } finally {
-        setLoading('step3-next', false);
-    }
-}
-
-// ============================================================================
-// Step 4: create superadmin + mark setup complete
-// ============================================================================
-async function handleStep4() {
-    const username = document.getElementById('adminUsername').value.trim();
-    const fullName = document.getElementById('adminFullName').value.trim();
-    const email = document.getElementById('adminEmail').value.trim();
-    const password = document.getElementById('adminPassword').value;
-    const passwordConfirm = document.getElementById('adminPasswordConfirm').value;
-
-    if (!username) { showStepError(4, 'Username is required.'); return; }
-    if (!fullName) { showStepError(4, 'Full name is required.'); return; }
-    if (!email) { showStepError(4, 'Email is required.'); return; }
-    if (password.length < 8) { showStepError(4, 'Password must be at least 8 characters.'); return; }
-    if (password !== passwordConfirm) { showStepError(4, 'Passwords do not match.'); return; }
-    if (!wizardState.organizationId) { showStepError(4, 'Organization not found. Please go back and create the organization first.'); return; }
-
-    setLoading('step4-next', true);
-    clearStepError(4);
-    try {
-        const result = await apiPost('/api/setup/admin', {
-            username,
-            fullName,
-            email,
-            password,
-            organizationId: wizardState.organizationId
-        });
-        if (!result.success) {
-            showStepError(4, result.message || 'Failed to create admin account.');
-            return;
-        }
         showStep(5);
     } catch (err) {
-        showStepError(4, err.message || 'Failed to create admin account. Please try again.');
+        showStepError(4, err.message || 'Failed to create organization. Please try again.');
     } finally {
         setLoading('step4-next', false);
     }
 }
 
 // ============================================================================
-// Step 5: load and save properties
+// Step 5: create superadmin + mark setup complete
+// ============================================================================
+async function handleStep5() {
+    const username = document.getElementById('adminUsername').value.trim();
+    const fullName = document.getElementById('adminFullName').value.trim();
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value;
+    const passwordConfirm = document.getElementById('adminPasswordConfirm').value;
+
+    if (!username) { showStepError(5, 'Username is required.'); return; }
+    if (!fullName) { showStepError(5, 'Full name is required.'); return; }
+    if (!email) { showStepError(5, 'Email is required.'); return; }
+    if (password.length < 8) { showStepError(5, 'Password must be at least 8 characters.'); return; }
+    if (password !== passwordConfirm) { showStepError(5, 'Passwords do not match.'); return; }
+    if (!wizardState.organizationId) { showStepError(5, 'Organization not found. Please go back and create the organization first.'); return; }
+
+    setLoading('step5-next', true);
+    clearStepError(5);
+    try {
+        const result = await apiPost('/api/setup/admin', {
+            username, fullName, email, password,
+            organizationId: wizardState.organizationId
+        });
+        if (!result.success) {
+            showStepError(5, result.message || 'Failed to create admin account.');
+            return;
+        }
+        showStep(6);
+    } catch (err) {
+        showStepError(5, err.message || 'Failed to create admin account. Please try again.');
+    } finally {
+        setLoading('step5-next', false);
+    }
+}
+
+// ============================================================================
+// Step 6: load and save properties
 // ============================================================================
 async function loadProperties() {
     document.getElementById('props-loading').classList.remove('d-none');
@@ -324,40 +384,32 @@ function renderProperties(groups) {
         });
     });
 
-    // Bind toggle for sensitive fields
     container.querySelectorAll('.toggle-sensitive').forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
             const input = link.closest('.input-group').querySelector('input');
             const icon = link.querySelector('i');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.className = 'ti ti-eye-off';
-            } else {
-                input.type = 'password';
-                icon.className = 'ti ti-eye';
-            }
+            if (input.type === 'password') { input.type = 'text'; icon.className = 'ti ti-eye-off'; }
+            else { input.type = 'password'; icon.className = 'ti ti-eye'; }
         });
     });
 }
 
-async function handleStep5Save() {
+async function handleStep6Save() {
     const inputs = document.querySelectorAll('.prop-input');
     const properties = {};
-    inputs.forEach(input => {
-        properties[input.dataset.key] = input.value;
-    });
+    inputs.forEach(input => { properties[input.dataset.key] = input.value; });
 
-    setLoading('step5-save', true);
+    setLoading('step6-save', true);
     try {
         await apiPost('/api/setup/properties', { properties });
         wizardState.propertiesChanged = true;
-        showStep(6);
+        showStep(7);
         document.getElementById('restart-notice').classList.remove('d-none');
     } catch (err) {
         notifications.show('Failed to save configuration: ' + (err.message || 'Unknown error'), 'error');
     } finally {
-        setLoading('step5-save', false);
+        setLoading('step6-save', false);
     }
 }
 
@@ -368,12 +420,9 @@ function handleDownload() {
         return;
     }
 
-    // Build properties file content from current input values
     const inputs = document.querySelectorAll('.prop-input');
     const currentValues = {};
-    inputs.forEach(input => {
-        currentValues[input.dataset.key] = input.value;
-    });
+    inputs.forEach(input => { currentValues[input.dataset.key] = input.value; });
 
     let content = '# application.properties — downloaded from Setup Wizard\n\n';
     Object.entries(groups).forEach(([groupName, entries]) => {
@@ -401,9 +450,7 @@ function handleDownload() {
 // API helpers (no JWT — setup is pre-auth)
 // ============================================================================
 async function apiGet(url) {
-    const res = await fetch(url, {
-        headers: { 'Accept': 'application/json' }
-    });
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
     return body;
@@ -425,18 +472,12 @@ async function apiPost(url, data) {
 // ============================================================================
 function showStepError(step, message) {
     const el = document.getElementById(`step${step}-error`);
-    if (el) {
-        el.textContent = message;
-        el.classList.remove('d-none');
-    }
+    if (el) { el.textContent = message; el.classList.remove('d-none'); }
 }
 
 function clearStepError(step) {
     const el = document.getElementById(`step${step}-error`);
-    if (el) {
-        el.textContent = '';
-        el.classList.add('d-none');
-    }
+    if (el) { el.textContent = ''; el.classList.add('d-none'); }
 }
 
 function setLoading(btnId, loading) {

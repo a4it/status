@@ -27,6 +27,17 @@ public class SetupApiController {
         return ResponseEntity.ok(setupService.getStatus());
     }
 
+    @PostMapping("/test-connection")
+    public ResponseEntity<MessageResponse> testConnection(@Valid @RequestBody SetupTestConnectionRequest request) {
+        if (setupService.isSetupAlreadyComplete()) {
+            return ResponseEntity.status(403).body(new MessageResponse("Setup is already complete.", false));
+        }
+        MessageResponse result = setupService.testConnection(request);
+        return result.isSuccess()
+                ? ResponseEntity.ok(result)
+                : ResponseEntity.badRequest().body(result);
+    }
+
     @PostMapping("/tenant")
     public ResponseEntity<?> createTenant(@Valid @RequestBody SetupTenantRequest request) {
         if (setupService.isSetupAlreadyComplete()) {

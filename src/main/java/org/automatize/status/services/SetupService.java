@@ -26,6 +26,9 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.*;
 
 @Service
@@ -66,6 +69,12 @@ public class SetupService {
     @Value("${app.setup.completed:false}")
     private boolean setupCompleted;
 
+    @Value("${spring.datasource.url:}")
+    private String datasourceUrl;
+
+    @Value("${spring.datasource.username:}")
+    private String datasourceUsername;
+
     public boolean isSetupAlreadyComplete() {
         return setupCompleted;
     }
@@ -85,6 +94,10 @@ public class SetupService {
             status.setDbConnected(false);
             status.setDbError(e.getMessage());
         }
+
+        // Expose current datasource config for pre-populating the DB step
+        status.setDbUrl(datasourceUrl);
+        status.setDbUsername(datasourceUsername);
 
         // Flyway migration version
         try {
@@ -164,6 +177,33 @@ public class SetupService {
         }
         userRepository.save(admin);
         return new MessageResponse("User registered successfully!", true);
+    }
+
+    // -------------------------------------------------------------------------
+    // Database connection test
+    // -------------------------------------------------------------------------
+
+    public MessageResponse testConnection(SetupTestConnectionRequest request) {
+        String password = request.getPassword() != null ? request.getPassword() : "";
+        try (Connection conn = DriverManager.getConnection(request.getUrl(), request.getUsername(), password)) {
+            if (conn.isValid(5)) {
+                if (request.isSaveToProperties()) {
+                    writeProperty("spring.datasource.url", request.getUrl());
+                    writeProperty("spring.datasource.username", request.getUsername());
+                    if (!password.isEmpty()) {
+                        writeProperty("spring.datasource.password", password);
+                    }
+                }
+                return new MessageResponse("Connection successful.", true);
+            }
+            return new MessageResponse("Connection established but database did not respond in time.", false);
+        } catch (SQLException e) {
+            logger.warn("DB connection test failed: {}", e.getMessage());
+            return new MessageResponse("Connection failed: " + e.getMessage(), false);
+        } catch (IOException e) {
+            logger.error("Failed to save datasource properties after successful test", e);
+            return new MessageResponse("Connection succeeded but could not save settings: " + e.getMessage(), false);
+        }
     }
 
     // -------------------------------------------------------------------------

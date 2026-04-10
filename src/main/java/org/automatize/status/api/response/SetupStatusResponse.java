@@ -7,6 +7,8 @@ public class SetupStatusResponse {
     private boolean setupCompleted;
     private boolean dbConnected;
     private String dbError;
+    private String dbUrl;
+    private String dbUsername;
     private String flywayVersion;
     private boolean tenantCreated;
     private UUID tenantId;
@@ -21,6 +23,12 @@ public class SetupStatusResponse {
 
     public String getDbError() { return dbError; }
     public void setDbError(String dbError) { this.dbError = dbError; }
+
+    public String getDbUrl() { return dbUrl; }
+    public void setDbUrl(String dbUrl) { this.dbUrl = dbUrl; }
+
+    public String getDbUsername() { return dbUsername; }
+    public void setDbUsername(String dbUsername) { this.dbUsername = dbUsername; }
 
     public String getFlywayVersion() { return flywayVersion; }
     public void setFlywayVersion(String flywayVersion) { this.flywayVersion = flywayVersion; }
