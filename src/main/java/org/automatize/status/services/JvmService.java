@@ -2,6 +2,8 @@ package org.automatize.status.services;
 
 import org.automatize.status.api.request.GcScheduleRequest;
 import org.automatize.status.api.response.JvmStatsResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.lang.management.*;
@@ -10,6 +12,8 @@ import java.util.List;
 
 @Service
 public class JvmService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JvmService.class);
 
     private volatile Long lastGcRunAt = null;
 

@@ -284,7 +284,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO",    MSG_ORDER + orderId + " reserved in DB"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),  "INFO",    MSG_STOCK_RESERVED_FOR + orderId),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(6),  LEVEL_WARNING, "Payment gateway timeout for " + orderId + " (5200ms)"),
-            log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(9),  "ERROR",   "Payment declined: card issuer refused " + orderId),
+            log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(9),  LEVEL_ERROR,   "Payment declined: card issuer refused " + orderId),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(10), LEVEL_WARNING, "Stock reservation rolled back for " + orderId),
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(11), LEVEL_WARNING, MSG_ORDER + orderId + " cancelled due to payment failure")
         );
@@ -318,7 +318,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
             log(tenant, apps.get(SVC_AUTH),    traceId, base.plusSeconds(1),   "INFO",     "JWT validated"),
             log(tenant, apps.get(SVC_ORDER),   traceId, base.plusSeconds(3),   LEVEL_WARNING,  "DB query slow: " + dbMs + "ms for " + orderId + " (threshold=2000ms)"),
             log(tenant, apps.get(SVC_ORDER),   traceId, base.plusSeconds(33),  "CRITICAL", "Request timeout exceeded for " + orderId + " after 30s"),
-            log(tenant, apps.get(SVC_GATEWAY), traceId, base.plusSeconds(34),  "ERROR",    "504 Gateway Timeout returned for " + orderId + " — Payment and Notify not reached")
+            log(tenant, apps.get(SVC_GATEWAY), traceId, base.plusSeconds(34),  LEVEL_ERROR,    "504 Gateway Timeout returned for " + orderId + " — Payment and Notify not reached")
         );
     }
 

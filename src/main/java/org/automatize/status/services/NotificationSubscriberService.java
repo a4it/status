@@ -1,10 +1,14 @@
 package org.automatize.status.services;
 
 import org.automatize.status.api.response.NotificationSubscriberResponse;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.NotificationSubscriber;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.repositories.NotificationSubscriberRepository;
 import org.automatize.status.repositories.StatusAppRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -39,6 +43,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class NotificationSubscriberService {
+
+    private static final Logger logger = LoggerFactory.getLogger(NotificationSubscriberService.class);
 
     @Autowired
     private NotificationSubscriberRepository subscriberRepository;
@@ -83,7 +89,7 @@ public class NotificationSubscriberService {
     @Transactional(readOnly = true)
     public NotificationSubscriberResponse getSubscriberById(UUID id) {
         NotificationSubscriber subscriber = subscriberRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subscriber not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Subscriber not found with id: " + id));
         return mapToResponse(subscriber);
     }
 
@@ -98,10 +104,10 @@ public class NotificationSubscriberService {
      */
     public NotificationSubscriberResponse createSubscriber(UUID appId, String email, String name) {
         StatusApp app = statusAppRepository.findById(appId)
-                .orElseThrow(() -> new RuntimeException("Status app not found with id: " + appId));
+                .orElseThrow(() -> new ResourceNotFoundException("Status app not found with id: " + appId));
 
         if (subscriberRepository.existsByAppIdAndEmail(appId, email)) {
-            throw new RuntimeException("Email already subscribed to this application");
+            throw new DuplicateResourceException("Email already subscribed to this application");
         }
 
         NotificationSubscriber subscriber = new NotificationSubscriber();
@@ -131,11 +137,11 @@ public class NotificationSubscriberService {
      */
     public NotificationSubscriberResponse updateSubscriber(UUID id, String email, String name, Boolean isActive) {
         NotificationSubscriber subscriber = subscriberRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subscriber not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Subscriber not found with id: " + id));
 
         if (email != null && !email.equals(subscriber.getEmail())) {
             if (subscriberRepository.existsByAppIdAndEmail(subscriber.getApp().getId(), email)) {
-                throw new RuntimeException("Email already subscribed to this application");
+                throw new DuplicateResourceException("Email already subscribed to this application");
             }
             subscriber.setEmail(email);
         }
@@ -162,7 +168,7 @@ public class NotificationSubscriberService {
      */
     public void deleteSubscriber(UUID id) {
         if (!subscriberRepository.existsById(id)) {
-            throw new RuntimeException("Subscriber not found with id: " + id);
+            throw new ResourceNotFoundException("Subscriber not found with id: " + id);
         }
         subscriberRepository.deleteById(id);
     }
