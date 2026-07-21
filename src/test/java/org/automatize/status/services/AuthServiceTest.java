@@ -116,27 +116,27 @@ class AuthServiceTest {
     @Test
     void authenticateUser_validCredentials_returnsAuthResponseAndStoresHashedRefreshToken() {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "USER");
+        User user = buildUser(userId, USERNAME, "USER");
         UserPrincipal principal = UserPrincipal.create(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
         LoginRequest request = new LoginRequest();
-        request.setUsername("tester");
-        request.setPassword("secret");
+        request.setUsername(USERNAME);
+        request.setPassword(SECRET);
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn("access-jwt");
-        when(jwtUtils.generateRefreshToken("tester")).thenReturn("refresh-plain");
+        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("refresh-plain");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AuthResponse response = authService.authenticateUser(request);
 
-        assertThat(response.getAccessToken()).isEqualTo("access-jwt");
+        assertThat(response.getAccessToken()).isEqualTo(ACCESS_JWT);
         assertThat(response.getRefreshToken()).isEqualTo("refresh-plain");
         assertThat(response.getTokenType()).isEqualTo("Bearer");
         assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUsername()).isEqualTo("tester");
+        assertThat(response.getUsername()).isEqualTo(USERNAME);
         assertThat(response.isRequiresContextSelection()).isFalse();
         // plaintext must never be persisted
         assertThat(user.getRefreshToken()).isNotEqualTo("refresh-plain");
@@ -156,10 +156,10 @@ class AuthServiceTest {
 
         LoginRequest request = new LoginRequest();
         request.setUsername("root");
-        request.setPassword("secret");
+        request.setPassword(SECRET);
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn("access-jwt");
+        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
         when(jwtUtils.generateRefreshToken("root")).thenReturn("refresh-plain");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -176,17 +176,17 @@ class AuthServiceTest {
     @Test
     void authenticateUser_userNotFoundAfterAuth_throwsRuntimeException() {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "USER");
+        User user = buildUser(userId, USERNAME, "USER");
         UserPrincipal principal = UserPrincipal.create(user);
         Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
 
         LoginRequest request = new LoginRequest();
-        request.setUsername("tester");
-        request.setPassword("secret");
+        request.setUsername(USERNAME);
+        request.setPassword(SECRET);
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn("access-jwt");
-        when(jwtUtils.generateRefreshToken("tester")).thenReturn("refresh-plain");
+        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("refresh-plain");
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.authenticateUser(request))
@@ -358,15 +358,15 @@ class AuthServiceTest {
     @Test
     void refreshToken_tokenMismatch_throwsUnauthorizedException() {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "USER");
+        User user = buildUser(userId, USERNAME, "USER");
         user.setRefreshToken("some-other-hash");
 
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("token");
 
         when(jwtUtils.validateJwtToken("token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn("tester");
-        when(userRepository.findByUsername("tester")).thenReturn(Optional.of(user));
+        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn(USERNAME);
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.refreshToken(request))
                 .isInstanceOf(UnauthorizedException.class)
@@ -382,18 +382,18 @@ class AuthServiceTest {
     @Test
     void refreshToken_validMatchingToken_returnsNewTokensAndRotatesRefresh() throws Exception {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "USER");
+        User user = buildUser(userId, USERNAME, "USER");
         user.setRefreshToken(sha256Hex("token"));
 
         RefreshTokenRequest request = new RefreshTokenRequest();
         request.setRefreshToken("token");
 
         when(jwtUtils.validateJwtToken("token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn("tester");
-        when(userRepository.findByUsername("tester")).thenReturn(Optional.of(user));
+        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn(USERNAME);
+        when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
         when(jwtUtils.generateJwtTokenFromUserId(any(), anyString(), anyString(), any(), anyString()))
                 .thenReturn("new-access");
-        when(jwtUtils.generateRefreshToken("tester")).thenReturn("new-refresh");
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("new-refresh");
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AuthResponse response = authService.refreshToken(request);
@@ -436,7 +436,7 @@ class AuthServiceTest {
     @Test
     void logout_validToken_clearsRefreshTokenAndReturnsSuccess() {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "USER");
+        User user = buildUser(userId, USERNAME, "USER");
         user.setRefreshToken("stored");
 
         when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
@@ -486,7 +486,7 @@ class AuthServiceTest {
     @Test
     void getCurrentUser_validToken_returnsUserDetails() {
         UUID userId = UUID.randomUUID();
-        User user = buildUser(userId, "tester", "ADMIN");
+        User user = buildUser(userId, USERNAME, "ADMIN");
 
         when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -494,7 +494,7 @@ class AuthServiceTest {
         AuthResponse response = authService.getCurrentUser("Bearer jwt-value");
 
         assertThat(response.getUserId()).isEqualTo(userId);
-        assertThat(response.getUsername()).isEqualTo("tester");
+        assertThat(response.getUsername()).isEqualTo(USERNAME);
         assertThat(response.getRole()).isEqualTo("ADMIN");
     }
 

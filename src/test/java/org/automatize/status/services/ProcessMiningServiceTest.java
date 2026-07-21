@@ -32,9 +32,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProcessMiningServiceTest {
 
-    private static final String SERVICE_A = SERVICE_A;
-    private static final String PLATFORM_SCOPE = PLATFORM_SCOPE;
-    private static final String TRACE_1 = TRACE_1;
+    private static final String SERVICE_A = "svc-a";
+    private static final String PLATFORM_SCOPE = "platform";
+    private static final String TRACE_1 = "trace-1";
 
     @Mock
     private LogRepository logRepository;

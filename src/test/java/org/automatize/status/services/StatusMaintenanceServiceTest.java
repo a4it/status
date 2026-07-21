@@ -136,7 +136,7 @@ class StatusMaintenanceServiceTest {
     void getMaintenanceById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
         when(statusMaintenanceRepository.findById(id))
-                .thenReturn(Optional.of(newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED)));
+                .thenReturn(Optional.of(newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED)));
 
         StatusMaintenanceResponse response = statusMaintenanceService.getMaintenanceById(id);
 
@@ -162,7 +162,7 @@ class StatusMaintenanceServiceTest {
      */
     @Test
     void getAllMaintenance_noFilters_returnsPageFromFindAll() {
-        StatusMaintenance m = newMaintenance(UUID.randomUUID(), newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED);
+        StatusMaintenance m = newMaintenance(UUID.randomUUID(), newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED);
         when(statusMaintenanceRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(m)));
 
         var page = statusMaintenanceService.getAllMaintenance(null, null, null, null, null, pageable);
@@ -176,7 +176,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void createMaintenance_validWindow_savesScheduled() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, STATUS_OPERATIONAL);
         StatusMaintenanceRequest request = validRequest(appId);
 
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
@@ -194,7 +194,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void createMaintenance_startAfterEnd_throwsRuntime() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, STATUS_OPERATIONAL);
         StatusMaintenanceRequest request = validRequest(appId);
         request.setStartsAt(ZonedDateTime.now().plusDays(2));
         request.setEndsAt(ZonedDateTime.now().plusDays(1));
@@ -225,7 +225,7 @@ class StatusMaintenanceServiceTest {
     void createMaintenance_withComponents_linksComponents() {
         UUID appId = UUID.randomUUID();
         UUID componentId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, STATUS_OPERATIONAL);
         StatusComponent component = new StatusComponent();
         component.setId(componentId);
         component.setApp(app);
@@ -249,7 +249,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void updateMaintenance_scheduled_updates() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
+        StatusApp app = newApp(UUID.randomUUID(), STATUS_OPERATIONAL);
         StatusMaintenance maintenance = newMaintenance(id, app, STATUS_SCHEDULED);
         StatusMaintenanceRequest request = validRequest(null);
         request.setTitle("Updated");
@@ -268,7 +268,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void updateMaintenance_completed_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "COMPLETED");
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), "COMPLETED");
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
 
         assertThatThrownBy(() -> statusMaintenanceService.updateMaintenance(id, validRequest(null)))
@@ -281,7 +281,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void updateMaintenance_startAfterEnd_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED);
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED);
         StatusMaintenanceRequest request = validRequest(null);
         request.setStartsAt(ZonedDateTime.now().plusDays(2));
         request.setEndsAt(ZonedDateTime.now().plusDays(1));
@@ -310,7 +310,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void updateStatus_updatesAndSaves() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED);
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED);
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
         when(statusMaintenanceRepository.save(any(StatusMaintenance.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -327,13 +327,13 @@ class StatusMaintenanceServiceTest {
     void startMaintenance_scheduled_setsInProgressAndUpdatesComponents() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, STATUS_OPERATIONAL);
         StatusMaintenance maintenance = newMaintenance(id, app, STATUS_SCHEDULED);
 
         StatusComponent component = new StatusComponent();
         component.setId(UUID.randomUUID());
         component.setApp(app);
-        component.setStatus("OPERATIONAL");
+        component.setStatus(STATUS_OPERATIONAL);
         StatusMaintenanceComponent mc = new StatusMaintenanceComponent();
         mc.setMaintenance(maintenance);
         mc.setComponent(component);
@@ -347,7 +347,7 @@ class StatusMaintenanceServiceTest {
 
         StatusMaintenanceResponse response = statusMaintenanceService.startMaintenance(id);
 
-        assertThat(response.getStatus()).isEqualTo("IN_PROGRESS");
+        assertThat(response.getStatus()).isEqualTo(STATUS_IN_PROGRESS);
         assertThat(component.getStatus()).isEqualTo("UNDER_MAINTENANCE");
         assertThat(app.getStatus()).isEqualTo("UNDER_MAINTENANCE");
     }
@@ -358,7 +358,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void startMaintenance_notScheduled_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "IN_PROGRESS");
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_IN_PROGRESS);
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
 
         assertThatThrownBy(() -> statusMaintenanceService.startMaintenance(id))
@@ -374,7 +374,7 @@ class StatusMaintenanceServiceTest {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId, "UNDER_MAINTENANCE");
-        StatusMaintenance maintenance = newMaintenance(id, app, "IN_PROGRESS");
+        StatusMaintenance maintenance = newMaintenance(id, app, STATUS_IN_PROGRESS);
 
         StatusComponent component = new StatusComponent();
         component.setId(UUID.randomUUID());
@@ -395,8 +395,8 @@ class StatusMaintenanceServiceTest {
         StatusMaintenanceResponse response = statusMaintenanceService.completeMaintenance(id);
 
         assertThat(response.getStatus()).isEqualTo("COMPLETED");
-        assertThat(component.getStatus()).isEqualTo("OPERATIONAL");
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(component.getStatus()).isEqualTo(STATUS_OPERATIONAL);
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
     }
 
     /**
@@ -405,7 +405,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void completeMaintenance_notInProgress_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED);
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED);
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
 
         assertThatThrownBy(() -> statusMaintenanceService.completeMaintenance(id))
@@ -418,7 +418,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void deleteMaintenance_scheduled_deletes() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_SCHEDULED);
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_SCHEDULED);
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
 
         statusMaintenanceService.deleteMaintenance(id);
@@ -433,7 +433,7 @@ class StatusMaintenanceServiceTest {
     @Test
     void deleteMaintenance_inProgress_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "IN_PROGRESS");
+        StatusMaintenance maintenance = newMaintenance(id, newApp(UUID.randomUUID(), STATUS_OPERATIONAL), STATUS_IN_PROGRESS);
         when(statusMaintenanceRepository.findById(id)).thenReturn(Optional.of(maintenance));
 
         assertThatThrownBy(() -> statusMaintenanceService.deleteMaintenance(id))
@@ -447,9 +447,9 @@ class StatusMaintenanceServiceTest {
     @Test
     void getUpcomingMaintenance_byApp_returnsOnlyScheduled() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, STATUS_OPERATIONAL);
         StatusMaintenance scheduled = newMaintenance(UUID.randomUUID(), app, STATUS_SCHEDULED);
-        StatusMaintenance inProgress = newMaintenance(UUID.randomUUID(), app, "IN_PROGRESS");
+        StatusMaintenance inProgress = newMaintenance(UUID.randomUUID(), app, STATUS_IN_PROGRESS);
         when(statusMaintenanceRepository.findUpcomingMaintenanceByAppId(eq(appId), any()))
                 .thenReturn(List.of(scheduled, inProgress));
 
@@ -465,10 +465,10 @@ class StatusMaintenanceServiceTest {
     @Test
     void getActiveMaintenance_byApp_filtersByApp() {
         UUID appId = UUID.randomUUID();
-        StatusApp matching = newApp(appId, "OPERATIONAL");
-        StatusApp other = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusMaintenance m1 = newMaintenance(UUID.randomUUID(), matching, "IN_PROGRESS");
-        StatusMaintenance m2 = newMaintenance(UUID.randomUUID(), other, "IN_PROGRESS");
+        StatusApp matching = newApp(appId, STATUS_OPERATIONAL);
+        StatusApp other = newApp(UUID.randomUUID(), STATUS_OPERATIONAL);
+        StatusMaintenance m1 = newMaintenance(UUID.randomUUID(), matching, STATUS_IN_PROGRESS);
+        StatusMaintenance m2 = newMaintenance(UUID.randomUUID(), other, STATUS_IN_PROGRESS);
         when(statusMaintenanceRepository.findActiveMaintenance(any())).thenReturn(List.of(m1, m2));
 
         List<StatusMaintenanceResponse> result = statusMaintenanceService.getActiveMaintenance(appId, null);

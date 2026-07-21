@@ -39,6 +39,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StatusPlatformServiceTest {
 
+    private static final String SLUG_CLOUD = "cloud";
+    private static final String STATUS_OPERATIONAL = "OPERATIONAL";
+
     @Mock
     private StatusPlatformRepository statusPlatformRepository;
     @Mock
