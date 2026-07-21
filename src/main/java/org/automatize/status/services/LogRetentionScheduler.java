@@ -19,6 +19,11 @@ public class LogRetentionScheduler {
     @Autowired
     private LogIngestionService logIngestionService;
 
+    /**
+     * Scheduled task that triggers deletion of expired log entries.
+     * Runs daily at 02:00 (server time) and delegates the actual purge
+     * to {@link LogIngestionService#purgeOldLogs()}.
+     */
     @Scheduled(cron = "0 0 2 * * *")
     public void purge() {
         logger.info("Starting log retention purge...");

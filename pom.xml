@@ -19,7 +19,7 @@
     <description>Status Monitoring Solution</description>
 
     <properties>
-        <revision>0.0.157-SNAPSHOT</revision>
+        <revision>0.0.158-SNAPSHOT</revision>
         <java.version>25</java.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
@@ -153,6 +153,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Spring Boot 4 extracted the @DataJpaTest slice into its own module -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-data-jpa-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

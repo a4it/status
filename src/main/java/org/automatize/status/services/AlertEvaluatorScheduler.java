@@ -19,6 +19,11 @@ public class AlertEvaluatorScheduler {
     @Autowired
     private AlertRuleService alertRuleService;
 
+    /**
+     * Scheduled entry point that triggers evaluation of all active alert rules.
+     * Runs every minute (at second 30) and delegates to {@link AlertRuleService#evaluateAll()},
+     * logging any failure without propagating it so the scheduler keeps running.
+     */
     @Scheduled(cron = "30 * * * * *")
     public void evaluate() {
         try {

@@ -72,106 +72,236 @@ public class StatusPlatformResponse {
     public StatusPlatformResponse() {
     }
 
+    /**
+     * Gets the platform ID.
+     *
+     * @return the platform ID
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Sets the platform ID.
+     *
+     * @param id the platform ID to set
+     */
     public void setId(UUID id) {
         this.id = id;
     }
 
+    /**
+     * Gets the platform name.
+     *
+     * @return the platform name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Sets the platform name.
+     *
+     * @param name the platform name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * Gets the platform description.
+     *
+     * @return the platform description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Sets the platform description.
+     *
+     * @param description the platform description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /**
+     * Gets the URL-friendly slug.
+     *
+     * @return the slug
+     */
     public String getSlug() {
         return slug;
     }
 
+    /**
+     * Sets the URL-friendly slug.
+     *
+     * @param slug the slug to set
+     */
     public void setSlug(String slug) {
         this.slug = slug;
     }
 
+    /**
+     * Gets the logo URL.
+     *
+     * @return the logo URL
+     */
     public String getLogoUrl() {
         return logoUrl;
     }
 
+    /**
+     * Sets the logo URL.
+     *
+     * @param logoUrl the logo URL to set
+     */
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
     }
 
+    /**
+     * Gets the external website URL.
+     *
+     * @return the website URL
+     */
     public String getWebsiteUrl() {
         return websiteUrl;
     }
 
+    /**
+     * Sets the external website URL.
+     *
+     * @param websiteUrl the website URL to set
+     */
     public void setWebsiteUrl(String websiteUrl) {
         this.websiteUrl = websiteUrl;
     }
 
+    /**
+     * Gets the current operational status.
+     *
+     * @return the status
+     */
     public String getStatus() {
         return status;
     }
 
+    /**
+     * Sets the current operational status.
+     *
+     * @param status the status to set
+     */
     public void setStatus(String status) {
         this.status = status;
     }
 
+    /**
+     * Gets the public visibility flag.
+     *
+     * @return true if the platform is publicly visible, false otherwise
+     */
     public Boolean getIsPublic() {
         return isPublic;
     }
 
+    /**
+     * Sets the public visibility flag.
+     *
+     * @param isPublic the visibility flag to set
+     */
     public void setIsPublic(Boolean isPublic) {
         this.isPublic = isPublic;
     }
 
+    /**
+     * Gets the display order position.
+     *
+     * @return the position
+     */
     public Integer getPosition() {
         return position;
     }
 
+    /**
+     * Sets the display order position.
+     *
+     * @param position the position to set
+     */
     public void setPosition(Integer position) {
         this.position = position;
     }
 
+    /**
+     * Gets the list of applications belonging to this platform.
+     *
+     * @return the applications
+     */
     public List<StatusAppResponse> getApps() {
         return apps;
     }
 
+    /**
+     * Sets the list of applications belonging to this platform.
+     *
+     * @param apps the applications to set
+     */
     public void setApps(List<StatusAppResponse> apps) {
         this.apps = apps;
     }
 
+    /**
+     * Gets the last updated timestamp.
+     *
+     * @return the last updated timestamp
+     */
     public ZonedDateTime getLastUpdated() {
         return lastUpdated;
     }
 
+    /**
+     * Sets the last updated timestamp.
+     *
+     * @param lastUpdated the last updated timestamp to set
+     */
     public void setLastUpdated(ZonedDateTime lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
+    /**
+     * Gets the ID of the tenant this platform belongs to.
+     *
+     * @return the tenant ID
+     */
     public UUID getTenantId() {
         return tenantId;
     }
 
+    /**
+     * Sets the ID of the tenant this platform belongs to.
+     *
+     * @param tenantId the tenant ID to set
+     */
     public void setTenantId(UUID tenantId) {
         this.tenantId = tenantId;
     }
 
+    /**
+     * Gets the ID of the organization this platform belongs to.
+     *
+     * @return the organization ID
+     */
     public UUID getOrganizationId() {
         return organizationId;
     }
 
+    /**
+     * Sets the ID of the organization this platform belongs to.
+     *
+     * @param organizationId the organization ID to set
+     */
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }

@@ -10,6 +10,12 @@ import java.lang.management.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Service that exposes live JVM runtime statistics (memory, threads, uptime,
+ * CPU load and garbage collector activity) and provides manual garbage
+ * collection control. Scheduled GC is intentionally disabled; the JVM manages
+ * its own collection heuristics while a manual trigger remains available.
+ */
 @Service
 public class JvmService {
 
@@ -17,9 +23,19 @@ public class JvmService {
 
     private volatile Long lastGcRunAt = null;
 
+    /**
+     * Creates a new JvmService instance.
+     */
     public JvmService() {
     }
 
+    /**
+     * Collects a snapshot of current JVM statistics including heap and non-heap
+     * memory usage, thread counts, uptime, process CPU load and garbage
+     * collector metrics.
+     *
+     * @return a populated {@link JvmStatsResponse} describing the JVM state
+     */
     public JvmStatsResponse getStats() {
         JvmStatsResponse response = new JvmStatsResponse();
 
@@ -48,6 +64,7 @@ public class JvmService {
         double cpuLoad = -1.0;
         try {
             OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            // Only the com.sun implementation exposes the process CPU load reading
             if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
                 cpuLoad = sunOsBean.getProcessCpuLoad();
             }
@@ -78,6 +95,12 @@ public class JvmService {
         return response;
     }
 
+    /**
+     * Returns the current GC schedule configuration. Scheduled GC is disabled,
+     * so this always reports a disabled schedule with no cron expression.
+     *
+     * @return a {@link GcScheduleRequest} reflecting the (disabled) schedule state
+     */
     public GcScheduleRequest getScheduleConfig() {
         GcScheduleRequest req = new GcScheduleRequest();
         req.setEnabled(false);
@@ -85,6 +108,14 @@ public class JvmService {
         return req;
     }
 
+    /**
+     * Updates the GC schedule configuration. This is a no-op because scheduled
+     * GC is disabled and the JVM manages its own collection heuristics; the
+     * manual trigger via {@link #triggerGcNow()} remains available.
+     *
+     * @param enabled whether scheduled GC should be enabled (ignored)
+     * @param cron    the cron expression for scheduled GC (ignored)
+     */
     public void updateSchedule(boolean enabled, String cron) {
         // Scheduled GC is disabled — the JVM manages its own GC heuristics.
         // Manual trigger is still available via triggerGcNow().

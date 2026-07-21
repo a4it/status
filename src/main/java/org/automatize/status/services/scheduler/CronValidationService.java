@@ -34,6 +34,7 @@ public class CronValidationService {
      * @return {@code true} if valid
      */
     public boolean isValid(String cronExpression) {
+        // Reject null or blank expressions outright
         if (cronExpression == null || cronExpression.isBlank()) return false;
         try {
             CronExpression.parse(cronExpression);
@@ -77,6 +78,7 @@ public class CronValidationService {
             ZonedDateTime current = ZonedDateTime.now(zoneId);
             for (int i = 0; i < count; i++) {
                 current = expr.next(current);
+                // Stop when no further execution time exists
                 if (current == null) break;
                 result.add(current);
             }
@@ -107,8 +109,10 @@ public class CronValidationService {
      * @return a human-readable string, or the original expression when unrecognised
      */
     public String toHumanReadable(String cronExpression) {
+        // Null expression has no description
         if (cronExpression == null) return "Unknown";
         String[] parts = cronExpression.trim().split("\\s+");
+        // Only 6-field expressions are recognised; otherwise return raw
         if (parts.length != 6) return cronExpression;
 
         String sec = parts[0], min = parts[1], hr = parts[2], dom = parts[3], mon = parts[4], dow = parts[5];

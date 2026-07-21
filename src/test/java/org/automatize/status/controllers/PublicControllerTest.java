@@ -20,6 +20,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
 class PublicControllerTest extends AbstractApiControllerTest {
 
+    /**
+     * Verifies that {@code GET /} responds 200 OK, renders the
+     * {@code public/status} view, and exposes the common build/config attributes.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void status_returnsStatusViewWithCommonAttributes() throws Exception {
         mockMvc.perform(get("/"))
@@ -29,6 +35,13 @@ class PublicControllerTest extends AbstractApiControllerTest {
                         "buildNumber", "buildDate", "copyright"));
     }
 
+    /**
+     * Verifies that {@code GET /incidents} responds 200 OK, renders the
+     * {@code public/incidents} view, and exposes the {@code applicationName}
+     * attribute.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void incidents_returnsIncidentsView() throws Exception {
         mockMvc.perform(get("/incidents"))
@@ -37,6 +50,13 @@ class PublicControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attributeExists("applicationName"));
     }
 
+    /**
+     * Verifies that {@code GET /incidents/{incidentId}} responds 200 OK, renders
+     * the {@code public/incident-detail} view, and binds the path variable into
+     * the {@code incidentId} model attribute.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void incidentDetail_returnsDetailViewWithIncidentId() throws Exception {
         UUID incidentId = UUID.randomUUID();
@@ -46,6 +66,12 @@ class PublicControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attribute("incidentId", incidentId));
     }
 
+    /**
+     * Verifies that {@code GET /maintenance} responds 200 OK and renders the
+     * {@code public/maintenance} view.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void maintenance_returnsMaintenanceView() throws Exception {
         mockMvc.perform(get("/maintenance"))
@@ -53,6 +79,12 @@ class PublicControllerTest extends AbstractApiControllerTest {
                 .andExpect(view().name("public/maintenance"));
     }
 
+    /**
+     * Verifies that {@code GET /history} responds 200 OK and renders the
+     * {@code public/history} view.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void history_returnsHistoryView() throws Exception {
         mockMvc.perform(get("/history"))

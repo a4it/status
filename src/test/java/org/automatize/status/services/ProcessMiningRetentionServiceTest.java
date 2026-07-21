@@ -62,6 +62,13 @@ class ProcessMiningRetentionServiceTest {
     @InjectMocks
     private ProcessMiningRetentionService service;
 
+    /**
+     * Builds an enabled {@link ProcessMiningRetentionRule} with the given id and retention window.
+     *
+     * @param id            the rule identifier
+     * @param retentionDays the number of days data is retained
+     * @return a new enabled retention rule
+     */
     private ProcessMiningRetentionRule rule(UUID id, int retentionDays) {
         ProcessMiningRetentionRule r = new ProcessMiningRetentionRule();
         r.setId(id);
@@ -70,12 +77,24 @@ class ProcessMiningRetentionServiceTest {
         return r;
     }
 
+    /**
+     * Builds a {@link StatusApp} (service) with the given name.
+     *
+     * @param name the service name
+     * @return a new status app
+     */
     private StatusApp app(String name) {
         StatusApp a = new StatusApp();
         a.setName(name);
         return a;
     }
 
+    /**
+     * Stubs the {@link EntityManager} JPQL delete chain so that executing the query reports
+     * the given number of affected rows.
+     *
+     * @param deleted the row count returned by {@code executeUpdate()}
+     */
     private void stubQueryChain(int deleted) {
         when(entityManager.createQuery(anyString())).thenReturn(query);
         lenient().when(query.setParameter(anyString(), any())).thenReturn(query);
@@ -84,6 +103,10 @@ class ProcessMiningRetentionServiceTest {
 
     // ── findAll / findById ────────────────────────────────────────────────────
 
+    /**
+     * Verifies that {@code findAll} maps every persisted rule to a response, and that a rule
+     * without a platform is reported with the "All Platforms" label.
+     */
     @Test
     void findAll_mapsAllRulesToResponses() {
         ProcessMiningRetentionRule r = rule(UUID.randomUUID(), 30);
@@ -97,6 +120,9 @@ class ProcessMiningRetentionServiceTest {
         assertThat(result.get(0).getPlatformName()).isEqualTo("All Platforms");
     }
 
+    /**
+     * Verifies that {@code findById} returns the mapped response when the rule exists.
+     */
     @Test
     void findById_present_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -108,6 +134,9 @@ class ProcessMiningRetentionServiceTest {
         assertThat(resp.getRetentionDays()).isEqualTo(15);
     }
 
+    /**
+     * Verifies that {@code findById} throws {@link NoSuchElementException} when the rule is absent.
+     */
     @Test
     void findById_missing_throwsNoSuchElement() {
         UUID id = UUID.randomUUID();
@@ -120,6 +149,10 @@ class ProcessMiningRetentionServiceTest {
 
     // ── create / update ───────────────────────────────────────────────────────
 
+    /**
+     * Verifies that creating a rule with neither tenant nor platform saves it with null
+     * associations, and never looks up a tenant or platform.
+     */
     @Test
     void create_noTenantNoPlatform_savesRuleWithNulls() {
         ProcessMiningRetentionRequest req = new ProcessMiningRetentionRequest();
@@ -137,6 +170,10 @@ class ProcessMiningRetentionServiceTest {
         verify(statusPlatformRepository, never()).findById(any());
     }
 
+    /**
+     * Verifies that creating a rule with a tenant and platform id resolves both entities and
+     * reflects their ids and names in the response.
+     */
     @Test
     void create_withTenantAndPlatform_resolvesBoth() {
         UUID tenantId = UUID.randomUUID();
@@ -167,6 +204,9 @@ class ProcessMiningRetentionServiceTest {
         assertThat(resp.getPlatformName()).isEqualTo("Prod");
     }
 
+    /**
+     * Verifies that creating a rule with an unknown tenant id throws {@link NoSuchElementException}.
+     */
     @Test
     void create_tenantNotFound_throwsNoSuchElement() {
         UUID tenantId = UUID.randomUUID();

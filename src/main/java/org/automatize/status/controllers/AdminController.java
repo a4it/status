@@ -254,6 +254,12 @@ public class AdminController {
         return "admin/log-api-keys";
     }
 
+    /**
+     * Displays the users management page.
+     *
+     * @param model the model for template rendering
+     * @return the users template view name
+     */
     @GetMapping("/users")
     public String users(Model model) {
         model.addAttribute(ACTIVE_NAV, "users");
@@ -261,6 +267,12 @@ public class AdminController {
         return "admin/users";
     }
 
+    /**
+     * Displays the process mining page.
+     *
+     * @param model the model for template rendering
+     * @return the process-mining template view name
+     */
     @GetMapping("/process-mining")
     public String processMining(Model model) {
         model.addAttribute(ACTIVE_NAV, "process-mining");
@@ -268,6 +280,12 @@ public class AdminController {
         return "admin/process-mining";
     }
 
+    /**
+     * Displays the process timeline page.
+     *
+     * @param model the model for template rendering
+     * @return the process-timeline template view name
+     */
     @GetMapping("/process-timeline")
     public String processTimeline(Model model) {
         model.addAttribute(ACTIVE_NAV, "process-timeline");
@@ -275,6 +293,12 @@ public class AdminController {
         return "admin/process-timeline";
     }
 
+    /**
+     * Displays the context selection page for choosing tenant/organization scope.
+     *
+     * @param model the model for template rendering
+     * @return the select-context template view name
+     */
     @GetMapping("/select-context")
     public String selectContext(Model model) {
         model.addAttribute(ACTIVE_NAV, "select-context");
@@ -282,6 +306,12 @@ public class AdminController {
         return "admin/select-context";
     }
 
+    /**
+     * Displays the help and documentation page.
+     *
+     * @param model the model for template rendering
+     * @return the help template view name
+     */
     @GetMapping("/help")
     public String help(Model model) {
         model.addAttribute(ACTIVE_NAV, "help");
@@ -289,6 +319,12 @@ public class AdminController {
         return "admin/help";
     }
 
+    /**
+     * Displays the JVM monitoring and management page.
+     *
+     * @param model the model for template rendering
+     * @return the jvm template view name
+     */
     @GetMapping("/jvm")
     public String jvm(Model model) {
         model.addAttribute(ACTIVE_NAV, "jvm");
@@ -296,6 +332,12 @@ public class AdminController {
         return "admin/jvm";
     }
 
+    /**
+     * Displays the system log viewer page.
+     *
+     * @param model the model for template rendering
+     * @return the log-viewer template view name
+     */
     @GetMapping("/log-viewer")
     public String logViewer(Model model) {
         model.addAttribute(ACTIVE_NAV, "log-viewer");
@@ -303,6 +345,12 @@ public class AdminController {
         return "admin/log-viewer";
     }
 
+    /**
+     * Displays the data retention configuration page.
+     *
+     * @param model the model for template rendering
+     * @return the data-retention template view name
+     */
     @GetMapping("/data-retention")
     public String dataRetention(Model model) {
         model.addAttribute(ACTIVE_NAV, "data-retention");
@@ -310,6 +358,12 @@ public class AdminController {
         return "admin/data-retention";
     }
 
+    /**
+     * Displays the scheduler jobs management page.
+     *
+     * @param model the model for template rendering
+     * @return the scheduler jobs template view name
+     */
     @GetMapping("/scheduler")
     public String scheduler(Model model) {
         model.addAttribute(ACTIVE_NAV, "scheduler");
@@ -317,6 +371,12 @@ public class AdminController {
         return "admin/scheduler/jobs";
     }
 
+    /**
+     * Displays the scheduler datasources management page.
+     *
+     * @param model the model for template rendering
+     * @return the scheduler datasources template view name
+     */
     @GetMapping("/scheduler/datasources")
     public String schedulerDatasources(Model model) {
         model.addAttribute(ACTIVE_NAV, "scheduler-datasources");

@@ -173,6 +173,10 @@ public class ProcessMiningRetentionService {
         return result;
     }
 
+    /**
+     * Scheduled job that runs the retention cleanup daily at 03:00.
+     * Delegates to {@link #runRetentionNow()} and logs the outcome.
+     */
     @Scheduled(cron = "0 0 3 * * *")
     public void scheduledRun() {
         logger.info("Starting scheduled process mining retention run...");

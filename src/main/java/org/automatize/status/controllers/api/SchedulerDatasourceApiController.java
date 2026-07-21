@@ -202,6 +202,7 @@ public class SchedulerDatasourceApiController {
         ds.setMaxPoolSize(req.getMaxPoolSize() != null ? req.getMaxPoolSize() : 5);
         ds.setConnectionTimeoutMs(req.getConnectionTimeoutMs() != null ? req.getConnectionTimeoutMs() : 5000);
         ds.setEnabled(req.getEnabled() != null ? req.getEnabled() : true);
+        // Attach the owning organization when an organization id was provided
         if (req.getOrganizationId() != null) {
             organizationRepository.findById(req.getOrganizationId())
                     .ifPresent(ds::setOrganization);
@@ -213,6 +214,11 @@ public class SchedulerDatasourceApiController {
     // Utility
     // -------------------------------------------------------------------------
 
+    /**
+     * Resolves the currently authenticated user from the security context.
+     *
+     * @return the {@link UserPrincipal} for the current request
+     */
     private UserPrincipal currentPrincipal() {
         return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

@@ -7,7 +7,20 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Request class for creating or updating a scheduler job.
+ * <p>
+ * Request object for creating or updating a scheduler job in the status monitoring system.
+ * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Encapsulate the scheduling parameters (cron expression, time zone, concurrency,
+ *       retry and timeout policy) of a monitoring job</li>
+ *   <li>Carry exactly one job-type-specific configuration payload (program, SQL, REST or SOAP)
+ *       depending on the selected {@code jobType}</li>
+ *   <li>Associate the job with an owning organization in the multi-tenant hierarchy</li>
+ * </ul>
+ * </p>
  *
  * <p>Licensed under the Creative Commons Attribution-NonCommercial 4.0
  * International (CC BY-NC 4.0).</p>
@@ -16,109 +29,151 @@ import java.util.UUID;
  */
 public class SchedulerJobRequest {
 
+    /** The job display name. */
     @NotBlank
     private String name;
 
+    /** The human-readable job description. */
     private String description;
 
+    /** The job type discriminator (e.g. PROGRAM, SQL, REST, SOAP). */
     @NotBlank
     private String jobType;
 
+    /** The cron expression defining the execution schedule. */
     @NotBlank
     private String cronExpression;
 
+    /** The time zone in which the cron expression is evaluated. */
     private String timeZone = "UTC";
 
+    /** Whether the job is enabled for scheduling. */
     private Boolean enabled = true;
 
+    /** Whether concurrent executions of this job are permitted. */
     private Boolean allowConcurrent = false;
 
+    /** The maximum number of retry attempts on failure. */
     private Integer maxRetryAttempts = 0;
 
+    /** The delay in seconds between retry attempts. */
     private Integer retryDelaySeconds = 60;
 
+    /** The per-execution timeout in seconds. */
     private Integer timeoutSeconds = 300;
 
+    /** The maximum number of captured output bytes to retain. */
     private Integer maxOutputBytes = 102400;
 
+    /** The free-form tags used to categorize the job. */
     private List<String> tags;
 
+    /** The owning organization identifier. */
     private UUID organizationId;
 
+    /** The program-execution configuration (used when jobType is PROGRAM). */
     private ProgramConfigRequest programConfig;
 
+    /** The SQL-execution configuration (used when jobType is SQL). */
     private SqlConfigRequest sqlConfig;
 
+    /** The REST-call configuration (used when jobType is REST). */
     private RestConfigRequest restConfig;
 
+    /** The SOAP-call configuration (used when jobType is SOAP). */
     private SoapConfigRequest soapConfig;
 
     // -------------------------------------------------------------------------
     // Nested request classes
     // -------------------------------------------------------------------------
 
+    /**
+     * Configuration payload for a PROGRAM-type scheduler job that executes an
+     * external command or shell script as part of a monitoring check.
+     */
     public static class ProgramConfigRequest {
 
+        /** The executable or command to run. */
         private String command;
+        /** The ordered command-line arguments. */
         private List<String> arguments;
+        /** The working directory for the process. */
         private String workingDirectory;
+        /** The environment variables to inject into the process. */
         private Map<String, String> environmentVars;
+        /** Whether to wrap the command in a shell invocation. */
         private Boolean shellWrap = false;
+        /** The shell executable path used when shell-wrapping. */
         private String shellPath = "/bin/bash";
+        /** The OS user to run the process as. */
         private String runAsUser;
 
+        /** @return the executable or command to run */
         public String getCommand() {
             return command;
         }
 
+        /** @param command the executable or command to run */
         public void setCommand(String command) {
             this.command = command;
         }
 
+        /** @return the ordered command-line arguments */
         public List<String> getArguments() {
             return arguments;
         }
 
+        /** @param arguments the ordered command-line arguments to set */
         public void setArguments(List<String> arguments) {
             this.arguments = arguments;
         }
 
+        /** @return the working directory for the process */
         public String getWorkingDirectory() {
             return workingDirectory;
         }
 
+        /** @param workingDirectory the working directory for the process to set */
         public void setWorkingDirectory(String workingDirectory) {
             this.workingDirectory = workingDirectory;
         }
 
+        /** @return the environment variables to inject into the process */
         public Map<String, String> getEnvironmentVars() {
             return environmentVars;
         }
 
+        /** @param environmentVars the environment variables to inject into the process */
         public void setEnvironmentVars(Map<String, String> environmentVars) {
             this.environmentVars = environmentVars;
         }
 
+        /** @return whether to wrap the command in a shell invocation */
         public Boolean getShellWrap() {
             return shellWrap;
         }
 
+        /** @param shellWrap whether to wrap the command in a shell invocation */
         public void setShellWrap(Boolean shellWrap) {
             this.shellWrap = shellWrap;
         }
 
+        /** @return the shell executable path used when shell-wrapping */
         public String getShellPath() {
             return shellPath;
         }
 
+        /** @param shellPath the shell executable path to set */
         public void setShellPath(String shellPath) {
             this.shellPath = shellPath;
         }
 
+        /** @return the OS user to run the process as */
         public String getRunAsUser() {
             return runAsUser;
         }
 
+        /** @param runAsUser the OS user to run the process as */
         public void setRunAsUser(String runAsUser) {
             this.runAsUser = runAsUser;
         }
