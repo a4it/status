@@ -25,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import org.mockito.ArgumentCaptor;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -70,7 +72,7 @@ class AuthServiceTest {
      * Computes the SHA-256 hex digest exactly as AuthService.hashToken does,
      * so the stored refresh-token hash can be reproduced in tests.
      */
-    private static String sha256Hex(String token) throws Exception {
+    private static String sha256Hex(String token) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
         return HexFormat.of().formatHex(hash);
@@ -209,7 +211,7 @@ class AuthServiceTest {
         MessageResponse response = authService.registerUser(request);
 
         assertThat(response.isSuccess()).isTrue();
-        org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         User saved = captor.getValue();
         assertThat(saved.getRole()).isEqualTo("USER");
@@ -238,7 +240,7 @@ class AuthServiceTest {
         MessageResponse response = authService.registerUser(request);
 
         assertThat(response.isSuccess()).isTrue();
-        org.mockito.ArgumentCaptor<User> captor = org.mockito.ArgumentCaptor.forClass(User.class);
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         assertThat(captor.getValue().getOrganization()).isEqualTo(org);
     }

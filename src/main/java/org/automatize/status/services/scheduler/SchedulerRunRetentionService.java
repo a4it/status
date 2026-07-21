@@ -55,7 +55,7 @@ public class SchedulerRunRetentionService {
             try {
                 runRepository.deleteByJobIdAndStartedAtBefore(job.getId(), cutoff);
             } catch (Exception e) {
-                logger.error("Error cleaning runs for job " + job.getId(), e);
+                logger.error("Error cleaning runs for job {}", job.getId(), e);
             }
         });
 

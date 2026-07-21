@@ -79,7 +79,7 @@ class LogMetricServiceTest {
     void aggregateRecentLogs_newBucket_createsMetricWithTenant() {
         UUID tenantId = UUID.randomUUID();
         Object[] row = new Object[]{tenantId, "billing", "ERROR", 5L};
-        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.of(row));
+        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
         when(logMetricRepository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
                 eq(tenantId), eq("billing"), eq("ERROR"), any(), eq("MINUTE")))
                 .thenReturn(Optional.empty());
@@ -100,7 +100,7 @@ class LogMetricServiceTest {
     @Test
     void aggregateRecentLogs_nullTenant_createsMetricWithoutTenant() {
         Object[] row = new Object[]{null, "billing", "INFO", 3L};
-        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.of(row));
+        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
         when(logMetricRepository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
                 any(), any(), any(), any(), any()))
                 .thenReturn(Optional.empty());
@@ -116,7 +116,7 @@ class LogMetricServiceTest {
     @Test
     void aggregateRecentLogs_existingBucket_incrementsCount() {
         Object[] row = new Object[]{null, "billing", "INFO", 4L};
-        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.of(row));
+        when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
 
         LogMetric existing = new LogMetric();
         existing.setService("billing");
