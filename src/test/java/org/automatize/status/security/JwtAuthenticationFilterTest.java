@@ -1,0 +1,182 @@
+package org.automatize.status.security;
+
+import jakarta.servlet.FilterChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collections;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Unit tests for {@link JwtAuthenticationFilter}.
+ *
+ * <p>Note: the filter extracts the token only from the {@code Authorization: Bearer ...}
+ * header (see {@code getJwtFromRequest}); it does not read cookies, so no cookie-based
+ * extraction test exists.</p>
+ */
+@ExtendWith(MockitoExtension.class)
+class JwtAuthenticationFilterTest {
+
+    @Mock
+    private JwtUtils jwtUtils;
+
+    @Mock
+    private CustomUserDetailsService customUserDetailsService;
+
+    @Mock
+    private FilterChain filterChain;
+
+    @Mock
+    private UserDetails userDetails;
+
+    @InjectMocks
+    private JwtAuthenticationFilter filter;
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void doFilterInternal_validBearerToken_setsAuthenticationAndContinuesChain() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/data");
+        request.addHeader("Authorization", "Bearer valid-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(jwtUtils.validateJwtToken("valid-token")).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken("valid-token")).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken("valid-token")).thenReturn(null);
+        when(jwtUtils.getOrganizationIdFromJwtToken("valid-token")).thenReturn(null);
+        when(customUserDetailsService.loadUserById(userId)).thenReturn(userDetails);
+        when(userDetails.getAuthorities()).thenReturn(Collections.emptyList());
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
+                .isEqualTo(userDetails);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_tokenWithContext_usesContextAwareLookup() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        UUID tenantId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/data");
+        request.addHeader("Authorization", "Bearer ctx-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(jwtUtils.validateJwtToken("ctx-token")).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken("ctx-token")).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken("ctx-token")).thenReturn(tenantId);
+        when(jwtUtils.getOrganizationIdFromJwtToken("ctx-token")).thenReturn(orgId);
+        when(customUserDetailsService.loadUserByIdWithContext(userId, tenantId, orgId))
+                .thenReturn(userDetails);
+        when(userDetails.getAuthorities()).thenReturn(Collections.emptyList());
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        verify(customUserDetailsService).loadUserByIdWithContext(userId, tenantId, orgId);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNotNull();
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_missingToken_doesNotAuthenticateButContinuesChain() throws Exception {
+        // Arrange
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/data");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(customUserDetailsService, never()).loadUserById(any());
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_invalidToken_doesNotAuthenticateButContinuesChain() throws Exception {
+        // Arrange
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/data");
+        request.addHeader("Authorization", "Bearer bad-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(jwtUtils.validateJwtToken("bad-token")).thenReturn(false);
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_staticResource_skipsJwtProcessing() throws Exception {
+        // Arrange
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/static/app.css");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert
+        verify(jwtUtils, never()).validateJwtToken(any());
+        verify(filterChain, times(1)).doFilter(request, response);
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+    }
+
+    @Test
+    void doFilterInternal_userLookupThrows_swallowsExceptionAndContinuesChain() throws Exception {
+        // Arrange
+        UUID userId = UUID.randomUUID();
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/data");
+        request.addHeader("Authorization", "Bearer valid-token");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        when(jwtUtils.validateJwtToken("valid-token")).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken("valid-token")).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken("valid-token")).thenReturn(null);
+        when(jwtUtils.getOrganizationIdFromJwtToken("valid-token")).thenReturn(null);
+        when(customUserDetailsService.loadUserById(userId))
+                .thenThrow(new RuntimeException("db down"));
+
+        // Act
+        filter.doFilterInternal(request, response, filterChain);
+
+        // Assert: exception is logged and swallowed, chain still proceeds
+        assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
+    }
+}
