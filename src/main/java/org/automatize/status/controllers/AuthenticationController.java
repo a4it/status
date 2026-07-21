@@ -36,6 +36,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 public class AuthenticationController {
 
+    private static final String ANONYMOUS_USER = "anonymousUser";
+    private static final String REDIRECT_ADMIN = "redirect:/admin";
+    private static final String ATTR_APPLICATION_NAME = "applicationName";
+    private static final String ATTR_SERVER_PORT = "serverPort";
+
     @Value("${spring.application.name}")
     private String applicationName;
 
@@ -60,12 +65,12 @@ public class AuthenticationController {
     @GetMapping("/login")
     public String showLoginForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/admin";
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
+            return REDIRECT_ADMIN;
         }
         
-        model.addAttribute("applicationName", applicationName);
-        model.addAttribute("serverPort", serverPort);
+        model.addAttribute(ATTR_APPLICATION_NAME, applicationName);
+        model.addAttribute(ATTR_SERVER_PORT, serverPort);
         
         return "authentication/login";
     }
@@ -134,12 +139,12 @@ public class AuthenticationController {
         }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/admin";
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
+            return REDIRECT_ADMIN;
         }
 
-        model.addAttribute("applicationName", applicationName);
-        model.addAttribute("serverPort", serverPort);
+        model.addAttribute(ATTR_APPLICATION_NAME, applicationName);
+        model.addAttribute(ATTR_SERVER_PORT, serverPort);
 
         return "authentication/register";
     }
@@ -156,12 +161,12 @@ public class AuthenticationController {
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals("anonymousUser")) {
-            return "redirect:/admin";
+        if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
+            return REDIRECT_ADMIN;
         }
         
-        model.addAttribute("applicationName", applicationName);
-        model.addAttribute("serverPort", serverPort);
+        model.addAttribute(ATTR_APPLICATION_NAME, applicationName);
+        model.addAttribute(ATTR_SERVER_PORT, serverPort);
         
         return "authentication/forgot-password";
     }

@@ -33,6 +33,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @PropertySource("classpath:build.properties")
 public class AdminController {
 
+    /**
+     * Model attribute name for the active navigation item.
+     */
+    private static final String ACTIVE_NAV = "activeNav";
+
     @Value("${spring.application.name}")
     private String applicationName;
 
@@ -75,7 +80,7 @@ public class AdminController {
      */
     @GetMapping
     public String dashboard(Model model) {
-        model.addAttribute("activeNav", "dashboard");
+        model.addAttribute(ACTIVE_NAV, "dashboard");
         addCommonAttributes(model);
         return "admin/dashboard";
     }
@@ -88,7 +93,7 @@ public class AdminController {
      */
     @GetMapping("/platforms")
     public String platforms(Model model) {
-        model.addAttribute("activeNav", "platforms");
+        model.addAttribute(ACTIVE_NAV, "platforms");
         addCommonAttributes(model);
         return "admin/platforms";
     }
@@ -101,7 +106,7 @@ public class AdminController {
      */
     @GetMapping("/issues")
     public String issues(Model model) {
-        model.addAttribute("activeNav", "issues");
+        model.addAttribute(ACTIVE_NAV, "issues");
         addCommonAttributes(model);
         return "admin/issues";
     }
@@ -114,7 +119,7 @@ public class AdminController {
      */
     @GetMapping("/components")
     public String components(Model model) {
-        model.addAttribute("activeNav", "components");
+        model.addAttribute(ACTIVE_NAV, "components");
         addCommonAttributes(model);
         return "admin/components";
     }
@@ -127,7 +132,7 @@ public class AdminController {
      */
     @GetMapping("/subscribers")
     public String subscribers(Model model) {
-        model.addAttribute("activeNav", "subscribers");
+        model.addAttribute(ACTIVE_NAV, "subscribers");
         addCommonAttributes(model);
         return "admin/subscribers";
     }
@@ -140,7 +145,7 @@ public class AdminController {
      */
     @GetMapping("/events")
     public String events(Model model) {
-        model.addAttribute("activeNav", "events");
+        model.addAttribute(ACTIVE_NAV, "events");
         addCommonAttributes(model);
         return "admin/events";
     }
@@ -153,7 +158,7 @@ public class AdminController {
      */
     @GetMapping("/health-checks")
     public String healthChecks(Model model) {
-        model.addAttribute("activeNav", "health-checks");
+        model.addAttribute(ACTIVE_NAV, "health-checks");
         addCommonAttributes(model);
         return "admin/health-checks";
     }
@@ -166,7 +171,7 @@ public class AdminController {
      */
     @GetMapping("/tenants")
     public String tenants(Model model) {
-        model.addAttribute("activeNav", "tenants");
+        model.addAttribute(ACTIVE_NAV, "tenants");
         addCommonAttributes(model);
         return "admin/tenants";
     }
@@ -179,7 +184,7 @@ public class AdminController {
      */
     @GetMapping("/organizations")
     public String organizations(Model model) {
-        model.addAttribute("activeNav", "organizations");
+        model.addAttribute(ACTIVE_NAV, "organizations");
         addCommonAttributes(model);
         return "admin/organizations";
     }
@@ -192,7 +197,7 @@ public class AdminController {
      */
     @GetMapping("/logs")
     public String logs(Model model) {
-        model.addAttribute("activeNav", "logs");
+        model.addAttribute(ACTIVE_NAV, "logs");
         addCommonAttributes(model);
         return "admin/logs";
     }
@@ -205,7 +210,7 @@ public class AdminController {
      */
     @GetMapping("/drop-rules")
     public String dropRules(Model model) {
-        model.addAttribute("activeNav", "drop-rules");
+        model.addAttribute(ACTIVE_NAV, "drop-rules");
         addCommonAttributes(model);
         return "admin/drop-rules";
     }
@@ -218,7 +223,7 @@ public class AdminController {
      */
     @GetMapping("/log-metrics")
     public String logMetrics(Model model) {
-        model.addAttribute("activeNav", "log-metrics");
+        model.addAttribute(ACTIVE_NAV, "log-metrics");
         addCommonAttributes(model);
         return "admin/log-metrics";
     }
@@ -231,7 +236,7 @@ public class AdminController {
      */
     @GetMapping("/alert-rules")
     public String alertRules(Model model) {
-        model.addAttribute("activeNav", "alert-rules");
+        model.addAttribute(ACTIVE_NAV, "alert-rules");
         addCommonAttributes(model);
         return "admin/alert-rules";
     }
@@ -244,77 +249,77 @@ public class AdminController {
      */
     @GetMapping("/log-api-keys")
     public String logApiKeys(Model model) {
-        model.addAttribute("activeNav", "log-api-keys");
+        model.addAttribute(ACTIVE_NAV, "log-api-keys");
         addCommonAttributes(model);
         return "admin/log-api-keys";
     }
 
     @GetMapping("/users")
     public String users(Model model) {
-        model.addAttribute("activeNav", "users");
+        model.addAttribute(ACTIVE_NAV, "users");
         addCommonAttributes(model);
         return "admin/users";
     }
 
     @GetMapping("/process-mining")
     public String processMining(Model model) {
-        model.addAttribute("activeNav", "process-mining");
+        model.addAttribute(ACTIVE_NAV, "process-mining");
         addCommonAttributes(model);
         return "admin/process-mining";
     }
 
     @GetMapping("/process-timeline")
     public String processTimeline(Model model) {
-        model.addAttribute("activeNav", "process-timeline");
+        model.addAttribute(ACTIVE_NAV, "process-timeline");
         addCommonAttributes(model);
         return "admin/process-timeline";
     }
 
     @GetMapping("/select-context")
     public String selectContext(Model model) {
-        model.addAttribute("activeNav", "select-context");
+        model.addAttribute(ACTIVE_NAV, "select-context");
         addCommonAttributes(model);
         return "admin/select-context";
     }
 
     @GetMapping("/help")
     public String help(Model model) {
-        model.addAttribute("activeNav", "help");
+        model.addAttribute(ACTIVE_NAV, "help");
         addCommonAttributes(model);
         return "admin/help";
     }
 
     @GetMapping("/jvm")
     public String jvm(Model model) {
-        model.addAttribute("activeNav", "jvm");
+        model.addAttribute(ACTIVE_NAV, "jvm");
         addCommonAttributes(model);
         return "admin/jvm";
     }
 
     @GetMapping("/log-viewer")
     public String logViewer(Model model) {
-        model.addAttribute("activeNav", "log-viewer");
+        model.addAttribute(ACTIVE_NAV, "log-viewer");
         addCommonAttributes(model);
         return "admin/log-viewer";
     }
 
     @GetMapping("/data-retention")
     public String dataRetention(Model model) {
-        model.addAttribute("activeNav", "data-retention");
+        model.addAttribute(ACTIVE_NAV, "data-retention");
         addCommonAttributes(model);
         return "admin/data-retention";
     }
 
     @GetMapping("/scheduler")
     public String scheduler(Model model) {
-        model.addAttribute("activeNav", "scheduler");
+        model.addAttribute(ACTIVE_NAV, "scheduler");
         addCommonAttributes(model);
         return "admin/scheduler/jobs";
     }
 
     @GetMapping("/scheduler/datasources")
     public String schedulerDatasources(Model model) {
-        model.addAttribute("activeNav", "scheduler-datasources");
+        model.addAttribute(ACTIVE_NAV, "scheduler-datasources");
         addCommonAttributes(model);
         return "admin/scheduler/datasources";
     }

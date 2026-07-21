@@ -35,6 +35,21 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     private static final String DEMO_PLATFORM_SLUG = "demo-platform";
 
+    private static final String SYSTEM = "system";
+
+    // Log levels
+    private static final String LEVEL_WARNING = "WARNING";
+    private static final String LEVEL_ERROR = "ERROR";
+
+    // Reused log-message fragments
+    private static final String MSG_INCOMING_ORDERS = MSG_INCOMING_ORDERS;
+    private static final String MSG_JWT_VALIDATED = "JWT validated for user ";
+    private static final String MSG_ORDER = "Order ";
+    private static final String MSG_FOR = " for ";
+    private static final String MSG_PAYMENT_AUTHORISED = "Payment authorised: ";
+    private static final String MSG_ARROW_USER = " → user ";
+    private static final String MSG_STOCK_RESERVED_FOR = "Stock reserved for ";
+
     // Service indices
     private static final int SVC_GATEWAY   = 0;
     private static final int SVC_AUTH      = 1;
@@ -143,8 +158,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         p.setIsPublic(true);
         p.setTenant(tenant);
         p.setOrganization(org);
-        p.setCreatedBy("system");
-        p.setLastModifiedBy("system");
+        p.setCreatedBy(SYSTEM);
+        p.setLastModifiedBy(SYSTEM);
         return statusPlatformRepository.save(p);
     }
 
@@ -158,8 +173,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         app.setPlatform(platform);
         app.setTenant(tenant);
         app.setOrganization(org);
-        app.setCreatedBy("system");
-        app.setLastModifiedBy("system");
+        app.setCreatedBy(SYSTEM);
+        app.setLastModifiedBy(SYSTEM);
         return statusAppRepository.save(app);
     }
 
@@ -235,7 +250,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         String orderId = orderId(rng);
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
-            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO", "Incoming POST /api/orders — " + orderId + " from user " + userId),
+            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO", MSG_INCOMING_ORDERS + orderId + " from user " + userId),
             log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO", "JWT validated for user " + userId + ", role=CUSTOMER"),
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO", "Order " + orderId + " created and persisted to DB"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),  "INFO", "Stock reserved: 1x SKU-" + (rng.nextInt(900) + 100) + " for " + orderId),
@@ -264,7 +279,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         String orderId = orderId(rng);
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
-            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO",    "Incoming POST /api/orders — " + orderId),
+            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO",    MSG_INCOMING_ORDERS + orderId),
             log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO",    "JWT validated for user " + userId),
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO",    "Order " + orderId + " reserved in DB"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),  "INFO",    "Stock reserved for " + orderId),
@@ -284,7 +299,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int userId = rng.nextInt(9000) + 1000;
         double balance = 20 + rng.nextInt(480);
         return List.of(
-            log(tenant, apps.get(SVC_GATEWAY),  traceId, base,                 "INFO", "Incoming POST /api/orders — " + orderId + " (wallet payment)"),
+            log(tenant, apps.get(SVC_GATEWAY),  traceId, base,                 "INFO", MSG_INCOMING_ORDERS + orderId + " (wallet payment)"),
             log(tenant, apps.get(SVC_AUTH),      traceId, base.plusSeconds(1), "INFO", "JWT validated for user " + userId + ", wallet balance=" + balance),
             log(tenant, apps.get(SVC_ORDER),     traceId, base.plusSeconds(3), "INFO", "Order " + orderId + " created, deducted from wallet balance"),
             log(tenant, apps.get(SVC_INVENTORY), traceId, base.plusSeconds(4), "INFO", "Stock reserved for " + orderId),
@@ -383,7 +398,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int results = 5 + rng.nextInt(95);
         return List.of(
             log(tenant, apps.get(SVC_SEARCH),    traceId, base,                  "INFO", "Search query '" + query + "' — " + results + " results returned to user " + userId),
-            log(tenant, apps.get(SVC_GATEWAY),   traceId, base.plusSeconds(4),   "INFO", "Incoming POST /api/orders — " + orderId + " (originated from search click)"),
+            log(tenant, apps.get(SVC_GATEWAY),   traceId, base.plusSeconds(4),   "INFO", MSG_INCOMING_ORDERS + orderId + " (originated from search click)"),
             log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(5),  "INFO", "JWT validated for user " + userId),
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(7),  "INFO", "Order " + orderId + " created from search result — query='" + query + "'"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(8),  "INFO", "Stock reserved for " + orderId),
@@ -400,7 +415,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         String orderId = orderId(rng);
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
-            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                   "INFO",    "Incoming POST /api/orders — " + orderId),
+            log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                   "INFO",    MSG_INCOMING_ORDERS + orderId),
             log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),   "INFO",    "JWT validated for user " + userId),
             log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),   "INFO",    "Order " + orderId + " created and reserved"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),   "INFO",    "Stock reserved for " + orderId),

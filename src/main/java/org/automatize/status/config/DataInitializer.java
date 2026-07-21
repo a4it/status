@@ -40,6 +40,11 @@ public class DataInitializer implements CommandLineRunner {
 
     private static final Logger logger = LoggerFactory.getLogger(DataInitializer.class);
 
+    private static final String USERNAME_ADMIN = "admin";
+    private static final String USERNAME_SUPERADMIN = "superadmin";
+    private static final String SYSTEM = "system";
+    private static final String STATUS_ACTIVE = "ACTIVE";
+
     @Value("${data.initializer.enabled:false}")
     private boolean enabled;
 
@@ -90,7 +95,7 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        if (!userRepository.existsByUsername("admin")) {
+        if (!userRepository.existsByUsername(USERNAME_ADMIN)) {
             logger.info("Initializing default admin account...");
 
             Tenant tenant = tenantRepository.findByName("Default Tenant")
@@ -98,8 +103,8 @@ public class DataInitializer implements CommandLineRunner {
                         Tenant newTenant = new Tenant();
                         newTenant.setName("Default Tenant");
                         newTenant.setIsActive(true);
-                        newTenant.setCreatedBy("system");
-                        newTenant.setLastModifiedBy("system");
+                        newTenant.setCreatedBy(SYSTEM);
+                        newTenant.setLastModifiedBy(SYSTEM);
                         return tenantRepository.save(newTenant);
                     });
 
@@ -108,43 +113,43 @@ public class DataInitializer implements CommandLineRunner {
                         Organization newOrg = new Organization();
                         newOrg.setName("Default Organization");
                         newOrg.setDescription("Default organization for system administrators");
-                        newOrg.setStatus("ACTIVE");
+                        newOrg.setStatus(STATUS_ACTIVE);
                         newOrg.setOrganizationType("INTERNAL");
                         newOrg.setTenant(tenant);
-                        newOrg.setCreatedBy("system");
-                        newOrg.setLastModifiedBy("system");
+                        newOrg.setCreatedBy(SYSTEM);
+                        newOrg.setLastModifiedBy(SYSTEM);
                         return organizationRepository.save(newOrg);
                     });
 
             User admin = new User();
-            admin.setUsername("admin");
-            admin.setPassword(passwordEncoder.encode("admin"));
+            admin.setUsername(USERNAME_ADMIN);
+            admin.setPassword(passwordEncoder.encode(USERNAME_ADMIN));
             admin.setEmail("admin@status.local");
             admin.setFullName("System Administrator");
             admin.setRole("ADMIN");
             admin.setEnabled(true);
-            admin.setStatus("ACTIVE");
+            admin.setStatus(STATUS_ACTIVE);
             admin.setOrganization(organization);
-            admin.setCreatedBy("system");
-            admin.setLastModifiedBy("system");
+            admin.setCreatedBy(SYSTEM);
+            admin.setLastModifiedBy(SYSTEM);
 
             userRepository.save(admin);
             logger.info("Admin account created successfully (username: admin)");
         }
 
-        if (!userRepository.existsByUsername("superadmin")) {
+        if (!userRepository.existsByUsername(USERNAME_SUPERADMIN)) {
             logger.info("Initializing superadmin account...");
 
             User superAdmin = new User();
-            superAdmin.setUsername("superadmin");
-            superAdmin.setPassword(passwordEncoder.encode("superadmin"));
+            superAdmin.setUsername(USERNAME_SUPERADMIN);
+            superAdmin.setPassword(passwordEncoder.encode(USERNAME_SUPERADMIN));
             superAdmin.setEmail("superadmin@status.local");
             superAdmin.setFullName("Super Administrator");
             superAdmin.setRole("SUPERADMIN");
             superAdmin.setEnabled(true);
-            superAdmin.setStatus("ACTIVE");
-            superAdmin.setCreatedBy("system");
-            superAdmin.setLastModifiedBy("system");
+            superAdmin.setStatus(STATUS_ACTIVE);
+            superAdmin.setCreatedBy(SYSTEM);
+            superAdmin.setLastModifiedBy(SYSTEM);
 
             userRepository.save(superAdmin);
             logger.info("Superadmin account created successfully (username: superadmin)");

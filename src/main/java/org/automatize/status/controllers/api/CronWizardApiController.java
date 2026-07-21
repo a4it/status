@@ -22,6 +22,8 @@ import java.util.*;
 @PreAuthorize("isAuthenticated()")
 public class CronWizardApiController {
 
+    private static final String EXPRESSION = "expression";
+
     @Autowired
     private CronValidationService cronValidationService;
 
@@ -31,7 +33,7 @@ public class CronWizardApiController {
 
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validate(@RequestBody Map<String, String> request) {
-        String expression = request.get("expression");
+        String expression = request.get(EXPRESSION);
         boolean valid = cronValidationService.isValid(expression);
         String error = valid ? null : cronValidationService.getValidationError(expression);
 
@@ -57,7 +59,7 @@ public class CronWizardApiController {
 
     @PostMapping("/preview")
     public ResponseEntity<List<String>> preview(@RequestBody Map<String, Object> request) {
-        String expression = (String) request.getOrDefault("expression", "");
+        String expression = (String) request.getOrDefault(EXPRESSION, "");
         String timezone = (String) request.getOrDefault("timezone", "UTC");
         int count = 5;
         Object countObj = request.get("count");

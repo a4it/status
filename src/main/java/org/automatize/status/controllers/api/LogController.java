@@ -9,6 +9,8 @@ import org.automatize.status.models.Log;
 import org.automatize.status.models.LogApiKey;
 import org.automatize.status.services.LogApiKeyService;
 import org.automatize.status.services.LogIngestionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +34,8 @@ import java.util.UUID;
 @RequestMapping("/api/logs")
 // MED-02: removed @CrossOrigin(origins = "*"); global CORS policy in SecurityConfig applies
 public class LogController {
+
+    private static final Logger logger = LoggerFactory.getLogger(LogController.class);
 
     @Autowired
     private LogIngestionService logIngestionService;
@@ -72,6 +76,7 @@ public class LogController {
             }
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(log));
         } catch (RuntimeException e) {
+            logger.warn("Log ingestion rejected: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse(e.getMessage(), false));
         }
@@ -110,6 +115,7 @@ public class LogController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(Map.of("stored", stored, "submitted", request.getLogs().size(), "success", true));
         } catch (RuntimeException e) {
+            logger.warn("Batch log ingestion rejected: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse(e.getMessage(), false));
         }
