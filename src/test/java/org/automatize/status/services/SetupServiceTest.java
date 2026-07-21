@@ -202,7 +202,7 @@ class SetupServiceTest {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
         when(dataSource.getConnection()).thenReturn(conn);
         when(conn.isValid(2)).thenReturn(true);
-        ReflectionTestUtils.setField(setupService, "flyway", null);
+        ReflectionTestUtils.setField(setupService, FLYWAY_FIELD, null);
         when(tenantRepository.findAll()).thenReturn(Collections.emptyList());
 
         SetupStatusResponse status = setupService.getStatus();
@@ -244,7 +244,7 @@ class SetupServiceTest {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
         when(dataSource.getConnection()).thenReturn(conn);
         when(conn.isValid(2)).thenReturn(true);
-        ReflectionTestUtils.setField(setupService, "flyway", null);
+        ReflectionTestUtils.setField(setupService, FLYWAY_FIELD, null);
 
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
@@ -275,7 +275,7 @@ class SetupServiceTest {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
         when(dataSource.getConnection()).thenReturn(conn);
         when(conn.isValid(2)).thenReturn(true);
-        ReflectionTestUtils.setField(setupService, "flyway", null);
+        ReflectionTestUtils.setField(setupService, FLYWAY_FIELD, null);
 
         UUID tenantId = UUID.randomUUID();
         Tenant tenant = new Tenant();

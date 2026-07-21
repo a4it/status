@@ -33,6 +33,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TenantContextServiceTest {
 
+    private static final String STATUS_ACTIVE = "ACTIVE";
+    private static final String ROLE_SUPERADMIN = "SUPERADMIN";
+
     @Mock
     private TenantRepository tenantRepository;
 

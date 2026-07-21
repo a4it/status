@@ -46,6 +46,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StatusAppServiceTest {
 
+    private static final String STATUS_OPERATIONAL = "OPERATIONAL";
+    private static final String STATUS_MAJOR_OUTAGE = "MAJOR_OUTAGE";
+    private static final String SLUG_NEW_APP = "new-app";
+
     @Mock
     private StatusAppRepository statusAppRepository;
     @Mock

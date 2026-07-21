@@ -54,6 +54,9 @@ class StatusComponentServiceTest {
     private StatusComponentService statusComponentService;
 
     private static final String OPERATIONAL = "OPERATIONAL";
+    private static final String DATABASE = "Database";
+    private static final String MAJOR_OUTAGE = "MAJOR_OUTAGE";
+    private static final String DEGRADED = "DEGRADED";
 
     /**
      * Establishes an authenticated security context before each test so that
@@ -143,16 +146,16 @@ class StatusComponentServiceTest {
         StatusApp app = newApp(appId, OPERATIONAL);
         StatusComponentRequest request = new StatusComponentRequest();
         request.setAppId(appId);
-        request.setName("Database");
+        request.setName(DATABASE);
 
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
-        when(statusComponentRepository.existsByAppIdAndName(appId, "Database")).thenReturn(false);
+        when(statusComponentRepository.existsByAppIdAndName(appId, DATABASE)).thenReturn(false);
         when(statusComponentRepository.countByAppId(appId)).thenReturn(2L);
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
 
         StatusComponentResponse response = statusComponentService.createComponent(request);
 
-        assertThat(response.getName()).isEqualTo("Database");
+        assertThat(response.getName()).isEqualTo(DATABASE);
         assertThat(response.getPosition()).isEqualTo(3);
         assertThat(response.getApiKey()).isNotBlank();
     }
@@ -260,14 +263,14 @@ class StatusComponentServiceTest {
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
-        StatusComponent outage = newComponent(UUID.randomUUID(), app, "A", "MAJOR_OUTAGE");
+        StatusComponent outage = newComponent(UUID.randomUUID(), app, "A", MAJOR_OUTAGE);
         when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of(outage));
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusAppRepository.save(any(StatusApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        statusComponentService.updateStatus(id, "MAJOR_OUTAGE");
+        statusComponentService.updateStatus(id, MAJOR_OUTAGE);
 
-        assertThat(app.getStatus()).isEqualTo("MAJOR_OUTAGE");
+        assertThat(app.getStatus()).isEqualTo(MAJOR_OUTAGE);
         verify(statusAppRepository).save(app);
     }
 
