@@ -74,12 +74,16 @@ public class StatusPlatformService {
     public Page<StatusPlatformResponse> getAllPlatforms(UUID tenantId, UUID organizationId, String search, Pageable pageable) {
         List<StatusPlatform> platforms;
 
+        // Tenant filter supplied: query platforms for that tenant, ordered by position
         if (tenantId != null) {
             platforms = statusPlatformRepository.findByTenantIdOrderByPosition(tenantId);
+        // Organization filter supplied: query platforms for that organization
         } else if (organizationId != null) {
             platforms = statusPlatformRepository.findByOrganizationId(organizationId);
+        // Search term supplied: run full-text search
         } else if (search != null && !search.isEmpty()) {
             platforms = statusPlatformRepository.search(search);
+        // No filters: return the full paginated result directly
         } else {
             return statusPlatformRepository.findAll(pageable).map(this::mapToResponse);
         }
@@ -152,6 +156,7 @@ public class StatusPlatformService {
      * @throws DuplicateResourceException if the slug already exists in the tenant
      */
     public StatusPlatformResponse createPlatform(StatusPlatform platform) {
+        // Guard: reject a slug that already exists within the same tenant
         if (platform.getTenant() != null &&
             statusPlatformRepository.existsByTenantIdAndSlug(platform.getTenant().getId(), platform.getSlug())) {
             throw new DuplicateResourceException("Platform with slug already exists in this tenant: " + platform.getSlug());
@@ -174,12 +179,14 @@ public class StatusPlatformService {
      * @return the newly created StatusPlatformResponse
      */
     public StatusPlatformResponse createPlatform(StatusPlatform platform, UUID tenantId, UUID organizationId) {
+        // Tenant ID supplied: resolve and attach the tenant
         if (tenantId != null) {
             Tenant tenant = tenantRepository.findById(tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             platform.setTenant(tenant);
         }
 
+        // Organization ID supplied: resolve and attach the organization
         if (organizationId != null) {
             Organization organization = organizationRepository.findById(organizationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
@@ -201,6 +208,7 @@ public class StatusPlatformService {
         StatusPlatform platform = statusPlatformRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
+        // Guard: if the slug changed, reject one that already exists within the same tenant
         if (!platform.getSlug().equals(updatedPlatform.getSlug()) &&
             platform.getTenant() != null &&
             statusPlatformRepository.existsByTenantIdAndSlug(platform.getTenant().getId(), updatedPlatform.getSlug())) {
@@ -234,12 +242,14 @@ public class StatusPlatformService {
         StatusPlatform platform = statusPlatformRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
+        // Tenant ID supplied and different from current: resolve and reassign the tenant
         if (tenantId != null && (platform.getTenant() == null || !platform.getTenant().getId().equals(tenantId))) {
             Tenant tenant = tenantRepository.findById(tenantId)
                     .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             platform.setTenant(tenant);
         }
 
+        // Organization ID supplied and different from current: resolve and reassign the organization
         if (organizationId != null && (platform.getOrganization() == null || !platform.getOrganization().getId().equals(organizationId))) {
             Organization organization = organizationRepository.findById(organizationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
@@ -292,6 +302,7 @@ public class StatusPlatformService {
 
         // Check for associated apps
         List<StatusApp> apps = statusAppRepository.findByPlatformId(id);
+        // Guard: platform still has associated apps, so it cannot be deleted
         if (!apps.isEmpty()) {
             throw new BusinessRuleException("Cannot delete platform with associated applications. Remove or reassign apps first.");
         }
@@ -318,9 +329,11 @@ public class StatusPlatformService {
         response.setPosition(platform.getPosition());
         response.setLastUpdated(platform.getLastModifiedDate());
 
+        // Platform has a tenant: expose its ID on the response
         if (platform.getTenant() != null) {
             response.setTenantId(platform.getTenant().getId());
         }
+        // Platform has an organization: expose its ID on the response
         if (platform.getOrganization() != null) {
             response.setOrganizationId(platform.getOrganization().getId());
         }
@@ -359,6 +372,7 @@ public class StatusPlatformService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Principal is a username string: return it
         if (principal instanceof String) {
             return (String) principal;
         }

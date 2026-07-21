@@ -30,6 +30,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = LogController.class)
 class LogControllerTest extends AbstractApiControllerTest {
 
+    private static final String SERVICE_ORDERS = "orders";
+    private static final String LOG_JSON = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
+    private static final String LOGS_PATH = "/api/logs";
+    private static final String LOGS_BATCH_PATH = "/api/logs/batch";
+    private static final String API_KEY_HEADER = "X-Log-Api-Key";
+    private static final String JSON_PATH_SUCCESS = "$.success";
+
     @MockitoBean
     private LogIngestionService logIngestionService;
 
@@ -47,7 +54,7 @@ class LogControllerTest extends AbstractApiControllerTest {
         Log log = new Log();
         log.setId(id);
         log.setLevel("INFO");
-        log.setService("orders");
+        log.setService(SERVICE_ORDERS);
         log.setMessage("order placed");
         log.setLogTimestamp(ZonedDateTime.now());
         return log;
@@ -67,7 +74,7 @@ class LogControllerTest extends AbstractApiControllerTest {
         when(logIngestionService.ingest(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(sampleLog(UUID.randomUUID()));
 
-        String body = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
+        String body = LOG_JSON;
         mockMvc.perform(post("/api/logs")
                         .header("X-Log-Api-Key", "k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
@@ -88,7 +95,7 @@ class LogControllerTest extends AbstractApiControllerTest {
         when(logIngestionService.ingest(any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(null);
 
-        String body = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
+        String body = LOG_JSON;
         mockMvc.perform(post("/api/logs")
                         .header("X-Log-Api-Key", "k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
@@ -104,7 +111,7 @@ class LogControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void ingest_missingApiKeyHeader_returns401() throws Exception {
-        String body = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
+        String body = LOG_JSON;
         mockMvc.perform(post("/api/logs")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized())
@@ -122,7 +129,7 @@ class LogControllerTest extends AbstractApiControllerTest {
         when(logIngestionService.validateApiKey("bad"))
                 .thenThrow(new RuntimeException("Invalid or inactive API key"));
 
-        String body = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
+        String body = LOG_JSON;
         mockMvc.perform(post("/api/logs")
                         .header("X-Log-Api-Key", "bad")
                         .contentType(MediaType.APPLICATION_JSON).content(body))

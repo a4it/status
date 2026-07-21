@@ -27,6 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = LogApiKeyController.class)
 class LogApiKeyControllerTest extends AbstractApiControllerTest {
 
+    private static final String BASE_URL = "/api/log-api-keys";
+    private static final String PROD_INGEST_NAME = "prod-ingest";
+    private static final String CI_KEY_NAME = "ci-key";
+
     @MockitoBean
     private LogApiKeyService logApiKeyService;
 
@@ -56,11 +60,11 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
     @Test
     void findAll_returnsOk() throws Exception {
         when(logApiKeyService.findAll())
-                .thenReturn(List.of(sampleKey(UUID.randomUUID(), "prod-ingest")));
+                .thenReturn(List.of(sampleKey(UUID.randomUUID(), PROD_INGEST_NAME)));
 
-        mockMvc.perform(get("/api/log-api-keys"))
+        mockMvc.perform(get(BASE_URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("prod-ingest"))
+                .andExpect(jsonPath("$[0].name").value(PROD_INGEST_NAME))
                 .andExpect(jsonPath("$[0].keyPrefix").value("abcd1234"));
     }
 
@@ -72,15 +76,15 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void create_valid_returns201WithRawKey() throws Exception {
-        LogApiKey key = sampleKey(UUID.randomUUID(), "ci-key");
+        LogApiKey key = sampleKey(UUID.randomUUID(), CI_KEY_NAME);
         key.setRawKeyOnceOnly("sk_live_rawsecret");
-        when(logApiKeyService.create(any(), eq("ci-key"))).thenReturn(key);
+        when(logApiKeyService.create(any(), eq(CI_KEY_NAME))).thenReturn(key);
 
         String body = "{\"name\":\"ci-key\"}";
-        mockMvc.perform(post("/api/log-api-keys")
+        mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("ci-key"))
+                .andExpect(jsonPath("$.name").value(CI_KEY_NAME))
                 .andExpect(jsonPath("$.rawKey").value("sk_live_rawsecret"));
     }
 
@@ -92,7 +96,7 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void create_missingName_returns400() throws Exception {
-        mockMvc.perform(post("/api/log-api-keys")
+        mockMvc.perform(post(BASE_URL)
                         .contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
@@ -106,7 +110,7 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
     @Test
     void toggle_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
-        LogApiKey key = sampleKey(id, "prod-ingest");
+        LogApiKey key = sampleKey(id, PROD_INGEST_NAME);
         key.setIsActive(false);
         when(logApiKeyService.toggleActive(id)).thenReturn(key);
 

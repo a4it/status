@@ -30,6 +30,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = AlertRuleController.class)
 class AlertRuleControllerTest extends AbstractApiControllerTest {
 
+    private static final String HIGH_ERROR_RATE = "High error rate";
+    private static final String ALERT_RULES_PATH = "/api/alert-rules";
+    private static final String ALERT_RULE_BY_ID_PATH = "/api/alert-rules/{id}";
+
     @MockitoBean
     private AlertRuleService alertRuleService;
 
@@ -43,7 +47,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
     private AlertRule sampleRule(UUID id) {
         AlertRule rule = new AlertRule();
         rule.setId(id);
-        rule.setName("High error rate");
+        rule.setName(HIGH_ERROR_RATE);
         rule.setService("api");
         rule.setLevel("ERROR");
         rule.setThresholdCount(5L);
@@ -77,9 +81,9 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
     void findAll_returnsOk() throws Exception {
         when(alertRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID())));
 
-        mockMvc.perform(get("/api/alert-rules"))
+        mockMvc.perform(get(ALERT_RULES_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("High error rate"));
+                .andExpect(jsonPath("$[0].name").value(HIGH_ERROR_RATE));
     }
 
     /**
@@ -93,7 +97,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(alertRuleService.findById(id)).thenReturn(sampleRule(id));
 
-        mockMvc.perform(get("/api/alert-rules/{id}", id))
+        mockMvc.perform(get(ALERT_RULE_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notificationType").value("EMAIL"));
     }
@@ -110,7 +114,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
         when(alertRuleService.findById(id))
                 .thenThrow(new ResourceNotFoundException("Alert rule not found: " + id));
 
-        mockMvc.perform(get("/api/alert-rules/{id}", id))
+        mockMvc.perform(get(ALERT_RULE_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -127,9 +131,9 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
                 any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
                 .thenReturn(sampleRule(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/alert-rules").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(ALERT_RULES_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("High error rate"));
+                .andExpect(jsonPath("$.name").value(HIGH_ERROR_RATE));
     }
 
     /**
@@ -141,7 +145,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
     @Test
     void create_missingName_returns400() throws Exception {
         String body = "{\"thresholdCount\":5,\"windowMinutes\":10,\"notificationType\":\"EMAIL\"}";
-        mockMvc.perform(post("/api/alert-rules").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(ALERT_RULES_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -154,7 +158,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
     @Test
     void create_invalidNotificationType_returns400() throws Exception {
         String body = "{\"name\":\"x\",\"thresholdCount\":5,\"windowMinutes\":10,\"notificationType\":\"CARRIER_PIGEON\"}";
-        mockMvc.perform(post("/api/alert-rules").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(ALERT_RULES_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -172,7 +176,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
                 any(), any(), org.mockito.ArgumentMatchers.anyBoolean()))
                 .thenReturn(sampleRule(id));
 
-        mockMvc.perform(put("/api/alert-rules/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(ALERT_RULE_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -203,7 +207,7 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
     void delete_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/alert-rules/{id}", id))
+        mockMvc.perform(delete(ALERT_RULE_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 

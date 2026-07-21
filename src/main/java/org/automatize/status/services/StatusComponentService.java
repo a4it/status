@@ -96,12 +96,16 @@ public class StatusComponentService {
     public Page<StatusComponentResponse> getAllComponents(UUID appId, String search, Pageable pageable) {
         List<StatusComponent> components;
         
+        // Filter by both app and search term when both are provided
         if (appId != null && search != null && !search.isEmpty()) {
             components = statusComponentRepository.searchByAppId(appId, search);
+        // Otherwise filter by app alone when an app ID is provided
         } else if (appId != null) {
             components = statusComponentRepository.findByAppId(appId);
+        // Otherwise apply the search term when one is provided
         } else if (search != null && !search.isEmpty()) {
             components = statusComponentRepository.search(search);
+        // Otherwise return the full paginated list
         } else {
             return statusComponentRepository.findAll(pageable).map(this::mapToResponse);
         }
@@ -156,6 +160,7 @@ public class StatusComponentService {
         StatusApp app = statusAppRepository.findById(request.getAppId())
                 .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
+        // Reject creation when a component with the same name already exists in the app
         if (statusComponentRepository.existsByAppIdAndName(request.getAppId(), request.getName())) {
             throw new DuplicateResourceException("Component with name already exists in this app: " + request.getName());
         }
@@ -169,6 +174,7 @@ public class StatusComponentService {
         component.setLastModifiedBy(currentUser);
         
         // Set position if not provided
+        // Default the position to the end of the list when none is provided
         if (component.getPosition() == null || component.getPosition() == 0) {
             Long componentCount = statusComponentRepository.countByAppId(app.getId());
             component.setPosition((int)(componentCount + 1));
@@ -194,6 +200,7 @@ public class StatusComponentService {
         StatusComponent component = statusComponentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + id));
 
+        // Reject update when the changed name collides with an existing component in the app
         if (!component.getName().equals(request.getName()) &&
             statusComponentRepository.existsByAppIdAndName(component.getApp().getId(), request.getName())) {
             throw new DuplicateResourceException("Component with name already exists in this app: " + request.getName());
@@ -201,6 +208,7 @@ public class StatusComponentService {
 
         mapRequestToComponent(request, component);
         
+        // Reassign the component to a different app when the requested app differs
         if (request.getAppId() != null && !component.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
                     .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
@@ -210,6 +218,7 @@ public class StatusComponentService {
         component.setLastModifiedBy(getCurrentUsername());
 
         // Generate API key if empty
+        // Generate a new API key when none is set
         if (component.getApiKey() == null || component.getApiKey().isEmpty()) {
             component.setApiKey(ApiKeyGenerator.generateApiKey());
         }
@@ -262,12 +271,14 @@ public class StatusComponentService {
 
         // Check for active incidents
         Long activeIncidents = statusIncidentComponentRepository.countByComponentId(id);
+        // Prevent deletion when the component has active incidents
         if (activeIncidents > 0) {
             throw new BusinessRuleException("Cannot delete component with active incidents");
         }
 
         // Check for upcoming maintenance
         Long activeMaintenance = statusMaintenanceComponentRepository.countByComponentId(id);
+        // Prevent deletion when the component has scheduled maintenance
         if (activeMaintenance > 0) {
             throw new BusinessRuleException("Cannot delete component with scheduled maintenance");
         }
@@ -309,6 +320,7 @@ public class StatusComponentService {
     private void updateAppStatusBasedOnComponents(UUID appId) {
         List<StatusComponent> components = statusComponentRepository.findByAppId(appId);
         
+        // Nothing to recalculate when the app has no components
         if (components.isEmpty()) {
             return;
         }
@@ -321,8 +333,10 @@ public class StatusComponentService {
                 .filter(c -> "DEGRADED".equals(c.getStatus()) || "PARTIAL_OUTAGE".equals(c.getStatus()))
                 .count();
         
+        // Escalate to major outage when any component is in major outage
         if (majorOutageCount > 0) {
             appStatus = "MAJOR_OUTAGE";
+        // Otherwise mark degraded when any component is degraded or partially down
         } else if (degradedCount > 0) {
             appStatus = "DEGRADED";
         }
@@ -330,6 +344,7 @@ public class StatusComponentService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
+        // Persist the app status only when it actually changed
         if (!app.getStatus().equals(appStatus)) {
             app.setStatus(appStatus);
             app.setLastModifiedBy(getCurrentUsername());
@@ -404,6 +419,7 @@ public class StatusComponentService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Return the principal directly when it is a username string
         if (principal instanceof String) {
             return (String) principal;
         }

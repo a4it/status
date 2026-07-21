@@ -23,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = LogProcessMiningController.class)
 class LogProcessMiningControllerTest extends AbstractApiControllerTest {
 
+    private static final String PROCESS_MINING_URL = "/api/logs/process-mining";
+
     @MockitoBean
     private ProcessMiningService processMiningService;
 
@@ -38,7 +40,7 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
         when(processMiningService.buildCases(any(), any(), any(), any(), any(), anyInt(), anyInt()))
                 .thenReturn(new ProcessMiningResponse(List.of(c), 1, false));
 
-        mockMvc.perform(get("/api/logs/process-mining")
+        mockMvc.perform(get(PROCESS_MINING_URL)
                         .param("scope", "platform")
                         .param("scopeId", UUID.randomUUID().toString()))
                 .andExpect(status().isOk())
@@ -53,7 +55,7 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getProcessMiningData_missingScope_returns400() throws Exception {
-        mockMvc.perform(get("/api/logs/process-mining")
+        mockMvc.perform(get(PROCESS_MINING_URL)
                         .param("scopeId", UUID.randomUUID().toString()))
                 .andExpect(status().isBadRequest());
     }
@@ -65,7 +67,7 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getProcessMiningData_missingScopeId_returns400() throws Exception {
-        mockMvc.perform(get("/api/logs/process-mining")
+        mockMvc.perform(get(PROCESS_MINING_URL)
                         .param("scope", "platform"))
                 .andExpect(status().isBadRequest());
     }

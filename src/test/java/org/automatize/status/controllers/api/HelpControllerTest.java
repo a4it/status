@@ -16,6 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = HelpController.class)
 class HelpControllerTest extends AbstractApiControllerTest {
 
+    private static final String HELP_SLUG_PATH = "/api/help/{slug}";
+    private static final String HELP_SEARCH_PATH = "/api/help/search";
+
     /**
      * Verifies {@code GET /api/help} returns 200 with a JSON array of help files.
      *
@@ -37,7 +40,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
     @Test
     void getFile_knownSlug_returnsOk() throws Exception {
         // 01-architecture.md is bundled under src/main/resources/help
-        mockMvc.perform(get("/api/help/{slug}", "01-architecture"))
+        mockMvc.perform(get(HELP_SLUG_PATH, "01-architecture"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("01-architecture"))
                 .andExpect(jsonPath("$.html").exists());
@@ -52,7 +55,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
     @Test
     void getFile_invalidSlug_returns400() throws Exception {
         // Uppercase fails the [a-z0-9\-]+ slug pattern.
-        mockMvc.perform(get("/api/help/{slug}", "Invalid"))
+        mockMvc.perform(get(HELP_SLUG_PATH, "Invalid"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -64,7 +67,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getFile_unknownSlug_returns404() throws Exception {
-        mockMvc.perform(get("/api/help/{slug}", "zzz-nonexistent-help-page"))
+        mockMvc.perform(get(HELP_SLUG_PATH, "zzz-nonexistent-help-page"))
                 .andExpect(status().isNotFound());
     }
 
@@ -76,7 +79,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void search_validQuery_returnsOkArray() throws Exception {
-        mockMvc.perform(get("/api/help/search").param("q", "architecture"))
+        mockMvc.perform(get(HELP_SEARCH_PATH).param("q", "architecture"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
     }
@@ -89,7 +92,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void search_shortQuery_returnsEmptyArray() throws Exception {
-        mockMvc.perform(get("/api/help/search").param("q", "a"))
+        mockMvc.perform(get(HELP_SEARCH_PATH).param("q", "a"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -103,7 +106,7 @@ class HelpControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void search_missingQueryParam_returns400() throws Exception {
-        mockMvc.perform(get("/api/help/search"))
+        mockMvc.perform(get(HELP_SEARCH_PATH))
                 .andExpect(status().isBadRequest());
     }
 }

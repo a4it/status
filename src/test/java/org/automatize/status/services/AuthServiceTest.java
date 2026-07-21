@@ -351,6 +351,10 @@ class AuthServiceTest {
                 .hasMessage("User not found");
     }
 
+    /**
+     * Verifies that a valid token whose hash does not match the stored hash is rejected.
+     * Expects an {@link UnauthorizedException} "Refresh token mismatch".
+     */
     @Test
     void refreshToken_tokenMismatch_throwsUnauthorizedException() {
         UUID userId = UUID.randomUUID();
@@ -369,6 +373,12 @@ class AuthServiceTest {
                 .hasMessage("Refresh token mismatch");
     }
 
+    /**
+     * Verifies that a valid, matching refresh token yields new access and refresh tokens
+     * and rotates the stored hash to the hash of the new refresh token. Expects a save of the user.
+     *
+     * @throws Exception if SHA-256 hashing in the test helper fails
+     */
     @Test
     void refreshToken_validMatchingToken_returnsNewTokensAndRotatesRefresh() throws Exception {
         UUID userId = UUID.randomUUID();
@@ -395,6 +405,10 @@ class AuthServiceTest {
         verify(userRepository).save(user);
     }
 
+    /**
+     * Verifies logout with a null authorization header is rejected.
+     * Expects an unsuccessful "Invalid authorization header" response.
+     */
     @Test
     void logout_nullToken_returnsUnsuccessfulResponse() {
         MessageResponse response = authService.logout(null);
@@ -403,6 +417,10 @@ class AuthServiceTest {
         assertThat(response.getMessage()).isEqualTo("Invalid authorization header");
     }
 
+    /**
+     * Verifies logout with a non-Bearer authorization header is rejected.
+     * Expects an unsuccessful "Invalid authorization header" response.
+     */
     @Test
     void logout_nonBearerToken_returnsUnsuccessfulResponse() {
         MessageResponse response = authService.logout("Basic xyz");
@@ -411,6 +429,10 @@ class AuthServiceTest {
         assertThat(response.getMessage()).isEqualTo("Invalid authorization header");
     }
 
+    /**
+     * Verifies logout with a valid Bearer token clears the stored refresh token and saves.
+     * Expects a successful response and a null refresh token on the user.
+     */
     @Test
     void logout_validToken_clearsRefreshTokenAndReturnsSuccess() {
         UUID userId = UUID.randomUUID();
@@ -429,6 +451,10 @@ class AuthServiceTest {
         verify(userRepository).save(user);
     }
 
+    /**
+     * Verifies logout when the token's user cannot be found returns an error response
+     * rather than throwing. Expects an unsuccessful "Error during logout" response.
+     */
     @Test
     void logout_userNotFound_returnsErrorResponse() {
         UUID userId = UUID.randomUUID();
@@ -442,6 +468,10 @@ class AuthServiceTest {
         assertThat(response.getMessage()).isEqualTo("Error during logout");
     }
 
+    /**
+     * Verifies that requesting the current user with a null authorization header is rejected.
+     * Expects an {@link UnauthorizedException} "Invalid authorization header".
+     */
     @Test
     void getCurrentUser_nullToken_throwsUnauthorizedException() {
         assertThatThrownBy(() -> authService.getCurrentUser(null))
@@ -449,6 +479,10 @@ class AuthServiceTest {
                 .hasMessage("Invalid authorization header");
     }
 
+    /**
+     * Verifies that a valid Bearer token returns the resolved user's details.
+     * Expects the user id, username and role to be reflected in the response.
+     */
     @Test
     void getCurrentUser_validToken_returnsUserDetails() {
         UUID userId = UUID.randomUUID();
@@ -464,6 +498,10 @@ class AuthServiceTest {
         assertThat(response.getRole()).isEqualTo("ADMIN");
     }
 
+    /**
+     * Verifies that a valid token whose user id resolves to no user throws.
+     * Expects a {@link RuntimeException} "User not found".
+     */
     @Test
     void getCurrentUser_userNotFound_throwsRuntimeException() {
         UUID userId = UUID.randomUUID();

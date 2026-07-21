@@ -28,6 +28,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = DropRuleController.class)
 class DropRuleControllerTest extends AbstractApiControllerTest {
 
+    private static final String DROP_DEBUG = "drop-debug";
+    private static final String API_DROP_RULES = "/api/drop-rules";
+    private static final String API_DROP_RULES_ID = "/api/drop-rules/{id}";
+
     @MockitoBean
     private DropRuleService dropRuleService;
 
@@ -58,11 +62,11 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void findAll_returnsOk() throws Exception {
-        when(dropRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID(), "drop-debug")));
+        when(dropRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID(), DROP_DEBUG)));
 
-        mockMvc.perform(get("/api/drop-rules"))
+        mockMvc.perform(get(API_DROP_RULES))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("drop-debug"));
+                .andExpect(jsonPath("$[0].name").value(DROP_DEBUG));
     }
 
     /**
@@ -74,9 +78,9 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
     @Test
     void findById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
-        when(dropRuleService.findById(id)).thenReturn(sampleRule(id, "drop-debug"));
+        when(dropRuleService.findById(id)).thenReturn(sampleRule(id, DROP_DEBUG));
 
-        mockMvc.perform(get("/api/drop-rules/{id}", id))
+        mockMvc.perform(get(API_DROP_RULES_ID, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.level").value("DEBUG"));
     }
@@ -94,7 +98,7 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
         // DropRuleService throws a plain RuntimeException (no @ResponseStatus); with no
         // matching resolver the exception propagates out of perform().
         Assertions.assertThrows(Exception.class,
-                () -> mockMvc.perform(get("/api/drop-rules/{id}", id)));
+                () -> mockMvc.perform(get(API_DROP_RULES_ID, id)));
     }
 
     /**
@@ -105,14 +109,14 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void create_valid_returns201() throws Exception {
-        DropRule rule = sampleRule(UUID.randomUUID(), "drop-debug");
+        DropRule rule = sampleRule(UUID.randomUUID(), DROP_DEBUG);
         when(dropRuleService.create(any(), any(), any(), any(), any(), anyBoolean())).thenReturn(rule);
 
         String body = "{\"name\":\"drop-debug\",\"level\":\"DEBUG\",\"service\":\"orders\",\"active\":true}";
-        mockMvc.perform(post("/api/drop-rules")
+        mockMvc.perform(post(API_DROP_RULES)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("drop-debug"));
+                .andExpect(jsonPath("$.name").value(DROP_DEBUG));
     }
 
     /**
@@ -124,7 +128,7 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
     @Test
     void create_missingName_returns400() throws Exception {
         String body = "{\"level\":\"DEBUG\"}";
-        mockMvc.perform(post("/api/drop-rules")
+        mockMvc.perform(post(API_DROP_RULES)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -142,7 +146,7 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .thenReturn(sampleRule(id, "drop-debug-updated"));
 
         String body = "{\"name\":\"drop-debug-updated\",\"active\":false}";
-        mockMvc.perform(put("/api/drop-rules/{id}", id)
+        mockMvc.perform(put(API_DROP_RULES_ID, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("drop-debug-updated"));
@@ -157,7 +161,7 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
     @Test
     void toggle_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
-        DropRule rule = sampleRule(id, "drop-debug");
+        DropRule rule = sampleRule(id, DROP_DEBUG);
         rule.setIsActive(false);
         when(dropRuleService.toggleActive(id)).thenReturn(rule);
 

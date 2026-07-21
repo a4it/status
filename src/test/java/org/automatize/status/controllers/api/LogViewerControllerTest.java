@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = LogViewerController.class)
 class LogViewerControllerTest extends AbstractApiControllerTest {
 
+    private static final String ROOT_LOGGER_NAME = "org.automatize.status";
+
     @MockitoBean
     private LogViewerService logViewerService;
 
@@ -85,14 +87,14 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
     @Test
     void getLoggers_returnsOk() throws Exception {
         LoggerInfoResponse info = new LoggerInfoResponse();
-        info.setName("org.automatize.status");
+        info.setName(ROOT_LOGGER_NAME);
         info.setEffectiveLevel("INFO");
         info.setConfiguredLevel("DEBUG");
         when(logViewerService.getLoggers()).thenReturn(List.of(info));
 
         mockMvc.perform(get("/api/log-viewer/loggers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("org.automatize.status"))
+                .andExpect(jsonPath("$[0].name").value(ROOT_LOGGER_NAME))
                 .andExpect(jsonPath("$[0].effectiveLevel").value("INFO"));
     }
 
@@ -106,10 +108,10 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
     @Test
     void setLogLevel_returnsOk() throws Exception {
         String body = "{\"level\":\"DEBUG\"}";
-        mockMvc.perform(put("/api/log-viewer/loggers/{name}", "org.automatize.status")
+        mockMvc.perform(put("/api/log-viewer/loggers/{name}", ROOT_LOGGER_NAME)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk());
 
-        verify(logViewerService).setLogLevel(eq("org.automatize.status"), eq("DEBUG"));
+        verify(logViewerService).setLogLevel(eq(ROOT_LOGGER_NAME), eq("DEBUG"));
     }
 }

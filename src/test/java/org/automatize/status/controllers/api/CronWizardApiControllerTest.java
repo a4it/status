@@ -27,6 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = CronWizardApiController.class)
 class CronWizardApiControllerTest extends AbstractApiControllerTest {
 
+    private static final String EVERY_MINUTE_EXPRESSION = "0 * * * * *";
+    private static final String EVERY_MINUTE_DESCRIPTION = "Every minute";
+
     @MockitoBean
     private CronValidationService cronValidationService;
 
@@ -43,9 +46,9 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void validate_validExpression_returnsOkValidTrue() throws Exception {
-        String expr = "0 * * * * *";
+        String expr = EVERY_MINUTE_EXPRESSION;
         when(cronValidationService.isValid(expr)).thenReturn(true);
-        when(cronValidationService.toHumanReadable(expr)).thenReturn("Every minute");
+        when(cronValidationService.toHumanReadable(expr)).thenReturn(EVERY_MINUTE_DESCRIPTION);
         when(cronValidationService.getNextExecutions(eq(expr), eq("UTC"), eq(5)))
                 .thenReturn(List.of(ZonedDateTime.now()));
 
@@ -54,7 +57,7 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
                         .content("{\"expression\":\"" + expr + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(true))
-                .andExpect(jsonPath("$.humanReadable").value("Every minute"))
+                .andExpect(jsonPath("$.humanReadable").value(EVERY_MINUTE_DESCRIPTION))
                 .andExpect(jsonPath("$.nextRuns").isArray())
                 .andExpect(jsonPath("$.error").value(nullValue()));
     }
@@ -93,7 +96,7 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void preview_returnsOkListOfExecutions() throws Exception {
-        when(cronValidationService.getNextExecutions(eq("0 * * * * *"), eq("UTC"), anyInt()))
+        when(cronValidationService.getNextExecutions(eq(EVERY_MINUTE_EXPRESSION), eq("UTC"), anyInt()))
                 .thenReturn(List.of(ZonedDateTime.now(), ZonedDateTime.now().plusMinutes(1)));
 
         mockMvc.perform(post("/api/scheduler/cron/preview")
@@ -137,8 +140,8 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
         mockMvc.perform(get("/api/scheduler/cron/presets"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].name").value("Every minute"))
-                .andExpect(jsonPath("$[0].expression").value("0 * * * * *"));
+                .andExpect(jsonPath("$[0].name").value(EVERY_MINUTE_DESCRIPTION))
+                .andExpect(jsonPath("$[0].expression").value(EVERY_MINUTE_EXPRESSION));
     }
 
     // -------------------------------------------------------------------------

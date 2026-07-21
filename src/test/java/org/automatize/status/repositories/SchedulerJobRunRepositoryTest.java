@@ -145,14 +145,18 @@ class SchedulerJobRunRepositoryTest {
         SchedulerJob job = persistJob("Job", t);
         persistRun(job, t, JobRunStatus.SUCCESS, BASE.plusMinutes(1));
         persistRun(job, t, JobRunStatus.SUCCESS, BASE.plusMinutes(2));
-        persistRun(job, t, JobRunStatus.SUCCESS, BASE.plusMinutes(10));
+        SchedulerJobRun kept = persistRun(job, t, JobRunStatus.SUCCESS, BASE.plusMinutes(10));
 
         repository.deleteByJobIdAndStartedAtBefore(job.getId(), BASE.plusMinutes(5));
         em.flush();
         em.clear();
 
+        // Assert by id: only the newest run (after the cutoff) survives. Exact
+        // timestamp equality is avoided because Hibernate/H2 round-trips the stored
+        // ZonedDateTime through a zone conversion.
         assertThat(repository.findByJobIdOrderByStartedAtDesc(job.getId(), PageRequest.of(0, 10)).getContent())
-                .extracting(SchedulerJobRun::getStartedAt).containsExactly(BASE.plusMinutes(10));
+                .extracting(SchedulerJobRun::getId)
+                .containsExactly(kept.getId());
     }
 
     @Test

@@ -274,6 +274,7 @@ public class StatusMaintenanceService {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
+        // Guard: completed or cancelled maintenance cannot be updated
         if ("COMPLETED".equals(maintenance.getStatus()) || "CANCELLED".equals(maintenance.getStatus())) {
             throw new BusinessRuleException("Cannot update completed or cancelled maintenance");
         }
@@ -285,6 +286,7 @@ public class StatusMaintenanceService {
 
         mapRequestToMaintenance(request, maintenance);
         
+        // App changed on the request: reassign the maintenance to the new app
         if (request.getAppId() != null && !maintenance.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
                     .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
@@ -296,6 +298,7 @@ public class StatusMaintenanceService {
         StatusMaintenance savedMaintenance = statusMaintenanceRepository.save(maintenance);
         
         // Update affected components if changed
+        // Component list provided: replace existing links with the new set
         if (request.getAffectedComponentIds() != null) {
             statusMaintenanceComponentRepository.deleteByMaintenanceId(id);
             linkAffectedComponents(savedMaintenance, request.getAffectedComponentIds());
@@ -343,6 +346,7 @@ public class StatusMaintenanceService {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
+        // Guard: only scheduled maintenance can be started
         if (!STATUS_SCHEDULED.equals(maintenance.getStatus())) {
             throw new BusinessRuleException("Can only start scheduled maintenance");
         }
@@ -389,6 +393,7 @@ public class StatusMaintenanceService {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
+        // Guard: only in-progress maintenance can be completed
         if (!STATUS_IN_PROGRESS.equals(maintenance.getStatus())) {
             throw new BusinessRuleException("Can only complete in-progress maintenance");
         }
@@ -429,6 +434,7 @@ public class StatusMaintenanceService {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
         
+        // Guard: in-progress maintenance cannot be deleted
         if (STATUS_IN_PROGRESS.equals(maintenance.getStatus())) {
             throw new BusinessRuleException("Cannot delete in-progress maintenance");
         }
@@ -468,13 +474,16 @@ public class StatusMaintenanceService {
     private void updateAppStatusForMaintenance(StatusApp app) {
         Long activeMaintenance = statusMaintenanceRepository.countActiveMaintenanceByAppId(app.getId());
         
+        // Active maintenance started while app was operational: mark app under maintenance
         if (activeMaintenance > 0 && STATUS_OPERATIONAL.equals(app.getStatus())) {
             app.setStatus(STATUS_UNDER_MAINTENANCE);
             app.setLastModifiedBy(getCurrentUsername());
             statusAppRepository.save(app);
+        // No active maintenance left and app still marked under maintenance: consider restoring it
         } else if (activeMaintenance == 0 && STATUS_UNDER_MAINTENANCE.equals(app.getStatus())) {
             // Check for active incidents before setting to operational
             Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(app.getId());
+            // No active incidents remain: restore app to operational
             if (activeIncidents == 0) {
                 app.setStatus(STATUS_OPERATIONAL);
                 app.setLastModifiedBy(getCurrentUsername());
@@ -547,6 +556,7 @@ public class StatusMaintenanceService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Principal is a username string: return it
         if (principal instanceof String) {
             return (String) principal;
         }

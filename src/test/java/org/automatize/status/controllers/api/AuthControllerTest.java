@@ -29,6 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = AuthController.class)
 class AuthControllerTest extends AbstractApiControllerTest {
 
+    private static final String ACCESS_TOKEN = "access-token";
+    private static final String USERNAME = "tester";
+    private static final String LOGIN_URL = "/api/auth/login";
+    private static final String REFRESH_URL = "/api/auth/refresh";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+
     @MockitoBean
     private AuthService authService;
 
@@ -43,11 +49,11 @@ class AuthControllerTest extends AbstractApiControllerTest {
      */
     private AuthResponse sampleAuth() {
         AuthResponse r = new AuthResponse();
-        r.setAccessToken("access-token");
+        r.setAccessToken(ACCESS_TOKEN);
         r.setRefreshToken("refresh-token");
         r.setTokenType("Bearer");
         r.setUserId(UUID.randomUUID());
-        r.setUsername("tester");
+        r.setUsername(USERNAME);
         r.setEmail("tester@example.com");
         r.setRole("USER");
         return r;
@@ -65,10 +71,10 @@ class AuthControllerTest extends AbstractApiControllerTest {
         when(authService.authenticateUser(any())).thenReturn(sampleAuth());
 
         String body = "{\"username\":\"tester\",\"password\":\"secret123\"}";
-        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(LOGIN_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"))
-                .andExpect(jsonPath("$.username").value("tester"));
+                .andExpect(jsonPath("$.accessToken").value(ACCESS_TOKEN))
+                .andExpect(jsonPath("$.username").value(USERNAME));
     }
 
     /**
@@ -80,7 +86,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
     @Test
     void login_missingPassword_returns400() throws Exception {
         String body = "{\"username\":\"tester\"}";
-        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(LOGIN_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -95,7 +101,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
         when(loginRateLimiter.isAllowed(anyString())).thenReturn(false);
 
         String body = "{\"username\":\"tester\",\"password\":\"secret123\"}";
-        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(LOGIN_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isTooManyRequests());
     }
 
@@ -141,9 +147,9 @@ class AuthControllerTest extends AbstractApiControllerTest {
         when(authService.refreshToken(any())).thenReturn(sampleAuth());
 
         String body = "{\"refreshToken\":\"some-refresh-token\"}";
-        mockMvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(REFRESH_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value("access-token"));
+                .andExpect(jsonPath("$.accessToken").value(ACCESS_TOKEN));
     }
 
     /**
@@ -155,7 +161,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
     @Test
     void refreshToken_missingToken_returns400() throws Exception {
         String body = "{}";
-        mockMvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(REFRESH_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -171,7 +177,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new UnauthorizedException("Invalid refresh token"));
 
         String body = "{\"refreshToken\":\"bad-token\"}";
-        mockMvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(REFRESH_URL).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -186,7 +192,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
         when(authService.logout(anyString()))
                 .thenReturn(new MessageResponse("Logged out successfully", true));
 
-        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer token"))
+        mockMvc.perform(post("/api/auth/logout").header(AUTHORIZATION_HEADER, "Bearer token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
@@ -213,9 +219,9 @@ class AuthControllerTest extends AbstractApiControllerTest {
     void getCurrentUser_valid_returns200() throws Exception {
         when(authService.getCurrentUser(anyString())).thenReturn(sampleAuth());
 
-        mockMvc.perform(get("/api/auth/me").header("Authorization", "Bearer token"))
+        mockMvc.perform(get("/api/auth/me").header(AUTHORIZATION_HEADER, "Bearer token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("tester"));
+                .andExpect(jsonPath("$.username").value(USERNAME));
     }
 
     /**
@@ -229,7 +235,7 @@ class AuthControllerTest extends AbstractApiControllerTest {
         when(authService.getCurrentUser(anyString()))
                 .thenThrow(new UnauthorizedException("Invalid authorization header"));
 
-        mockMvc.perform(get("/api/auth/me").header("Authorization", "bad"))
+        mockMvc.perform(get("/api/auth/me").header(AUTHORIZATION_HEADER, "bad"))
                 .andExpect(status().isUnauthorized());
     }
 }

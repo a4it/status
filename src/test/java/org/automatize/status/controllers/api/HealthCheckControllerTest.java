@@ -29,6 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = HealthCheckController.class)
 class HealthCheckControllerTest extends AbstractApiControllerTest {
 
+    private static final String JSON_SUCCESS = "$.success";
+
     @MockitoBean
     private HealthCheckSettingsService settingsService;
 
@@ -138,7 +140,7 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/health-checks/trigger/all"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath(JSON_SUCCESS).value(true))
                 .andExpect(jsonPath("$.message").value("Triggered health checks for 3 entities"));
     }
 
@@ -156,7 +158,7 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/health-checks/trigger/app/{id}", UUID.randomUUID()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath(JSON_SUCCESS).value(true))
                 .andExpect(jsonPath("$.durationMs").value(5));
     }
 
@@ -174,6 +176,6 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/health-checks/trigger/component/{id}", UUID.randomUUID()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_SUCCESS).value(false));
     }
 }

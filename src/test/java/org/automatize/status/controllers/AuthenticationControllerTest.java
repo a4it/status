@@ -30,6 +30,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"app.registration.enabled=true"})
 class AuthenticationControllerTest extends AbstractApiControllerTest {
 
+    private static final String LOGIN_PATH = "/login";
+    private static final String ADMIN_PATH = "/admin";
+    private static final String APPLICATION_NAME_ATTR = "applicationName";
+    private static final String SERVER_PORT_ATTR = "serverPort";
+
     /**
      * Clears the {@link SecurityContextHolder} after each test so authenticated
      * state seeded by one test does not leak into the next.
@@ -60,10 +65,10 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void login_anonymous_returnsLoginView() throws Exception {
-        mockMvc.perform(get("/login"))
+        mockMvc.perform(get(LOGIN_PATH))
                 .andExpect(status().isOk())
                 .andExpect(view().name("authentication/login"))
-                .andExpect(model().attributeExists("applicationName", "serverPort"));
+                .andExpect(model().attributeExists(APPLICATION_NAME_ATTR, SERVER_PORT_ATTR));
     }
 
     /**
@@ -75,9 +80,9 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
     @Test
     void login_authenticated_redirectsToAdmin() throws Exception {
         authenticate();
-        mockMvc.perform(get("/login"))
+        mockMvc.perform(get(LOGIN_PATH))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin"));
+                .andExpect(redirectedUrl(ADMIN_PATH));
     }
 
     /**
@@ -90,7 +95,7 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
     void logout_get_clearsCookiesAndRedirectsToLogin() throws Exception {
         mockMvc.perform(get("/logout"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
+                .andExpect(redirectedUrl(LOGIN_PATH));
     }
 
     /**
@@ -102,7 +107,7 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
     void logout_post_redirectsToLogin() throws Exception {
         mockMvc.perform(post("/logout"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
+                .andExpect(redirectedUrl(LOGIN_PATH));
     }
 
     /**
@@ -118,7 +123,7 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
         mockMvc.perform(get("/register"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("authentication/register"))
-                .andExpect(model().attributeExists("applicationName", "serverPort"));
+                .andExpect(model().attributeExists(APPLICATION_NAME_ATTR, SERVER_PORT_ATTR));
     }
 
     /**
@@ -132,7 +137,7 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
         authenticate();
         mockMvc.perform(get("/register"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin"));
+                .andExpect(redirectedUrl(ADMIN_PATH));
     }
 
     /**
@@ -147,7 +152,7 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
         mockMvc.perform(get("/forgot-password"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("authentication/forgot-password"))
-                .andExpect(model().attributeExists("applicationName", "serverPort"));
+                .andExpect(model().attributeExists(APPLICATION_NAME_ATTR, SERVER_PORT_ATTR));
     }
 
     /**
@@ -161,6 +166,6 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
         authenticate();
         mockMvc.perform(get("/forgot-password"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin"));
+                .andExpect(redirectedUrl(ADMIN_PATH));
     }
 }
