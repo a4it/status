@@ -39,6 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = SchedulerRunApiController.class)
 class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
 
+    private static final String STATUS_SUCCESS = "SUCCESS";
+    private static final String RUNS_ID_PATH = "/api/scheduler/runs/{id}";
+
     @MockitoBean
     private SchedulerJobRunRepository runRepository;
 
@@ -93,7 +96,7 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/scheduler/runs"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"));
+                .andExpect(jsonPath("$.content[0].status").value(STATUS_SUCCESS));
     }
 
     /**
@@ -126,9 +129,9 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(runRepository.findById(id)).thenReturn(Optional.of(sampleRun(id)));
 
-        mockMvc.perform(get("/api/scheduler/runs/{id}", id))
+        mockMvc.perform(get(RUNS_ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.status").value(STATUS_SUCCESS));
     }
 
     /**
@@ -141,7 +144,7 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
         when(runRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(Exception.class,
-                () -> mockMvc.perform(get("/api/scheduler/runs/{id}", id)));
+                () -> mockMvc.perform(get(RUNS_ID_PATH, id)));
     }
 
     // -------------------------------------------------------------------------
@@ -161,7 +164,7 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/scheduler/runs/job/{jobId}", jobId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].status").value("SUCCESS"));
+                .andExpect(jsonPath("$.content[0].status").value(STATUS_SUCCESS));
     }
 
     // -------------------------------------------------------------------------
@@ -180,7 +183,7 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
         SchedulerJobRun run = sampleRun(id);
         when(runRepository.findById(id)).thenReturn(Optional.of(run));
 
-        mockMvc.perform(delete("/api/scheduler/runs/{id}", id))
+        mockMvc.perform(delete(RUNS_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -197,6 +200,6 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
         when(runRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(Exception.class,
-                () -> mockMvc.perform(delete("/api/scheduler/runs/{id}", id)));
+                () -> mockMvc.perform(delete(RUNS_ID_PATH, id)));
     }
 }

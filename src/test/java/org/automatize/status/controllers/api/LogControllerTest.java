@@ -75,12 +75,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .thenReturn(sampleLog(UUID.randomUUID()));
 
         String body = LOG_JSON;
-        mockMvc.perform(post("/api/logs")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.level").value("INFO"))
-                .andExpect(jsonPath("$.service").value("orders"));
+                .andExpect(jsonPath("$.service").value(SERVICE_ORDERS));
     }
 
     /**
@@ -96,11 +96,11 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .thenReturn(null);
 
         String body = LOG_JSON;
-        mockMvc.perform(post("/api/logs")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -112,10 +112,10 @@ class LogControllerTest extends AbstractApiControllerTest {
     @Test
     void ingest_missingApiKeyHeader_returns401() throws Exception {
         String body = LOG_JSON;
-        mockMvc.perform(post("/api/logs")
+        mockMvc.perform(post(LOGS_PATH)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -130,11 +130,11 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new RuntimeException("Invalid or inactive API key"));
 
         String body = LOG_JSON;
-        mockMvc.perform(post("/api/logs")
-                        .header("X-Log-Api-Key", "bad")
+        mockMvc.perform(post(LOGS_PATH)
+                        .header(API_KEY_HEADER,"bad")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -146,8 +146,8 @@ class LogControllerTest extends AbstractApiControllerTest {
     @Test
     void ingest_missingLevel_returns400() throws Exception {
         String body = "{\"service\":\"orders\",\"message\":\"order placed\"}";
-        mockMvc.perform(post("/api/logs")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -161,8 +161,8 @@ class LogControllerTest extends AbstractApiControllerTest {
     @Test
     void ingest_invalidLevelValue_returns400() throws Exception {
         String body = "{\"level\":\"TRACE\",\"service\":\"orders\",\"message\":\"order placed\"}";
-        mockMvc.perform(post("/api/logs")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -181,12 +181,12 @@ class LogControllerTest extends AbstractApiControllerTest {
         when(logIngestionService.ingestBatch(any())).thenReturn(1);
 
         String body = "{\"logs\":[{\"level\":\"ERROR\",\"service\":\"orders\",\"message\":\"boom\"}]}";
-        mockMvc.perform(post("/api/logs/batch")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_BATCH_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.stored").value(1))
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -198,7 +198,7 @@ class LogControllerTest extends AbstractApiControllerTest {
     @Test
     void ingestBatch_missingApiKeyHeader_returns401() throws Exception {
         String body = "{\"logs\":[{\"level\":\"ERROR\",\"service\":\"orders\",\"message\":\"boom\"}]}";
-        mockMvc.perform(post("/api/logs/batch")
+        mockMvc.perform(post(LOGS_BATCH_PATH)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized());
     }
@@ -212,8 +212,8 @@ class LogControllerTest extends AbstractApiControllerTest {
     @Test
     void ingestBatch_emptyLogs_returns400() throws Exception {
         String body = "{\"logs\":[]}";
-        mockMvc.perform(post("/api/logs/batch")
-                        .header("X-Log-Api-Key", "k")
+        mockMvc.perform(post(LOGS_BATCH_PATH)
+                        .header(API_KEY_HEADER,"k")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -231,9 +231,9 @@ class LogControllerTest extends AbstractApiControllerTest {
         when(logIngestionService.searchLogs(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleLog(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/logs"))
+        mockMvc.perform(get(LOGS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].service").value("orders"));
+                .andExpect(jsonPath("$.content[0].service").value(SERVICE_ORDERS));
     }
 
     /**
@@ -276,10 +276,10 @@ class LogControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getServices_returnsOk() throws Exception {
-        when(logIngestionService.getDistinctServices()).thenReturn(List.of("orders", "billing"));
+        when(logIngestionService.getDistinctServices()).thenReturn(List.of(SERVICE_ORDERS, "billing"));
 
         mockMvc.perform(get("/api/logs/services"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0]").value("orders"));
+                .andExpect(jsonPath("$[0]").value(SERVICE_ORDERS));
     }
 }

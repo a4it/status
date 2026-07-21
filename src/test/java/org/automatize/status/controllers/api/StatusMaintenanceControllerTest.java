@@ -34,6 +34,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatusMaintenanceController.class)
 class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
 
+    private static final String TITLE_DB_UPGRADE = "DB upgrade";
+    private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String JSON_APP_ID_PREFIX = "{\"appId\":\"";
+    private static final String BASE_PATH = "/api/maintenance";
+    private static final String ID_PATH = "/api/maintenance/{id}";
+
     @MockitoBean
     private StatusMaintenanceService statusMaintenanceService;
 

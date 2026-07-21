@@ -34,6 +34,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatusAppController.class)
 class StatusAppControllerTest extends AbstractApiControllerTest {
 
+    private static final String APP_NAME = "My App";
+    private static final String APP_SLUG = "my-app";
+    private static final String BASE_PATH = BASE_PATH;
+    private static final String BASE_PATH_ID = BASE_PATH_ID;
+
     @MockitoBean
     private StatusAppService statusAppService;
 
@@ -46,8 +51,8 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     private StatusAppResponse sampleResponse(UUID id) {
         StatusAppResponse r = new StatusAppResponse();
         r.setId(id);
-        r.setName("My App");
-        r.setSlug("my-app");
+        r.setName(APP_NAME);
+        r.setSlug(APP_SLUG);
         r.setStatus("OPERATIONAL");
         return r;
     }
@@ -71,9 +76,9 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         when(statusAppService.getAllStatusApps(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/status-apps"))
+        mockMvc.perform(get(BASE_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].name").value("My App"));
+                .andExpect(jsonPath("$.content[0].name").value(APP_NAME));
     }
 
     @Test
@@ -86,9 +91,9 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusAppService.getStatusAppById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/status-apps/{id}", id))
+        mockMvc.perform(get(BASE_PATH_ID, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("my-app"));
+                .andExpect(jsonPath("$.slug").value(APP_SLUG));
     }
 
     @Test
@@ -102,7 +107,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         when(statusAppService.getStatusAppById(id))
                 .thenThrow(new ResourceNotFoundException("Status app not found with id: " + id));
 
-        mockMvc.perform(get("/api/status-apps/{id}", id))
+        mockMvc.perform(get(BASE_PATH_ID, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -115,9 +120,9 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     void createStatusApp_valid_returns201() throws Exception {
         when(statusAppService.createStatusApp(any())).thenReturn(sampleResponse(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("My App"));
+                .andExpect(jsonPath("$.name").value(APP_NAME));
     }
 
     @Test
@@ -128,7 +133,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
      */
     void createStatusApp_missingName_returns400() throws Exception {
         String body = "{\"slug\":\"my-app\"}";
-        mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -140,7 +145,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
      */
     void createStatusApp_invalidSlug_returns400() throws Exception {
         String body = "{\"name\":\"My App\",\"slug\":\"Invalid Slug!\"}";
-        mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -154,7 +159,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         when(statusAppService.createStatusApp(any()))
                 .thenThrow(new DuplicateResourceException("Status app with slug already exists: my-app"));
 
-        mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isConflict());
     }
 
@@ -168,9 +173,9 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusAppService.updateStatusApp(eq(id), any())).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(put("/api/status-apps/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(BASE_PATH_ID, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("My App"));
+                .andExpect(jsonPath("$.name").value(APP_NAME));
     }
 
     @Test
@@ -184,7 +189,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         when(statusAppService.updateStatusApp(eq(id), any()))
                 .thenThrow(new ResourceNotFoundException("Status app not found with id: " + id));
 
-        mockMvc.perform(put("/api/status-apps/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(BASE_PATH_ID, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isNotFound());
     }
 
@@ -197,7 +202,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     void deleteStatusApp_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/status-apps/{id}", id))
+        mockMvc.perform(delete(BASE_PATH_ID, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -245,7 +250,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-apps/tenant/{tenantId}", tenantId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("My App"));
+                .andExpect(jsonPath("$[0].name").value(APP_NAME));
     }
 
     @Test
@@ -261,7 +266,7 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-apps/organization/{organizationId}", orgId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].slug").value("my-app"));
+                .andExpect(jsonPath("$[0].slug").value(APP_SLUG));
     }
 
     @Test
@@ -277,6 +282,6 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-apps/platform/{platformId}", platformId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("My App"));
+                .andExpect(jsonPath("$[0].name").value(APP_NAME));
     }
 }

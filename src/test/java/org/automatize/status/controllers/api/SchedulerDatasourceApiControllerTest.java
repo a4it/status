@@ -41,6 +41,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = SchedulerDatasourceApiController.class)
 class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
 
+    private static final String DATASOURCE_NAME = "Primary DB";
+    private static final String DATASOURCES_PATH = "/api/scheduler/datasources";
+    private static final String DATASOURCE_ID_PATH = "/api/scheduler/datasources/{id}";
+    private static final String DATASOURCE_NOT_FOUND_MESSAGE = "Datasource not found";
+
     @MockitoBean
     private SchedulerDatasourceService datasourceService;
 
@@ -77,7 +82,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     private SchedulerJdbcDatasource sampleDatasource(UUID id) {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
         ds.setId(id);
-        ds.setName("Primary DB");
+        ds.setName(DATASOURCE_NAME);
         ds.setDbType(DbType.POSTGRESQL);
         ds.setHost("localhost");
         return ds;
@@ -105,9 +110,9 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     void listDatasources_returnsOkList() throws Exception {
         when(datasourceService.list(any())).thenReturn(List.of(sampleDatasource(UUID.randomUUID())));
 
-        mockMvc.perform(get("/api/scheduler/datasources"))
+        mockMvc.perform(get(DATASOURCES_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Primary DB"))
+                .andExpect(jsonPath("$[0].name").value(DATASOURCE_NAME))
                 .andExpect(jsonPath("$[0].dbType").value("POSTGRESQL"));
     }
 
@@ -125,7 +130,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(datasourceService.get(eq(id), any())).thenReturn(sampleDatasource(id));
 
-        mockMvc.perform(get("/api/scheduler/datasources/{id}", id))
+        mockMvc.perform(get(DATASOURCE_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.host").value("localhost"));
     }
@@ -140,9 +145,9 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     void getDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(datasourceService.get(eq(id), any()))
-                .thenThrow(new ResourceNotFoundException("Datasource not found"));
+                .thenThrow(new ResourceNotFoundException(DATASOURCE_NOT_FOUND_MESSAGE));
 
-        mockMvc.perform(get("/api/scheduler/datasources/{id}", id))
+        mockMvc.perform(get(DATASOURCE_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -160,11 +165,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(datasourceService.create(any(), any(), any())).thenReturn(sampleDatasource(id));
 
-        mockMvc.perform(post("/api/scheduler/datasources")
+        mockMvc.perform(post(DATASOURCES_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Primary DB"));
+                .andExpect(jsonPath("$.name").value(DATASOURCE_NAME));
     }
 
     /**
@@ -175,7 +180,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createDatasource_missingName_returns400() throws Exception {
-        mockMvc.perform(post("/api/scheduler/datasources")
+        mockMvc.perform(post(DATASOURCES_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"dbType\":\"POSTGRESQL\"}"))
                 .andExpect(status().isBadRequest());
@@ -189,7 +194,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createDatasource_missingDbType_returns400() throws Exception {
-        mockMvc.perform(post("/api/scheduler/datasources")
+        mockMvc.perform(post(DATASOURCES_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Primary DB\"}"))
                 .andExpect(status().isBadRequest());
@@ -209,11 +214,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(datasourceService.update(eq(id), any(), any(), any())).thenReturn(sampleDatasource(id));
 
-        mockMvc.perform(put("/api/scheduler/datasources/{id}", id)
+        mockMvc.perform(put(DATASOURCE_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Primary DB"));
+                .andExpect(jsonPath("$.name").value(DATASOURCE_NAME));
     }
 
     /**
@@ -226,9 +231,9 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     void updateDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(datasourceService.update(eq(id), any(), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Datasource not found"));
+                .thenThrow(new ResourceNotFoundException(DATASOURCE_NOT_FOUND_MESSAGE));
 
-        mockMvc.perform(put("/api/scheduler/datasources/{id}", id)
+        mockMvc.perform(put(DATASOURCE_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isNotFound());
@@ -248,7 +253,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     void deleteDatasource_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/scheduler/datasources/{id}", id))
+        mockMvc.perform(delete(DATASOURCE_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -264,10 +269,10 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     @Test
     void deleteDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
-        doThrow(new ResourceNotFoundException("Datasource not found"))
+        doThrow(new ResourceNotFoundException(DATASOURCE_NOT_FOUND_MESSAGE))
                 .when(datasourceService).delete(eq(id), any());
 
-        mockMvc.perform(delete("/api/scheduler/datasources/{id}", id))
+        mockMvc.perform(delete(DATASOURCE_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -303,7 +308,7 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     void testConnection_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(datasourceService.testConnection(eq(id), any()))
-                .thenThrow(new ResourceNotFoundException("Datasource not found"));
+                .thenThrow(new ResourceNotFoundException(DATASOURCE_NOT_FOUND_MESSAGE));
 
         mockMvc.perform(post("/api/scheduler/datasources/{id}/test", id))
                 .andExpect(status().isNotFound());

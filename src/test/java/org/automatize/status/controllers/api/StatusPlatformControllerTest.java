@@ -34,6 +34,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatusPlatformController.class)
 class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
+    private static final String PLATFORM_NAME = "Cloud";
+    private static final String PLATFORM_SLUG = "cloud";
+    private static final String BASE_PATH = "/api/status-platforms";
+    private static final String ID_PATH = "/api/status-platforms/{id}";
+    private static final String JSON_PATH_NAME = "$.name";
+
     @MockitoBean
     private StatusPlatformService statusPlatformService;
 
@@ -46,8 +52,8 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     private StatusPlatformResponse sampleResponse(UUID id) {
         StatusPlatformResponse r = new StatusPlatformResponse();
         r.setId(id);
-        r.setName("Cloud");
-        r.setSlug("cloud");
+        r.setName(PLATFORM_NAME);
+        r.setSlug(PLATFORM_SLUG);
         r.setStatus("OPERATIONAL");
         return r;
     }
@@ -103,7 +109,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-platforms/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Cloud"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(PLATFORM_NAME));
     }
 
     @Test
@@ -147,7 +153,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/status-platforms").contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Cloud"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(PLATFORM_NAME));
     }
 
     @Test
@@ -234,7 +240,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/status-platforms/{id}/status", id).param("status", "DEGRADED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Cloud"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(PLATFORM_NAME));
     }
 
     @Test

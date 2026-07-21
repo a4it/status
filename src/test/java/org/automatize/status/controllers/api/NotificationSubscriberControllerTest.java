@@ -32,6 +32,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = NotificationSubscriberController.class)
 class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
 
+    private static final String SUBSCRIBER_EMAIL = "sub@example.com";
+    private static final String SUBSCRIBERS_PATH = "/api/notification-subscribers";
+    private static final String SUBSCRIBER_BY_ID_PATH = "/api/notification-subscribers/{id}";
+    private static final String FIRST_EMAIL_JSON_PATH = "$[0].email";
+    private static final String APP_ID_JSON_PREFIX = "{\"appId\":\"";
+
     @MockitoBean
     private NotificationSubscriberService subscriberService;
 
@@ -46,7 +52,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         NotificationSubscriberResponse r = new NotificationSubscriberResponse();
         r.setId(id);
         r.setAppId(UUID.randomUUID());
-        r.setEmail("sub@example.com");
+        r.setEmail(SUBSCRIBER_EMAIL);
         r.setName("Subscriber");
         r.setIsActive(true);
         r.setIsVerified(true);
@@ -63,9 +69,9 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     void getAllSubscribers_noFilter_returnsOk() throws Exception {
         when(subscriberService.getAllSubscribers()).thenReturn(List.of(sample(UUID.randomUUID())));
 
-        mockMvc.perform(get("/api/notification-subscribers"))
+        mockMvc.perform(get(SUBSCRIBERS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("sub@example.com"));
+                .andExpect(jsonPath(FIRST_EMAIL_JSON_PATH).value(SUBSCRIBER_EMAIL));
     }
 
     /**
@@ -79,9 +85,9 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         UUID appId = UUID.randomUUID();
         when(subscriberService.getSubscribersByAppId(appId)).thenReturn(List.of(sample(UUID.randomUUID())));
 
-        mockMvc.perform(get("/api/notification-subscribers").param("appId", appId.toString()))
+        mockMvc.perform(get(SUBSCRIBERS_PATH).param("appId", appId.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("sub@example.com"));
+                .andExpect(jsonPath(FIRST_EMAIL_JSON_PATH).value(SUBSCRIBER_EMAIL));
 
         verify(subscriberService).getSubscribersByAppId(appId);
     }
@@ -97,7 +103,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(subscriberService.getSubscriberById(id)).thenReturn(sample(id));
 
-        mockMvc.perform(get("/api/notification-subscribers/{id}", id))
+        mockMvc.perform(get(SUBSCRIBER_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -114,7 +120,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         when(subscriberService.getSubscriberById(id))
                 .thenThrow(new ResourceNotFoundException("Subscriber not found with id: " + id));
 
-        mockMvc.perform(get("/api/notification-subscribers/{id}", id))
+        mockMvc.perform(get(SUBSCRIBER_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -129,9 +135,9 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         when(subscriberService.createSubscriber(any(), any(), any())).thenReturn(sample(UUID.randomUUID()));
 
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"sub@example.com\",\"name\":\"Subscriber\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.email").value("sub@example.com"));
+                .andExpect(jsonPath("$.email").value(SUBSCRIBER_EMAIL));
     }
 
     /**
@@ -143,7 +149,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @Test
     void createSubscriber_missingEmail_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"name\":\"Subscriber\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -156,7 +162,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @Test
     void createSubscriber_invalidEmail_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"not-an-email\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -169,7 +175,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @Test
     void createSubscriber_missingAppId_returns400() throws Exception {
         String body = "{\"email\":\"sub@example.com\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -185,7 +191,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new ResourceNotFoundException("Status app not found"));
 
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"sub@example.com\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isNotFound());
     }
 
@@ -201,7 +207,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new DuplicateResourceException("Email already subscribed to this application"));
 
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"sub@example.com\"}";
-        mockMvc.perform(post("/api/notification-subscribers").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(SUBSCRIBERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
     }
 
@@ -217,7 +223,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         when(subscriberService.updateSubscriber(eq(id), any(), any(), any())).thenReturn(sample(id));
 
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"new@example.com\",\"name\":\"New\",\"isActive\":false}";
-        mockMvc.perform(put("/api/notification-subscribers/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(put(SUBSCRIBER_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -233,7 +239,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     void deleteSubscriber_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/notification-subscribers/{id}", id))
+        mockMvc.perform(delete(SUBSCRIBER_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -252,7 +258,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         doThrow(new ResourceNotFoundException("Subscriber not found with id: " + id))
                 .when(subscriberService).deleteSubscriber(eq(id));
 
-        mockMvc.perform(delete("/api/notification-subscribers/{id}", id))
+        mockMvc.perform(delete(SUBSCRIBER_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -269,7 +275,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/notification-subscribers/by-app/{appId}", appId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("sub@example.com"));
+                .andExpect(jsonPath(FIRST_EMAIL_JSON_PATH).value(SUBSCRIBER_EMAIL));
     }
 
     /**

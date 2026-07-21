@@ -181,7 +181,7 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
     void delete_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/drop-rules/{id}", id))
+        mockMvc.perform(delete(API_DROP_RULES_ID, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 

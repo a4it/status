@@ -35,6 +35,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = PublicStatusController.class)
 class PublicStatusControllerTest extends AbstractApiControllerTest {
 
+    private static final String APP_NAME = "Public App";
+    private static final String APP_SLUG = "public-app";
+    private static final String INCIDENT_TITLE = "Outage";
+    private static final String JSON_PATH_FIRST_TITLE = "$[0].title";
+    private static final String TYPE_COMPONENT = "COMPONENT";
+
     @MockitoBean
     private PublicStatusService publicStatusService;
 
@@ -47,8 +53,8 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
     private StatusAppResponse sampleApp(UUID id) {
         StatusAppResponse r = new StatusAppResponse();
         r.setId(id);
-        r.setName("Public App");
-        r.setSlug("public-app");
+        r.setName(APP_NAME);
+        r.setSlug(APP_SLUG);
         return r;
     }
 
@@ -74,7 +80,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
     private StatusIncidentResponse sampleIncident(UUID id) {
         StatusIncidentResponse r = new StatusIncidentResponse();
         r.setId(id);
-        r.setTitle("Outage");
+        r.setTitle(INCIDENT_TITLE);
         return r;
     }
 
@@ -103,7 +109,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/public/status/apps"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Public App"));
+                .andExpect(jsonPath("$[0].name").value(APP_NAME));
     }
 
     /**
@@ -113,12 +119,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getAppBySlug_found_returnsOk() throws Exception {
-        when(publicStatusService.getAppBySlug(eq("public-app"), any()))
+        when(publicStatusService.getAppBySlug(eq(APP_SLUG), any()))
                 .thenReturn(sampleApp(UUID.randomUUID()));
 
-        mockMvc.perform(get("/api/public/status/apps/{slug}", "public-app"))
+        mockMvc.perform(get("/api/public/status/apps/{slug}", APP_SLUG))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("public-app"));
+                .andExpect(jsonPath("$.slug").value(APP_SLUG));
     }
 
     /**
@@ -166,7 +172,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/public/status/apps/{appId}/incidents", appId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Outage"));
+                .andExpect(jsonPath(JSON_PATH_FIRST_TITLE).value(INCIDENT_TITLE));
     }
 
     /**
@@ -182,7 +188,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/public/status/apps/{appId}/incidents/current", appId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Outage"));
+                .andExpect(jsonPath(JSON_PATH_FIRST_TITLE).value(INCIDENT_TITLE));
     }
 
     /**
@@ -248,7 +254,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/public/status/apps/{appId}/maintenance", appId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Upgrade"));
+                .andExpect(jsonPath(JSON_PATH_FIRST_TITLE).value("Upgrade"));
     }
 
     /**
@@ -332,7 +338,7 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         UUID appId = UUID.randomUUID();
         UptimeHistoryResponse history = new UptimeHistoryResponse();
         history.setId(appId);
-        history.setName("Public App");
+        history.setName(APP_NAME);
         history.setType("APP");
         when(publicStatusService.getAppUptimeHistory(eq(appId), eq(90))).thenReturn(history);
 
@@ -352,12 +358,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         UUID componentId = UUID.randomUUID();
         UptimeHistoryResponse history = new UptimeHistoryResponse();
         history.setId(componentId);
-        history.setType("COMPONENT");
+        history.setType(TYPE_COMPONENT);
         when(publicStatusService.getComponentUptimeHistory(eq(componentId), eq(90))).thenReturn(history);
 
         mockMvc.perform(get("/api/public/status/components/{componentId}/uptime-history", componentId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.type").value("COMPONENT"));
+                .andExpect(jsonPath("$.type").value(TYPE_COMPONENT));
     }
 
     /**
@@ -371,12 +377,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         UUID appId = UUID.randomUUID();
         UptimeHistoryResponse history = new UptimeHistoryResponse();
         history.setId(UUID.randomUUID());
-        history.setType("COMPONENT");
+        history.setType(TYPE_COMPONENT);
         when(publicStatusService.getAllComponentsUptimeHistory(eq(appId), eq(90)))
                 .thenReturn(List.of(history));
 
         mockMvc.perform(get("/api/public/status/apps/{appId}/components/uptime-history", appId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].type").value("COMPONENT"));
+                .andExpect(jsonPath("$[0].type").value(TYPE_COMPONENT));
     }
 }

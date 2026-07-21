@@ -54,6 +54,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = SchedulerJobApiController.class)
 class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
 
+    private static final String NIGHTLY_BACKUP = "Nightly Backup";
+    private static final String JOBS_PATH = JOBS_PATH;
+    private static final String JOB_BY_ID_PATH = JOB_BY_ID_PATH;
+    private static final String JOB_TRIGGER_PATH = JOB_TRIGGER_PATH;
+    private static final String STATUS_JSON_PATH = "$.status";
+    private static final String JOB_NOT_FOUND = "Job not found";
+
     @MockitoBean
     private SchedulerJobService schedulerJobService;
 
@@ -99,7 +106,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     private SchedulerJob sampleJob(UUID id) {
         SchedulerJob job = new SchedulerJob();
         job.setId(id);
-        job.setName("Nightly Backup");
+        job.setName(NIGHTLY_BACKUP);
         job.setJobType(JobType.PROGRAM);
         job.setCronExpression("0 0 0 * * *");
         job.setStatus(JobStatus.ACTIVE);
@@ -143,9 +150,9 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         when(schedulerJobService.listJobs(any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleJob(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/scheduler/jobs"))
+        mockMvc.perform(get(JOBS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].name").value("Nightly Backup"))
+                .andExpect(jsonPath("$.content[0].name").value(NIGHTLY_BACKUP))
                 .andExpect(jsonPath("$.content[0].jobType").value("PROGRAM"));
     }
 
@@ -163,9 +170,9 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.getJob(eq(id), any())).thenReturn(sampleJob(id));
 
-        mockMvc.perform(get("/api/scheduler/jobs/{id}", id))
+        mockMvc.perform(get(JOB_BY_ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath(STATUS_JSON_PATH).value("ACTIVE"));
     }
 
     /**
@@ -178,9 +185,9 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     void getJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.getJob(eq(id), any()))
-                .thenThrow(new ResourceNotFoundException("Job not found"));
+                .thenThrow(new ResourceNotFoundException(JOB_NOT_FOUND));
 
-        mockMvc.perform(get("/api/scheduler/jobs/{id}", id))
+        mockMvc.perform(get(JOB_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -198,11 +205,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.createJob(any(), any(), any())).thenReturn(sampleJob(id));
 
-        mockMvc.perform(post("/api/scheduler/jobs")
+        mockMvc.perform(post(JOBS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Nightly Backup"));
+                .andExpect(jsonPath("$.name").value(NIGHTLY_BACKUP));
     }
 
     /**
@@ -213,7 +220,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createJob_missingName_returns400() throws Exception {
-        mockMvc.perform(post("/api/scheduler/jobs")
+        mockMvc.perform(post(JOBS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jobType\":\"PROGRAM\",\"cronExpression\":\"0 0 0 * * *\"}"))
                 .andExpect(status().isBadRequest());
@@ -227,7 +234,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createJob_missingCronExpression_returns400() throws Exception {
-        mockMvc.perform(post("/api/scheduler/jobs")
+        mockMvc.perform(post(JOBS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"Nightly Backup\",\"jobType\":\"PROGRAM\"}"))
                 .andExpect(status().isBadRequest());
@@ -243,7 +250,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new IllegalArgumentException("Invalid cron expression"));
 
         assertThrows(Exception.class,
-                () -> mockMvc.perform(post("/api/scheduler/jobs")
+                () -> mockMvc.perform(post(JOBS_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody())));
     }
@@ -262,11 +269,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.updateJob(eq(id), any(), any(), any())).thenReturn(sampleJob(id));
 
-        mockMvc.perform(put("/api/scheduler/jobs/{id}", id)
+        mockMvc.perform(put(JOB_BY_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Nightly Backup"));
+                .andExpect(jsonPath("$.name").value(NIGHTLY_BACKUP));
     }
 
     /**
@@ -279,9 +286,9 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     void updateJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.updateJob(eq(id), any(), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Job not found"));
+                .thenThrow(new ResourceNotFoundException(JOB_NOT_FOUND));
 
-        mockMvc.perform(put("/api/scheduler/jobs/{id}", id)
+        mockMvc.perform(put(JOB_BY_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequestBody()))
                 .andExpect(status().isNotFound());
@@ -300,7 +307,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     void deleteJob_returns204() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/scheduler/jobs/{id}", id))
+        mockMvc.perform(delete(JOB_BY_ID_PATH, id))
                 .andExpect(status().isNoContent());
 
         verify(schedulerJobService).deleteJob(eq(id), any());
@@ -315,10 +322,10 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     @Test
     void deleteJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
-        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Job not found"))
+        org.mockito.Mockito.doThrow(new ResourceNotFoundException(JOB_NOT_FOUND))
                 .when(schedulerJobService).deleteJob(eq(id), any());
 
-        mockMvc.perform(delete("/api/scheduler/jobs/{id}", id))
+        mockMvc.perform(delete(JOB_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -340,7 +347,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/scheduler/jobs/{id}/pause", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PAUSED"));
+                .andExpect(jsonPath(STATUS_JSON_PATH).value("PAUSED"));
     }
 
     /**
@@ -355,7 +362,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/scheduler/jobs/{id}/resume", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                .andExpect(jsonPath(STATUS_JSON_PATH).value("ACTIVE"));
     }
 
     /**
@@ -368,7 +375,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     void resumeJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(schedulerJobService.resumeJob(eq(id), any(), any()))
-                .thenThrow(new ResourceNotFoundException("Job not found"));
+                .thenThrow(new ResourceNotFoundException(JOB_NOT_FOUND));
 
         mockMvc.perform(post("/api/scheduler/jobs/{id}/resume", id))
                 .andExpect(status().isNotFound());
@@ -390,9 +397,9 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         when(jobDispatcherService.triggerManually(eq(id), any(), any()))
                 .thenReturn(sampleRun(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/scheduler/jobs/{id}/trigger", id))
+        mockMvc.perform(post(JOB_TRIGGER_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SUCCESS"));
+                .andExpect(jsonPath(STATUS_JSON_PATH).value("SUCCESS"));
     }
 
     /**
@@ -406,7 +413,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(jobDispatcherService.triggerManually(eq(id), any(), any())).thenReturn(null);
 
-        mockMvc.perform(post("/api/scheduler/jobs/{id}/trigger", id))
+        mockMvc.perform(post(JOB_TRIGGER_PATH, id))
                 .andExpect(status().isOk());
     }
 
@@ -421,7 +428,7 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .thenThrow(new RuntimeException("Job not found or access denied"));
 
         assertThrows(Exception.class,
-                () -> mockMvc.perform(post("/api/scheduler/jobs/{id}/trigger", id)));
+                () -> mockMvc.perform(post(JOB_TRIGGER_PATH, id)));
     }
 
     // -------------------------------------------------------------------------

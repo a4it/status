@@ -35,6 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatusComponentController.class)
 class StatusComponentControllerTest extends AbstractApiControllerTest {
 
+    private static final String COMPONENTS_PATH = "/api/components";
+    private static final String COMPONENT_BY_ID_PATH = "/api/components/{id}";
+    private static final String APP_ID_JSON_PREFIX = "{\"appId\":\"";
+
     @MockitoBean
     private StatusComponentService statusComponentService;
 
@@ -62,7 +66,7 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         when(statusComponentService.getAllComponents(any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/components"))
+        mockMvc.perform(get(COMPONENTS_PATH))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("API"));
     }
@@ -77,7 +81,7 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusComponentService.getComponentById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/components/{id}", id))
+        mockMvc.perform(get(COMPONENT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("OPERATIONAL"));
     }
@@ -93,7 +97,7 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         when(statusComponentService.getComponentById(id))
                 .thenThrow(new ResourceNotFoundException("Component not found with id: " + id));
 
-        mockMvc.perform(get("/api/components/{id}", id))
+        mockMvc.perform(get(COMPONENT_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -107,8 +111,8 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusComponentService.createComponent(any())).thenReturn(sampleResponse(id));
 
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"name\":\"API\"}";
-        mockMvc.perform(post("/api/components").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\",\"name\":\"API\"}";
+        mockMvc.perform(post(COMPONENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.name").value("API"));
     }
@@ -120,8 +124,8 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
      * @throws Exception if the mock request cannot be performed
      */
     void createComponent_missingName_returns400() throws Exception {
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\"}";
-        mockMvc.perform(post("/api/components").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\"}";
+        mockMvc.perform(post(COMPONENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -135,8 +139,8 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         when(statusComponentService.createComponent(any()))
                 .thenThrow(new DuplicateResourceException("Component with name already exists in this app: API"));
 
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"name\":\"API\"}";
-        mockMvc.perform(post("/api/components").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\",\"name\":\"API\"}";
+        mockMvc.perform(post(COMPONENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
     }
 
@@ -149,7 +153,7 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     void deleteComponent_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/components/{id}", id))
+        mockMvc.perform(delete(COMPONENT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -167,7 +171,7 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
         doThrow(new BusinessRuleException("Cannot delete component with active incidents"))
                 .when(statusComponentService).deleteComponent(eq(id));
 
-        mockMvc.perform(delete("/api/components/{id}", id))
+        mockMvc.perform(delete(COMPONENT_BY_ID_PATH, id))
                 .andExpect(status().isConflict());
     }
 }

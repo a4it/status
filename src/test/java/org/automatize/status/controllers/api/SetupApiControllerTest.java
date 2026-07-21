@@ -37,6 +37,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = SetupApiController.class)
 class SetupApiControllerTest extends AbstractApiControllerTest {
 
+    private static final String URL_TEST_CONNECTION = "/api/setup/test-connection";
+    private static final String URL_TENANT = "/api/setup/tenant";
+    private static final String URL_ORGANIZATION = "/api/setup/organization";
+    private static final String URL_ADMIN = "/api/setup/admin";
+    private static final String URL_PROPERTIES = "/api/setup/properties";
+    private static final String JSON_PATH_SUCCESS = "$.success";
+    private static final String BODY_NAME_ACME = "{\"name\":\"Acme\"}";
+
     @MockitoBean
     private SetupService setupService;
 
@@ -75,9 +83,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .thenReturn(new MessageResponse("Connection successful.", true));
 
         String body = "{\"url\":\"jdbc:postgresql://localhost/db\",\"username\":\"u\",\"password\":\"p\"}";
-        mockMvc.perform(post("/api/setup/test-connection").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_TEST_CONNECTION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -93,9 +101,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .thenReturn(new MessageResponse("Connection failed: timeout", false));
 
         String body = "{\"url\":\"jdbc:postgresql://localhost/db\",\"username\":\"u\"}";
-        mockMvc.perform(post("/api/setup/test-connection").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_TEST_CONNECTION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -108,7 +116,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
 
         String body = "{\"url\":\"jdbc:postgresql://localhost/db\",\"username\":\"u\"}";
-        mockMvc.perform(post("/api/setup/test-connection").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_TEST_CONNECTION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isForbidden());
     }
 
@@ -121,7 +129,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     @Test
     void testConnection_missingFields_returns400() throws Exception {
         String body = "{\"password\":\"p\"}"; // url + username are @NotBlank
-        mockMvc.perform(post("/api/setup/test-connection").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_TEST_CONNECTION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -140,8 +148,8 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         tenant.setName("Acme");
         when(setupService.createTenant(any(SetupTenantRequest.class))).thenReturn(tenant);
 
-        String body = "{\"name\":\"Acme\"}";
-        mockMvc.perform(post("/api/setup/tenant").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = BODY_NAME_ACME;
+        mockMvc.perform(post(URL_TENANT).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
@@ -155,7 +163,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     void createTenant_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
 
-        mockMvc.perform(post("/api/setup/tenant").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Acme\"}"))
+        mockMvc.perform(post(URL_TENANT).contentType(MediaType.APPLICATION_JSON).content(BODY_NAME_ACME))
                 .andExpect(status().isForbidden());
     }
 
@@ -166,7 +174,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createTenant_missingName_returns400() throws Exception {
-        mockMvc.perform(post("/api/setup/tenant").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        mockMvc.perform(post(URL_TENANT).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -182,9 +190,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         when(setupService.createTenant(any(SetupTenantRequest.class)))
                 .thenThrow(new RuntimeException("boom"));
 
-        mockMvc.perform(post("/api/setup/tenant").contentType(MediaType.APPLICATION_JSON).content("{\"name\":\"Acme\"}"))
+        mockMvc.perform(post(URL_TENANT).contentType(MediaType.APPLICATION_JSON).content(BODY_NAME_ACME))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     // ---- organization ----------------------------------------------------
@@ -204,7 +212,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
         String body = "{\"name\":\"Acme Org\",\"organizationType\":\"CUSTOMER\",\"tenantId\":\""
                 + UUID.randomUUID() + "\"}";
-        mockMvc.perform(post("/api/setup/organization").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_ORGANIZATION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Acme Org"));
     }
@@ -220,7 +228,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
         String body = "{\"name\":\"Acme Org\",\"organizationType\":\"CUSTOMER\",\"tenantId\":\""
                 + UUID.randomUUID() + "\"}";
-        mockMvc.perform(post("/api/setup/organization").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_ORGANIZATION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isForbidden());
     }
 
@@ -233,7 +241,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     @Test
     void createOrganization_missingFields_returns400() throws Exception {
         String body = "{\"name\":\"Acme Org\"}"; // organizationType + tenantId missing
-        mockMvc.perform(post("/api/setup/organization").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_ORGANIZATION).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -261,9 +269,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         when(setupService.createAdmin(any(SetupAdminRequest.class)))
                 .thenReturn(new MessageResponse("User registered successfully!", true));
 
-        mockMvc.perform(post("/api/setup/admin").contentType(MediaType.APPLICATION_JSON).content(adminBody()))
+        mockMvc.perform(post(URL_ADMIN).contentType(MediaType.APPLICATION_JSON).content(adminBody()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
 
         verify(setupService).markSetupComplete();
     }
@@ -280,9 +288,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         when(setupService.createAdmin(any(SetupAdminRequest.class)))
                 .thenReturn(new MessageResponse("Username is already taken!", false));
 
-        mockMvc.perform(post("/api/setup/admin").contentType(MediaType.APPLICATION_JSON).content(adminBody()))
+        mockMvc.perform(post(URL_ADMIN).contentType(MediaType.APPLICATION_JSON).content(adminBody()))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -294,7 +302,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     void createAdmin_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
 
-        mockMvc.perform(post("/api/setup/admin").contentType(MediaType.APPLICATION_JSON).content(adminBody()))
+        mockMvc.perform(post(URL_ADMIN).contentType(MediaType.APPLICATION_JSON).content(adminBody()))
                 .andExpect(status().isForbidden());
     }
 
@@ -307,7 +315,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     @Test
     void createAdmin_missingFields_returns400() throws Exception {
         String body = "{\"username\":\"ad\"}"; // too short + missing required fields
-        mockMvc.perform(post("/api/setup/admin").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_ADMIN).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -325,7 +333,7 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                         "server.port", "8080", "HTTP port", false)));
         when(setupService.getGroupedProperties()).thenReturn(groups);
 
-        mockMvc.perform(get("/api/setup/properties"))
+        mockMvc.perform(get(URL_PROPERTIES))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.Critical[0].key").value("server.port"));
     }
@@ -340,9 +348,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     void getProperties_serviceThrows_returns400() throws Exception {
         when(setupService.getGroupedProperties()).thenThrow(new java.io.IOException("no file"));
 
-        mockMvc.perform(get("/api/setup/properties"))
+        mockMvc.perform(get(URL_PROPERTIES))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -354,9 +362,9 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
     @Test
     void saveProperties_returnsOk() throws Exception {
         String body = "{\"properties\":{\"server.port\":\"9090\"}}";
-        mockMvc.perform(post("/api/setup/properties").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_PROPERTIES).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
 
         verify(setupService).saveProperties(any());
     }
@@ -372,8 +380,8 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         doThrow(new java.io.IOException("write failed")).when(setupService).saveProperties(any());
 
         String body = "{\"properties\":{\"server.port\":\"9090\"}}";
-        mockMvc.perform(post("/api/setup/properties").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(URL_PROPERTIES).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 }

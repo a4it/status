@@ -24,6 +24,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = UptimeHistoryController.class)
 class UptimeHistoryControllerTest extends AbstractApiControllerTest {
 
+    private static final String BACKFILL_URL = "/api/uptime-history/backfill";
+    private static final String CALCULATE_URL = "/api/uptime-history/calculate";
+    private static final String JSON_PATH_SUCCESS = "$.success";
+
     @MockitoBean
     private UptimeHistoryService uptimeHistoryService;
 
@@ -38,7 +42,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void backfill_valid_returnsOk() throws Exception {
         when(uptimeHistoryService.backfillUptimeHistory(90)).thenReturn(90);
 
-        mockMvc.perform(post("/api/uptime-history/backfill").param("days", "90"))
+        mockMvc.perform(post(BACKFILL_URL).param("days", "90"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.daysProcessed").value(90));
@@ -54,7 +58,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void backfill_defaultDays_returnsOk() throws Exception {
         when(uptimeHistoryService.backfillUptimeHistory(90)).thenReturn(90);
 
-        mockMvc.perform(post("/api/uptime-history/backfill"))
+        mockMvc.perform(post(BACKFILL_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
@@ -68,7 +72,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void backfill_daysBelowOne_returns400() throws Exception {
-        mockMvc.perform(post("/api/uptime-history/backfill").param("days", "0"))
+        mockMvc.perform(post(BACKFILL_URL).param("days", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -82,7 +86,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void backfill_daysAbove365_returns400() throws Exception {
-        mockMvc.perform(post("/api/uptime-history/backfill").param("days", "366"))
+        mockMvc.perform(post(BACKFILL_URL).param("days", "366"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -96,7 +100,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void calculate_validPastDate_returnsOk() throws Exception {
-        mockMvc.perform(post("/api/uptime-history/calculate").param("date", "2020-01-01"))
+        mockMvc.perform(post(CALCULATE_URL).param("date", "2020-01-01"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.date").value("2020-01-01"));
@@ -112,7 +116,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void calculate_invalidFormat_returns400() throws Exception {
-        mockMvc.perform(post("/api/uptime-history/calculate").param("date", "01-01-2020"))
+        mockMvc.perform(post(CALCULATE_URL).param("date", "01-01-2020"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -127,7 +131,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     @Test
     void calculate_futureDate_returns400() throws Exception {
         String future = LocalDate.now().plusDays(5).toString();
-        mockMvc.perform(post("/api/uptime-history/calculate").param("date", future))
+        mockMvc.perform(post(CALCULATE_URL).param("date", future))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false));
     }
@@ -140,7 +144,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void calculate_missingDateParam_returns400() throws Exception {
-        mockMvc.perform(post("/api/uptime-history/calculate"))
+        mockMvc.perform(post(CALCULATE_URL))
                 .andExpect(status().isBadRequest());
     }
 

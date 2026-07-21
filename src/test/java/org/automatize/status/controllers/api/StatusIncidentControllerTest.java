@@ -35,6 +35,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = StatusIncidentController.class)
 class StatusIncidentControllerTest extends AbstractApiControllerTest {
 
+    private static final String INCIDENT_TITLE = "DB outage";
+    private static final String INCIDENTS_PATH = "/api/incidents";
+    private static final String INCIDENT_BY_ID_PATH = "/api/incidents/{id}";
+    private static final String INCIDENT_UPDATES_PATH = "/api/incidents/{id}/updates";
+
     @MockitoBean
     private StatusIncidentService statusIncidentService;
 
@@ -47,7 +52,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     private StatusIncidentResponse sampleResponse(UUID id) {
         StatusIncidentResponse r = new StatusIncidentResponse();
         r.setId(id);
-        r.setTitle("DB outage");
+        r.setTitle(INCIDENT_TITLE);
         r.setStatus("INVESTIGATING");
         r.setSeverity("MAJOR");
         return r;
@@ -88,9 +93,9 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         when(statusIncidentService.getAllIncidents(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/incidents"))
+        mockMvc.perform(get(INCIDENTS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].title").value("DB outage"));
+                .andExpect(jsonPath("$.content[0].title").value(INCIDENT_TITLE));
     }
 
     @Test
@@ -132,9 +137,9 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     void createIncident_valid_returns201() throws Exception {
         when(statusIncidentService.createIncident(any())).thenReturn(sampleResponse(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/incidents").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(INCIDENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("DB outage"));
+                .andExpect(jsonPath("$.title").value(INCIDENT_TITLE));
     }
 
     @Test
@@ -282,6 +287,6 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/incidents/active"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("DB outage"));
+                .andExpect(jsonPath("$[0].title").value(INCIDENT_TITLE));
     }
 }

@@ -63,6 +63,8 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
         }
     }
 
+    private static final String TENANT_NAME = "Globex";
+
     @MockitoBean
     private TenantContextService tenantContextService;
 
@@ -102,7 +104,7 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
     private Tenant sampleTenant(UUID id) {
         Tenant t = new Tenant();
         t.setId(id);
-        t.setName("Globex");
+        t.setName(TENANT_NAME);
         t.setIsActive(true);
         return t;
     }
@@ -131,7 +133,7 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
     private ContextResponse sampleContext() {
         ContextResponse r = new ContextResponse();
         r.setAccessToken("ctx-token");
-        r.setTenantName("Globex");
+        r.setTenantName(TENANT_NAME);
         r.setOrganizationName("Acme");
         r.setSuperadmin(true);
         r.setHasSelectedContext(true);
@@ -151,7 +153,7 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/context/tenants"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Globex"));
+                .andExpect(jsonPath("$[0].name").value(TENANT_NAME));
     }
 
     /**
@@ -217,7 +219,7 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/context/current"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.tenantName").value("Globex"))
+                .andExpect(jsonPath("$.tenantName").value(TENANT_NAME))
                 .andExpect(jsonPath("$.superadmin").value(true));
     }
 }

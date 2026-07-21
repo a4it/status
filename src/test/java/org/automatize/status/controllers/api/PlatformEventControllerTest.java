@@ -32,6 +32,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = PlatformEventController.class)
 class PlatformEventControllerTest extends AbstractApiControllerTest {
 
+    private static final String SEVERITY_ERROR = "ERROR";
+    private static final String EVENT_JSON_BODY = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
+    private static final String EVENTS_LOG_PATH = "/api/events/log";
+    private static final String API_KEY_HEADER = "X-API-Key";
+    private static final String API_KEY_VALUE = "secret-key";
+    private static final String JSON_PATH_SUCCESS = "$.success";
+    private static final String EVENTS_PATH = "/api/events";
+    private static final String EVENTS_ID_PATH = "/api/events/{id}";
+    private static final String APP_ID_JSON_PREFIX = "{\"appId\":\"";
+
     @MockitoBean
     private PlatformEventService platformEventService;
 
@@ -44,7 +54,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     private PlatformEvent sampleEvent(UUID id) {
         PlatformEvent e = new PlatformEvent();
         e.setId(id);
-        e.setSeverity("ERROR");
+        e.setSeverity(SEVERITY_ERROR);
         e.setMessage("Something broke");
         e.setSource("monitor");
         return e;
@@ -63,9 +73,9 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         when(platformEventService.createEventWithApiKey(any(), any(), any(), any(), any(), any()))
                 .thenReturn(sampleEvent(UUID.randomUUID()));
 
-        String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events/log")
-                        .header("X-API-Key", "secret-key")
+        String body = EVENT_JSON_BODY;
+        mockMvc.perform(post(EVENTS_LOG_PATH)
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("Something broke"));
@@ -79,11 +89,11 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void logEventWithApiKey_missingApiKey_returns401() throws Exception {
-        String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events/log")
+        String body = EVENT_JSON_BODY;
+        mockMvc.perform(post(EVENTS_LOG_PATH)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -98,12 +108,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         when(platformEventService.createEventWithApiKey(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new UnauthorizedException("Invalid API key"));
 
-        String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events/log")
-                        .header("X-API-Key", "bad-key")
+        String body = EVENT_JSON_BODY;
+        mockMvc.perform(post(EVENTS_LOG_PATH)
+                        .header(API_KEY_HEADER, "bad-key")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -115,8 +125,8 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     @Test
     void logEventWithApiKey_missingMessage_returns400() throws Exception {
         String body = "{\"severity\":\"ERROR\"}";
-        mockMvc.perform(post("/api/events/log")
-                        .header("X-API-Key", "secret-key")
+        mockMvc.perform(post(EVENTS_LOG_PATH)
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -130,8 +140,8 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     @Test
     void logEventWithApiKey_invalidSeverity_returns400() throws Exception {
         String body = "{\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events/log")
-                        .header("X-API-Key", "secret-key")
+        mockMvc.perform(post(EVENTS_LOG_PATH)
+                        .header(API_KEY_HEADER, API_KEY_VALUE)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -149,9 +159,9 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         when(platformEventService.searchEvents(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleEvent(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/events"))
+        mockMvc.perform(get(EVENTS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].severity").value("ERROR"));
+                .andExpect(jsonPath("$.content[0].severity").value(SEVERITY_ERROR));
     }
 
     // ---- getEventById ----
@@ -202,9 +212,9 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .thenReturn(sampleEvent(UUID.randomUUID()));
 
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.severity").value("ERROR"));
+                .andExpect(jsonPath("$.severity").value(SEVERITY_ERROR));
     }
 
     /**
@@ -215,8 +225,8 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createEvent_missingAppId_returns400() throws Exception {
-        String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = EVENT_JSON_BODY;
+        mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -229,7 +239,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     @Test
     void createEvent_invalidSeverity_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -247,7 +257,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         // exception is not mapped to a status and propagates out of the servlet.
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
         org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
-                mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body)));
+                mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body)));
     }
 
     // ---- deleteEvent ----
@@ -264,7 +274,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(delete("/api/events/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
 
         verify(platformEventService).deleteEvent(id);
     }
@@ -285,7 +295,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         mockMvc.perform(post("/api/events/regenerate-key/component/{componentId}", componentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiKey").value("new-key-123"))
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -303,7 +313,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/events/regenerate-key/component/{componentId}", componentId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -320,7 +330,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         mockMvc.perform(post("/api/events/regenerate-key/app/{appId}", appId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.apiKey").value("app-key-456"))
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -337,6 +347,6 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post("/api/events/regenerate-key/app/{appId}", appId))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 }

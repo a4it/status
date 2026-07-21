@@ -36,6 +36,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = OrganizationController.class)
 class OrganizationControllerTest extends AbstractApiControllerTest {
 
+    private static final String ORGANIZATIONS_PATH = "/api/organizations";
+    private static final String ORGANIZATION_BY_ID_PATH = "/api/organizations/{id}";
+    private static final String JSON_PATH_NAME = "$.name";
+
     @MockitoBean
     private OrganizationService organizationService;
 
@@ -74,7 +78,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         when(organizationService.getAllOrganizations(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleOrg(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/organizations"))
+        mockMvc.perform(get(ORGANIZATIONS_PATH))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("Acme"));
     }
@@ -90,9 +94,9 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(organizationService.getOrganizationById(id)).thenReturn(sampleOrg(id));
 
-        mockMvc.perform(get("/api/organizations/{id}", id))
+        mockMvc.perform(get(ORGANIZATION_BY_ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Acme"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value("Acme"));
     }
 
     /**
@@ -107,7 +111,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         when(organizationService.getOrganizationById(id))
                 .thenThrow(new ResourceNotFoundException("Organization not found with id: " + id));
 
-        mockMvc.perform(get("/api/organizations/{id}", id))
+        mockMvc.perform(get(ORGANIZATION_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -121,9 +125,9 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     void createOrganization_valid_returns201() throws Exception {
         when(organizationService.createOrganization(any())).thenReturn(sampleOrg(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/organizations").contentType(MediaType.APPLICATION_JSON).content(validOrgJson()))
+        mockMvc.perform(post(ORGANIZATIONS_PATH).contentType(MediaType.APPLICATION_JSON).content(validOrgJson()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Acme"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value("Acme"));
     }
 
     /**
@@ -135,7 +139,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     @Test
     void createOrganization_missingName_returns400() throws Exception {
         String body = "{\"organizationType\":\"CUSTOMER\"}";
-        mockMvc.perform(post("/api/organizations").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(ORGANIZATIONS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -148,7 +152,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     @Test
     void createOrganization_missingType_returns400() throws Exception {
         String body = "{\"name\":\"Acme\"}";
-        mockMvc.perform(post("/api/organizations").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(ORGANIZATIONS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -163,7 +167,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         when(organizationService.createOrganization(any()))
                 .thenThrow(new DuplicateResourceException("Organization with name already exists: Acme"));
 
-        mockMvc.perform(post("/api/organizations").contentType(MediaType.APPLICATION_JSON).content(validOrgJson()))
+        mockMvc.perform(post(ORGANIZATIONS_PATH).contentType(MediaType.APPLICATION_JSON).content(validOrgJson()))
                 .andExpect(status().isConflict());
     }
 
@@ -178,10 +182,10 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(organizationService.updateOrganization(eq(id), any())).thenReturn(sampleOrg(id));
 
-        mockMvc.perform(put("/api/organizations/{id}", id)
+        mockMvc.perform(put(ORGANIZATION_BY_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(validOrgJson()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Acme"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value("Acme"));
     }
 
     /**
@@ -194,7 +198,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     void updateOrganization_missingType_returns400() throws Exception {
         UUID id = UUID.randomUUID();
         String body = "{\"name\":\"Acme\"}";
-        mockMvc.perform(put("/api/organizations/{id}", id)
+        mockMvc.perform(put(ORGANIZATION_BY_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -210,7 +214,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     void deleteOrganization_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/organizations/{id}", id))
+        mockMvc.perform(delete(ORGANIZATION_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -229,7 +233,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         doThrow(new BusinessRuleException("Cannot delete organization with active users"))
                 .when(organizationService).deleteOrganization(eq(id));
 
-        mockMvc.perform(delete("/api/organizations/{id}", id))
+        mockMvc.perform(delete(ORGANIZATION_BY_ID_PATH, id))
                 .andExpect(status().isConflict());
     }
 
@@ -262,7 +266,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/organizations/current"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Acme"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value("Acme"));
     }
 
     /**
@@ -278,7 +282,7 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/organizations/{id}/status", id).param("status", "INACTIVE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Acme"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value("Acme"));
     }
 
     /**

@@ -31,6 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ProcessMiningRetentionController.class)
 class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
 
+    private static final String RETENTION_BY_ID_PATH = RETENTION_BY_ID_PATH;
+
     @MockitoBean
     private ProcessMiningRetentionService service;
 
@@ -75,7 +77,7 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(service.findById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/process-mining/retention/{id}", id))
+        mockMvc.perform(get(RETENTION_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.platformName").value("All Platforms"));
     }
@@ -93,7 +95,7 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
         // Service throws NoSuchElementException (no @ResponseStatus); with no matching
         // resolver the exception propagates out of perform().
         Assertions.assertThrows(Exception.class,
-                () -> mockMvc.perform(get("/api/process-mining/retention/{id}", id)));
+                () -> mockMvc.perform(get(RETENTION_BY_ID_PATH, id)));
     }
 
     /**
@@ -123,7 +125,7 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
         when(service.update(eq(id), any())).thenReturn(sampleResponse(id));
 
         String body = "{\"retentionDays\":30,\"enabled\":false}";
-        mockMvc.perform(put("/api/process-mining/retention/{id}", id)
+        mockMvc.perform(put(RETENTION_BY_ID_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
@@ -138,7 +140,7 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
     void delete_returnsNoContent() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/process-mining/retention/{id}", id))
+        mockMvc.perform(delete(RETENTION_BY_ID_PATH, id))
                 .andExpect(status().isNoContent());
 
         verify(service).delete(id);
