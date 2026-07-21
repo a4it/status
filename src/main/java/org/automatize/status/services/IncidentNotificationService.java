@@ -58,6 +58,7 @@ public class IncidentNotificationService {
     @Async
     @Transactional(readOnly = true)
     public void notifySubscribersOfNewIncident(StatusIncident incident) {
+        // Guard against a missing incident or its associated app
         if (incident == null || incident.getApp() == null) {
             logger.warn(NULL_INCIDENT_WARNING);
             return;
@@ -67,6 +68,7 @@ public class IncidentNotificationService {
             List<NotificationSubscriber> subscribers =
                     subscriberService.getActiveVerifiedSubscribers(incident.getApp().getId());
 
+            // Nothing to do when there are no active subscribers
             if (subscribers.isEmpty()) {
                 logger.info("No active subscribers for app {}, skipping notification",
                         incident.getApp().getName());
@@ -115,6 +117,7 @@ public class IncidentNotificationService {
     @Async
     @Transactional(readOnly = true)
     public void notifySubscribersOfIncidentUpdate(StatusIncident incident, String updateMessage) {
+        // Guard against a missing incident or its associated app
         if (incident == null || incident.getApp() == null) {
             logger.warn(NULL_INCIDENT_WARNING);
             return;
@@ -124,6 +127,7 @@ public class IncidentNotificationService {
             List<NotificationSubscriber> subscribers =
                     subscriberService.getActiveVerifiedSubscribers(incident.getApp().getId());
 
+            // Nothing to do when there are no active subscribers
             if (subscribers.isEmpty()) {
                 logger.info("No active subscribers for app {}, skipping update notification",
                         incident.getApp().getName());
@@ -163,6 +167,7 @@ public class IncidentNotificationService {
     @Async
     @Transactional(readOnly = true)
     public void notifySubscribersOfIncidentResolution(StatusIncident incident, String resolutionMessage) {
+        // Guard against a missing incident or its associated app
         if (incident == null || incident.getApp() == null) {
             logger.warn(NULL_INCIDENT_WARNING);
             return;
@@ -172,6 +177,7 @@ public class IncidentNotificationService {
             List<NotificationSubscriber> subscribers =
                     subscriberService.getActiveVerifiedSubscribers(incident.getApp().getId());
 
+            // Nothing to do when there are no active subscribers
             if (subscribers.isEmpty()) {
                 return;
             }

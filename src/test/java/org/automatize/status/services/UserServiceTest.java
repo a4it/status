@@ -58,17 +58,32 @@ class UserServiceTest {
 
     private UUID currentUserId;
 
+    /**
+     * Initialises a random current-user id and installs an authenticated ADMIN principal
+     * in the security context before each test.
+     */
     @BeforeEach
     void setUp() {
         currentUserId = UUID.randomUUID();
         setPrincipal(currentUserId, "ADMIN");
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication
+     * state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Installs an authenticated {@link UserPrincipal} with the given id and role into
+     * the security context.
+     *
+     * @param id   the principal user identifier
+     * @param role the principal security role
+     */
     private void setPrincipal(UUID id, String role) {
         UserPrincipal principal = new UserPrincipal(
                 id, "tester", "tester@example.com", "pw",
@@ -77,6 +92,14 @@ class UserServiceTest {
                 new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList()));
     }
 
+    /**
+     * Builds an enabled {@link User} test fixture with the given identifier and username,
+     * deriving the email from the username and using a fixed stored password hash.
+     *
+     * @param id       the user identifier to assign
+     * @param username the username to assign
+     * @return a populated {@link User} instance for use in tests
+     */
     private User buildUser(UUID id, String username) {
         User user = new User();
         user.setId(id);
@@ -88,6 +111,13 @@ class UserServiceTest {
         return user;
     }
 
+    /**
+     * Builds a {@link UserRequest} test fixture carrying the given username and email.
+     *
+     * @param username the username to set on the request
+     * @param email    the email to set on the request
+     * @return a populated {@link UserRequest} instance for use in tests
+     */
     private UserRequest buildRequest(String username, String email) {
         UserRequest request = new UserRequest();
         request.setUsername(username);
@@ -97,6 +127,10 @@ class UserServiceTest {
 
     // ---------- getAllUsers ----------
 
+    /**
+     * Verifies that {@code getAllUsers} filters by both organization and role when both
+     * are supplied.
+     */
     @Test
     void getAllUsers_organizationAndRole_filtersByBoth() {
         UUID orgId = UUID.randomUUID();
@@ -109,6 +143,10 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} filters by both organization and enabled flag
+     * when both are supplied.
+     */
     @Test
     void getAllUsers_organizationAndEnabled_filtersByBoth() {
         UUID orgId = UUID.randomUUID();
@@ -121,6 +159,10 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} filters by organization only when just the
+     * organization id is supplied.
+     */
     @Test
     void getAllUsers_organizationOnly_filtersByOrganization() {
         UUID orgId = UUID.randomUUID();
@@ -133,6 +175,9 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} filters by role only when just the role is supplied.
+     */
     @Test
     void getAllUsers_roleOnly_filtersByRole() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -144,6 +189,10 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} filters by enabled flag only when just the
+     * enabled flag is supplied.
+     */
     @Test
     void getAllUsers_enabledOnly_filtersByEnabled() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -155,6 +204,10 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} performs a search query when only a search term
+     * is supplied.
+     */
     @Test
     void getAllUsers_searchOnly_usesSearch() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -166,6 +219,10 @@ class UserServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllUsers} returns the full paged result from {@code findAll}
+     * when no filters or search term are supplied.
+     */
     @Test
     void getAllUsers_noFilters_returnsFindAllPage() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -179,6 +236,9 @@ class UserServiceTest {
 
     // ---------- getUserById / lookups ----------
 
+    /**
+     * Verifies that {@code getUserById} returns the user when one exists for the id.
+     */
     @Test
     void getUserById_existing_returnsUser() {
         UUID id = UUID.randomUUID();
@@ -188,6 +248,10 @@ class UserServiceTest {
         assertThat(userService.getUserById(id)).isSameAs(user);
     }
 
+    /**
+     * Verifies that {@code getUserById} throws {@link ResourceNotFoundException} when no
+     * user exists for the id.
+     */
     @Test
     void getUserById_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
@@ -197,6 +261,10 @@ class UserServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code getUsersByOrganization} delegates to the repository and returns
+     * the users it provides for the organization.
+     */
     @Test
     void getUsersByOrganization_delegatesToRepository() {
         UUID orgId = UUID.randomUUID();
@@ -206,6 +274,10 @@ class UserServiceTest {
         assertThat(userService.getUsersByOrganization(orgId)).isEqualTo(users);
     }
 
+    /**
+     * Verifies that {@code getCurrentUserProfile} returns the user identified by the
+     * authenticated principal.
+     */
     @Test
     void getCurrentUserProfile_returnsCurrentUser() {
         User user = buildUser(currentUserId, "tester");

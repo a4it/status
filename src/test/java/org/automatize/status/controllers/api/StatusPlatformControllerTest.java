@@ -37,6 +37,12 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private StatusPlatformService statusPlatformService;
 
+    /**
+     * Builds a sample {@link StatusPlatformResponse} for stubbing service returns.
+     *
+     * @param id the identifier to assign to the response
+     * @return a sample platform response with representative field values
+     */
     private StatusPlatformResponse sampleResponse(UUID id) {
         StatusPlatformResponse r = new StatusPlatformResponse();
         r.setId(id);
@@ -46,11 +52,21 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Provides a minimal valid JSON request body that satisfies bean validation for platform creation.
+     *
+     * @return a JSON string with the required name and slug fields
+     */
     private String validBody() {
         return "{\"name\":\"Cloud\",\"slug\":\"cloud\"}";
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms returns 200 OK with a paged JSON body of platforms.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getAllPlatforms_returnsOkPage() throws Exception {
         when(statusPlatformService.getAllPlatforms(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
@@ -61,6 +77,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms/all returns 200 OK with all platforms in display order.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getAllPlatformsOrdered_returnsOk() throws Exception {
         when(statusPlatformService.getAllPlatformsOrdered())
                 .thenReturn(List.of(sampleResponse(UUID.randomUUID())));
@@ -71,6 +92,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms/{id} returns 200 OK with the platform when it exists.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getPlatformById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.getPlatformById(id)).thenReturn(sampleResponse(id));
@@ -81,6 +107,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms/{id} maps {@link ResourceNotFoundException} to 404 Not Found.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getPlatformById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.getPlatformById(id))
@@ -91,6 +122,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms/slug/{slug} returns 200 OK with the matching platform.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getPlatformBySlug_found_returnsOk() throws Exception {
         when(statusPlatformService.getPlatformBySlug("cloud")).thenReturn(sampleResponse(UUID.randomUUID()));
 
@@ -100,6 +136,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-platforms with a valid body returns 201 Created and echoes the platform.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createPlatform_valid_returns201() throws Exception {
         when(statusPlatformService.createPlatform(any(), any(), any()))
                 .thenReturn(sampleResponse(UUID.randomUUID()));
@@ -110,6 +151,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-platforms with a missing name fails bean validation with 400 Bad Request.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createPlatform_missingName_returns400() throws Exception {
         String body = "{\"slug\":\"cloud\"}";
         mockMvc.perform(post("/api/status-platforms").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -117,6 +163,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-platforms maps {@link DuplicateResourceException} to 409 Conflict.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createPlatform_duplicate_returns409() throws Exception {
         when(statusPlatformService.createPlatform(any(), any(), any()))
                 .thenThrow(new DuplicateResourceException("Platform with slug already exists: cloud"));
@@ -126,6 +177,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PUT /api/status-platforms/{id} with a valid body returns 200 OK with the updated platform.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updatePlatform_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.updatePlatform(eq(id), any(), any(), any())).thenReturn(sampleResponse(id));
@@ -136,6 +192,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PUT /api/status-platforms/{id} maps {@link ResourceNotFoundException} to 404 Not Found.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updatePlatform_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.updatePlatform(eq(id), any(), any(), any()))
@@ -146,6 +207,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies DELETE /api/status-platforms/{id} returns 200 OK with a success message and delegates to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void deletePlatform_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -157,6 +223,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PATCH /api/status-platforms/{id}/status with a status param returns 200 OK with the updated platform.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updatePlatformStatus_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.updateStatus(eq(id), eq("DEGRADED"))).thenReturn(sampleResponse(id));
@@ -167,6 +238,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-platforms/tenant/{tenantId} returns 200 OK with the tenant's platforms.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getPlatformsByTenant_returnsOk() throws Exception {
         UUID tenantId = UUID.randomUUID();
         when(statusPlatformService.getPlatformsByTenant(tenantId))

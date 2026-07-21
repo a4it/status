@@ -13,6 +13,17 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * REST API controller for aggregated log metrics.
+ * <p>
+ * Base route: {@code /api/log-metrics}. Exposes time-bucketed log counts grouped
+ * by service and level, optionally scoped to a tenant and a starting time.
+ * All endpoints require authentication.
+ * </p>
+ *
+ * @see LogMetricService
+ * @see LogMetricResponse
+ */
 @RestController
 @RequestMapping("/api/log-metrics")
 // MED-02: removed @CrossOrigin(origins = "*"); global CORS policy in SecurityConfig applies
@@ -22,6 +33,18 @@ public class LogMetricController {
     @Autowired
     private LogMetricService logMetricService;
 
+    /**
+     * Retrieves aggregated log metrics.
+     * <p>
+     * Handles {@code GET /api/log-metrics}. When {@code since} is omitted it defaults
+     * to the last 24 hours; when {@code tenantId} is provided results are scoped to
+     * that tenant.
+     * </p>
+     *
+     * @param tenantId optional tenant identifier to scope the metrics
+     * @param since optional start of the time window (ISO-8601); defaults to 24 hours ago
+     * @return ResponseEntity containing the list of log metric responses
+     */
     @GetMapping
     public ResponseEntity<List<LogMetricResponse>> getMetrics(
             @RequestParam(required = false) UUID tenantId,
@@ -35,6 +58,12 @@ public class LogMetricController {
         return ResponseEntity.ok(metrics.stream().map(this::mapToResponse).toList());
     }
 
+    /**
+     * Maps a {@link LogMetric} entity to its API response representation.
+     *
+     * @param m the log metric entity to map
+     * @return the mapped log metric response
+     */
     private LogMetricResponse mapToResponse(LogMetric m) {
         LogMetricResponse r = new LogMetricResponse();
         r.setId(m.getId());

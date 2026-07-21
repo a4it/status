@@ -38,6 +38,12 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link OrganizationService}.
+ *
+ * <p>Testing approach: pure Mockito unit tests. The organization, tenant and user repositories are
+ * mocked and injected into the service, so filtering/paging, CRUD rules, duplicate and not-found
+ * handling, tenant association, and delete-guard logic are verified without a database. A
+ * {@link SecurityContextHolder} authentication (optionally carrying a {@link UserPrincipal}) is
+ * seeded per test for the current-user scenarios and cleared afterwards.
  */
 @ExtendWith(MockitoExtension.class)
 class OrganizationServiceTest {
@@ -54,17 +60,29 @@ class OrganizationServiceTest {
     @InjectMocks
     private OrganizationService organizationService;
 
+    /**
+     * Seeds the security context with a basic "tester" authentication before each test.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, java.util.List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Replaces the authentication with one whose principal is a {@link UserPrincipal} bound to the
+     * given organization id, enabling current-user organization scenarios.
+     *
+     * @param orgId the organization id to associate with the principal (may be {@code null})
+     */
     private void setPrincipal(UUID orgId) {
         UserPrincipal principal = new UserPrincipal(
                 UUID.randomUUID(), "tester", "tester@example.com", "pw",
@@ -73,6 +91,13 @@ class OrganizationServiceTest {
                 new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList()));
     }
 
+    /**
+     * Builds an ACTIVE {@link Organization} fixture with the given id and name plus a derived email.
+     *
+     * @param id   the identifier to assign
+     * @param name the organization name (also used to derive the email)
+     * @return a populated {@link Organization}
+     */
     private Organization buildOrg(UUID id, String name) {
         Organization org = new Organization();
         org.setId(id);
@@ -82,12 +107,22 @@ class OrganizationServiceTest {
         return org;
     }
 
+    /**
+     * Builds an {@link OrganizationRequest} carrying only the given name.
+     *
+     * @param name the organization name to set on the request
+     * @return a populated {@link OrganizationRequest}
+     */
     private OrganizationRequest buildRequest(String name) {
         OrganizationRequest request = new OrganizationRequest();
         request.setName(name);
         return request;
     }
 
+    /**
+     * Verifies that supplying both tenant and status filters queries the repository by tenant id and
+     * status, returning the matching organizations as a page.
+     */
     @Test
     void getAllOrganizations_tenantAndStatus_filtersByBoth() {
         UUID tenantId = UUID.randomUUID();
@@ -100,6 +135,9 @@ class OrganizationServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that supplying only a tenant filter queries the repository by tenant id.
+     */
     @Test
     void getAllOrganizations_tenantOnly_filtersByTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -112,6 +150,9 @@ class OrganizationServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that supplying only a status filter queries the repository by status.
+     */
     @Test
     void getAllOrganizations_statusOnly_filtersByStatus() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -123,6 +164,9 @@ class OrganizationServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that supplying only a search term routes to the repository's search query.
+     */
     @Test
     void getAllOrganizations_searchOnly_usesSearch() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -134,6 +178,10 @@ class OrganizationServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that when no filters are provided the service returns the repository's paged findAll
+     * result directly.
+     */
     @Test
     void getAllOrganizations_noFilters_returnsFindAllPage() {
         Pageable pageable = PageRequest.of(0, 10);

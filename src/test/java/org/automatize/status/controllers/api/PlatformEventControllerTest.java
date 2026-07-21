@@ -35,6 +35,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private PlatformEventService platformEventService;
 
+    /**
+     * Builds a representative {@link PlatformEvent} used to stub the service.
+     *
+     * @param id the event id to assign
+     * @return a populated {@link PlatformEvent} with {@code ERROR} severity
+     */
     private PlatformEvent sampleEvent(UUID id) {
         PlatformEvent e = new PlatformEvent();
         e.setId(id);
@@ -46,6 +52,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- logEventWithApiKey ----
 
+    /**
+     * Verifies {@code POST /api/events/log} with a valid API key and body returns
+     * 201 with the created event's message.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void logEventWithApiKey_valid_returns201() throws Exception {
         when(platformEventService.createEventWithApiKey(any(), any(), any(), any(), any(), any()))
@@ -59,6 +71,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.message").value("Something broke"));
     }
 
+    /**
+     * Verifies {@code POST /api/events/log} without the {@code X-API-Key} header
+     * returns 401 with {@code success=false}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void logEventWithApiKey_missingApiKey_returns401() throws Exception {
         String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
@@ -68,6 +86,13 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies {@code POST /api/events/log} maps a service
+     * {@link UnauthorizedException} (invalid key) to HTTP 401 with
+     * {@code success=false}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void logEventWithApiKey_invalidApiKey_returns401() throws Exception {
         when(platformEventService.createEventWithApiKey(any(), any(), any(), any(), any(), any()))
@@ -81,6 +106,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies {@code POST /api/events/log} with a missing message fails bean
+     * validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void logEventWithApiKey_missingMessage_returns400() throws Exception {
         String body = "{\"severity\":\"ERROR\"}";
@@ -90,6 +121,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/events/log} with an invalid severity value fails
+     * bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void logEventWithApiKey_invalidSeverity_returns400() throws Exception {
         String body = "{\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
@@ -101,6 +138,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- getEvents ----
 
+    /**
+     * Verifies {@code GET /api/events} returns 200 with a paged result whose first
+     * content entry has the expected severity.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getEvents_returnsOkPage() throws Exception {
         when(platformEventService.searchEvents(any(), any(), any(), any(), any(), any(), any()))
@@ -113,6 +156,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- getEventById ----
 
+    /**
+     * Verifies {@code GET /api/events/{id}} for an existing event returns 200 with
+     * the matching {@code id}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getEventById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -123,6 +172,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    /**
+     * Verifies {@code GET /api/events/{id}} maps a service
+     * {@link ResourceNotFoundException} to HTTP 404.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getEventById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -135,6 +190,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- createEvent ----
 
+    /**
+     * Verifies {@code POST /api/events} with a valid body returns 201 with the
+     * created event's severity.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createEvent_valid_returns201() throws Exception {
         when(platformEventService.createEvent(any(), any(), any(), any(), any(), any(), any()))
@@ -146,6 +207,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.severity").value("ERROR"));
     }
 
+    /**
+     * Verifies {@code POST /api/events} with a missing appId fails bean validation
+     * and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createEvent_missingAppId_returns400() throws Exception {
         String body = "{\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
@@ -153,6 +220,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/events} with an invalid severity value fails bean
+     * validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createEvent_invalidSeverity_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
@@ -160,6 +233,11 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that a plain (unannotated) {@link RuntimeException} thrown by the
+     * service on {@code POST /api/events} is not mapped to a status and instead
+     * propagates out of the servlet (asserted via {@code assertThrows}).
+     */
     @Test
     void createEvent_serviceRuntimeException_propagates() {
         when(platformEventService.createEvent(any(), any(), any(), any(), any(), any(), any()))
@@ -174,6 +252,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- deleteEvent ----
 
+    /**
+     * Verifies {@code DELETE /api/events/{id}} returns 200 with {@code success=true}
+     * and delegates to {@link PlatformEventService#deleteEvent}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void deleteEvent_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
@@ -187,6 +271,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
     // ---- regenerate key ----
 
+    /**
+     * Verifies {@code POST /api/events/regenerate-key/component/{componentId}}
+     * returns 200 with the new {@code apiKey} and {@code success=true}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void regenerateComponentApiKey_returnsOk() throws Exception {
         UUID componentId = UUID.randomUUID();

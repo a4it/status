@@ -59,17 +59,31 @@ class StatusMaintenanceServiceTest {
 
     private final Pageable pageable = PageRequest.of(0, 10);
 
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal {@link StatusApp} fixture for use in tests.
+     *
+     * @param id     the identifier to assign to the app
+     * @param status the status value to assign to the app
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp newApp(UUID id, String status) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -78,6 +92,15 @@ class StatusMaintenanceServiceTest {
         return app;
     }
 
+    /**
+     * Builds a minimal {@link StatusMaintenance} fixture linked to the given app, scheduled to start
+     * one day from now and last two hours.
+     *
+     * @param id     the identifier to assign to the maintenance
+     * @param app    the owning {@link StatusApp}
+     * @param status the maintenance status
+     * @return a populated {@link StatusMaintenance} instance
+     */
     private StatusMaintenance newMaintenance(UUID id, StatusApp app, String status) {
         StatusMaintenance m = new StatusMaintenance();
         m.setId(id);
@@ -90,6 +113,13 @@ class StatusMaintenanceServiceTest {
         return m;
     }
 
+    /**
+     * Builds a valid {@link StatusMaintenanceRequest} fixture with a future window (start one day from
+     * now, ending two hours later).
+     *
+     * @param appId the target app identifier (may be null when the app is not relevant to the test)
+     * @return a populated {@link StatusMaintenanceRequest} instance
+     */
     private StatusMaintenanceRequest validRequest(UUID appId) {
         StatusMaintenanceRequest request = new StatusMaintenanceRequest();
         request.setAppId(appId);
@@ -99,6 +129,9 @@ class StatusMaintenanceServiceTest {
         return request;
     }
 
+    /**
+     * Verifies that requesting an existing maintenance by id returns a response mapping its id and status.
+     */
     @Test
     void getMaintenanceById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -111,6 +144,9 @@ class StatusMaintenanceServiceTest {
         assertThat(response.getStatus()).isEqualTo("SCHEDULED");
     }
 
+    /**
+     * Verifies that requesting a maintenance whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void getMaintenanceById_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -120,6 +156,10 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that requesting all maintenances without filters delegates to the repository's paged findAll
+     * and returns the resulting page.
+     */
     @Test
     void getAllMaintenance_noFilters_returnsPageFromFindAll() {
         StatusMaintenance m = newMaintenance(UUID.randomUUID(), newApp(UUID.randomUUID(), "OPERATIONAL"), "SCHEDULED");
@@ -130,6 +170,9 @@ class StatusMaintenanceServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that creating a maintenance with a valid future window persists it in the SCHEDULED status.
+     */
     @Test
     void createMaintenance_validWindow_savesScheduled() {
         UUID appId = UUID.randomUUID();
@@ -144,6 +187,10 @@ class StatusMaintenanceServiceTest {
         assertThat(response.getStatus()).isEqualTo("SCHEDULED");
     }
 
+    /**
+     * Verifies that creating a maintenance whose start is after its end throws a {@link RuntimeException}
+     * and never persists it.
+     */
     @Test
     void createMaintenance_startAfterEnd_throwsRuntime() {
         UUID appId = UUID.randomUUID();
@@ -159,6 +206,9 @@ class StatusMaintenanceServiceTest {
         verify(statusMaintenanceRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that creating a maintenance for a non-existent app throws a {@link RuntimeException}.
+     */
     @Test
     void createMaintenance_appNotFound_throwsRuntime() {
         UUID appId = UUID.randomUUID();
@@ -168,6 +218,9 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that creating a maintenance with affected component ids links each component to the maintenance.
+     */
     @Test
     void createMaintenance_withComponents_linksComponents() {
         UUID appId = UUID.randomUUID();

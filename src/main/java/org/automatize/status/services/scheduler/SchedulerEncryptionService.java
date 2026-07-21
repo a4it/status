@@ -36,7 +36,14 @@ public class SchedulerEncryptionService {
     @Value("${scheduler.encryption.key:}")
     private String encryptionKeyBase64;
 
+    /**
+     * Resolves the AES secret key, using the configured Base64 key when present or
+     * falling back to a hardcoded development key otherwise.
+     *
+     * @return the AES {@link SecretKey}
+     */
     private SecretKey getSecretKey() {
+        // No key configured — fall back to the built-in development key
         if (encryptionKeyBase64 == null || encryptionKeyBase64.isBlank()) {
             // 32 bytes = 256-bit AES key — development only
             byte[] defaultKey = "status-scheduler-default-key-32b".getBytes();
@@ -54,6 +61,7 @@ public class SchedulerEncryptionService {
      * @return Base64-encoded {@code IV || ciphertext}
      */
     public String encrypt(String plaintext) {
+        // Null input passes through unchanged
         if (plaintext == null) return null;
         try {
             SecretKey key = getSecretKey();
@@ -78,6 +86,7 @@ public class SchedulerEncryptionService {
      * @return the original plaintext string
      */
     public String decrypt(String ciphertext) {
+        // Null input passes through unchanged
         if (ciphertext == null) return null;
         try {
             byte[] combined = Base64.getDecoder().decode(ciphertext);

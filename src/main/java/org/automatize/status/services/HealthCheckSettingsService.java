@@ -31,6 +31,11 @@ public class HealthCheckSettingsService {
 
     private final HealthCheckSettingsRepository repository;
 
+    /**
+     * Constructs a new HealthCheckSettingsService with the required dependency.
+     *
+     * @param repository repository for persisting and retrieving health check settings
+     */
     public HealthCheckSettingsService(HealthCheckSettingsRepository repository) {
         this.repository = repository;
     }

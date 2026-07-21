@@ -19,6 +19,18 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * REST API controller serving the in-application help documentation.
+ * <p>
+ * Base route: {@code /api/help}. Markdown help files bundled on the classpath under
+ * {@code help/} are loaded once at startup, rendered to HTML on demand, and made
+ * searchable. Endpoints list the available files, fetch a rendered file by slug, and
+ * perform full-text search across the documentation.
+ * </p>
+ *
+ * @see HelpContentResponse
+ * @see HelpSearchResult
+ */
 @RestController
 @RequestMapping("/api/help")
 public class HelpController {
@@ -29,12 +41,25 @@ public class HelpController {
     private final Parser parser;
     private final HtmlRenderer renderer;
 
+    /**
+     * Constructs the controller, initialising the CommonMark parser and HTML renderer
+     * with GitHub-flavoured table support.
+     */
     public HelpController() {
         List<org.commonmark.Extension> extensions = List.of(TablesExtension.create());
         this.parser = Parser.builder().extensions(extensions).build();
         this.renderer = HtmlRenderer.builder().extensions(extensions).build();
     }
 
+    /**
+     * Loads and caches all bundled help markdown files at application startup.
+     * <p>
+     * Scans {@code classpath:help/*.md}, sorts the files by name, and caches the
+     * content and extracted titles of files whose names begin with a digit.
+     * </p>
+     *
+     * @throws IOException if the help resources cannot be read
+     */
     @PostConstruct
     public void loadFiles() throws IOException {
         PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
@@ -44,6 +69,7 @@ public class HelpController {
 
         for (Resource resource : resources) {
             String filename = resource.getFilename();
+            // Skip resources without a name or whose name does not start with a digit (ordering prefix)
             if (filename == null || !filename.matches("\\d.*\\.md")) continue;
 
             String slug = filename.replace(".md", "");
@@ -55,17 +81,37 @@ public class HelpController {
         }
     }
 
+    /**
+     * Lists all available help files.
+     * <p>
+     * Handles {@code GET /api/help}.
+     * </p>
+     *
+     * @return the list of help file summaries (slug and title)
+     */
     @GetMapping
     public List<HelpFileResponse> listFiles() {
         return fileList;
     }
 
+    /**
+     * Fetches a single help file rendered to HTML.
+     * <p>
+     * Handles {@code GET /api/help/{slug}}.
+     * </p>
+     *
+     * @param slug the slug identifying the help file
+     * @return ResponseEntity with the rendered content, HTTP 400 for an invalid slug,
+     *         or HTTP 404 when no file matches the slug
+     */
     @GetMapping("/{slug}")
     public ResponseEntity<HelpContentResponse> getFile(@PathVariable String slug) {
+        // Reject slugs containing anything other than lowercase letters, digits, and hyphens
         if (!slug.matches("[a-z0-9\\-]+")) {
             return ResponseEntity.badRequest().build();
         }
         String markdown = contentCache.get(slug);
+        // No cached content for this slug: report not found
         if (markdown == null) {
             return ResponseEntity.notFound().build();
         }
@@ -74,8 +120,19 @@ public class HelpController {
         return ResponseEntity.ok(new HelpContentResponse(slug, title, html));
     }
 
+    /**
+     * Performs a full-text search across all help files.
+     * <p>
+     * Handles {@code GET /api/help/search}. Results are ordered by match count descending.
+     * </p>
+     *
+     * @param q the search query; must be at least two non-blank characters
+     * @return the list of matching help files with excerpts and match counts,
+     *         or an empty list when the query is too short
+     */
     @GetMapping("/search")
     public List<HelpSearchResult> search(@RequestParam String q) {
+        // Ignore null, blank, or too-short queries
         if (q == null || q.isBlank() || q.length() < 2) {
             return List.of();
         }
@@ -88,6 +145,7 @@ public class HelpController {
             String contentLower = content.toLowerCase();
 
             int count = countOccurrences(contentLower, lower);
+            // Skip files that do not contain the search term
             if (count == 0) continue;
 
             String title = extractTitle(content);

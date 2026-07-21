@@ -47,6 +47,10 @@ class RestExecutorServiceTest {
     // execute() - null config guard
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the null-config guard on {@code execute}.
+     * Expected outcome: run status is FAILURE with a "REST configuration is missing" message.
+     */
     @Test
     void execute_nullConfig_setsFailureWithMessage() {
         SchedulerJobRun run = new SchedulerJobRun();
@@ -61,6 +65,10 @@ class RestExecutorServiceTest {
     // buildUrl()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies URL building when no query params are configured.
+     * Expected outcome: the base URL is returned unchanged.
+     */
     @Test
     void buildUrl_noQueryParams_returnsUrlUnchanged() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -71,6 +79,10 @@ class RestExecutorServiceTest {
         assertThat(url).isEqualTo("https://api.example.com/status");
     }
 
+    /**
+     * Verifies query params are URL-encoded and appended with a leading {@code ?}.
+     * Expected outcome: the encoded param string is appended to the base URL.
+     */
     @Test
     void buildUrl_withQueryParams_appendsEncodedParams() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -84,6 +96,10 @@ class RestExecutorServiceTest {
         assertThat(url).isEqualTo("https://api.example.com/status?q=a+b");
     }
 
+    /**
+     * Verifies that when the URL already contains a query string, params are joined with {@code &}.
+     * Expected outcome: the new param is appended after an ampersand separator.
+     */
     @Test
     void buildUrl_urlAlreadyHasQuery_usesAmpersandSeparator() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -101,6 +117,10 @@ class RestExecutorServiceTest {
     // checkAssertions()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the default assertion (no explicit asserts) treats a 2xx status as success.
+     * Expected outcome: assertion check returns {@code true}.
+     */
     @Test
     void checkAssertions_defaultNoAssertions_2xxIsSuccess() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -111,6 +131,10 @@ class RestExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies the default assertion treats a non-2xx status as failure.
+     * Expected outcome: assertion check returns {@code false}.
+     */
     @Test
     void checkAssertions_defaultNoAssertions_non2xxIsFailure() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -121,6 +145,10 @@ class RestExecutorServiceTest {
         assertThat(result).isFalse();
     }
 
+    /**
+     * Verifies an explicit expected status code matching the actual code passes.
+     * Expected outcome: assertion check returns {@code true}.
+     */
     @Test
     void checkAssertions_expectedStatusCodeMatches_returnsTrue() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -132,6 +160,10 @@ class RestExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies an explicit expected status code not matching the actual code fails.
+     * Expected outcome: assertion check returns {@code false}.
+     */
     @Test
     void checkAssertions_expectedStatusCodeMismatch_returnsFalse() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -143,6 +175,10 @@ class RestExecutorServiceTest {
         assertThat(result).isFalse();
     }
 
+    /**
+     * Verifies a body-contains assertion passes when the substring is present.
+     * Expected outcome: assertion check returns {@code true}.
+     */
     @Test
     void checkAssertions_bodyContainsMatches_returnsTrue() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -154,6 +190,10 @@ class RestExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies a body-contains assertion fails when the substring is absent.
+     * Expected outcome: assertion check returns {@code false}.
+     */
     @Test
     void checkAssertions_bodyDoesNotContainExpected_returnsFalse() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -169,6 +209,10 @@ class RestExecutorServiceTest {
     // applyAuth()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies {@code AuthType.NONE} adds no Authorization header.
+     * Expected outcome: the built request has no Authorization header.
+     */
     @Test
     void applyAuth_none_addsNoAuthorizationHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -181,6 +225,10 @@ class RestExecutorServiceTest {
         assertThat(request.headers().firstValue("Authorization")).isEmpty();
     }
 
+    /**
+     * Verifies BASIC auth decrypts the password and adds a Base64-encoded credentials header.
+     * Expected outcome: the Authorization header equals {@code Basic base64(user:secret)}.
+     */
     @Test
     void applyAuth_basic_addsBase64EncodedCredentials() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -197,6 +245,10 @@ class RestExecutorServiceTest {
         assertThat(builder.build().headers().firstValue("Authorization")).hasValue(expected);
     }
 
+    /**
+     * Verifies BEARER auth decrypts the token and adds a bearer Authorization header.
+     * Expected outcome: the Authorization header equals {@code Bearer <token>}.
+     */
     @Test
     void applyAuth_bearer_addsBearerToken() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -210,6 +262,10 @@ class RestExecutorServiceTest {
         assertThat(builder.build().headers().firstValue("Authorization")).hasValue("Bearer tok123");
     }
 
+    /**
+     * Verifies API-key auth with HEADER location adds the configured custom header.
+     * Expected outcome: the custom header carries the decrypted key value.
+     */
     @Test
     void applyAuth_apiKeyHeaderLocation_addsCustomHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -225,6 +281,10 @@ class RestExecutorServiceTest {
         assertThat(builder.build().headers().firstValue("X-Custom-Key")).hasValue("keyval");
     }
 
+    /**
+     * Verifies API-key auth with QUERY_PARAM location does not add a header (key goes in the URL).
+     * Expected outcome: the built request has no custom header.
+     */
     @Test
     void applyAuth_apiKeyQueryParamLocation_addsNoHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
@@ -245,6 +305,10 @@ class RestExecutorServiceTest {
     // recordResponse() - response-to-run mapping (mocked HttpResponse)
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies a 2xx response under default assertions maps to a successful run.
+     * Expected outcome: run is SUCCESS with the status code and body recorded and no error.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void recordResponse_2xxDefaultAssertions_setsSuccess() {
@@ -262,6 +326,10 @@ class RestExecutorServiceTest {
         assertThat(run.getErrorMessage()).isNull();
     }
 
+    /**
+     * Verifies a non-2xx response under default assertions maps to a failed run.
+     * Expected outcome: run is FAILURE with the status code and an assertion-failed message.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void recordResponse_non2xx_setsFailureWithAssertionMessage() {
@@ -278,6 +346,10 @@ class RestExecutorServiceTest {
         assertThat(run.getErrorMessage()).isEqualTo("Assertion failed for HTTP 503");
     }
 
+    /**
+     * Verifies a response body larger than the configured limit is truncated.
+     * Expected outcome: the recorded body is truncated with a marker and the run is still SUCCESS.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void recordResponse_bodyTooLarge_truncatesResponseBody() {
@@ -294,6 +366,10 @@ class RestExecutorServiceTest {
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.SUCCESS);
     }
 
+    /**
+     * Verifies a 2xx response failing a body-contains assertion maps to a failed run.
+     * Expected outcome: run is FAILURE with an assertion-failed message.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void recordResponse_bodyContainsAssertionFails_setsFailure() {
@@ -314,6 +390,10 @@ class RestExecutorServiceTest {
     // applyMethodAndBody() - method resolution defaults
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies a request with a body sets the configured HTTP method and content type.
+     * Expected outcome: the built request uses POST and carries the configured Content-Type header.
+     */
     @Test
     void applyMethodAndBody_withBody_setsContentTypeAndMethod() {
         SchedulerRestConfig config = new SchedulerRestConfig();

@@ -74,6 +74,7 @@ public class SchedulerDatasourceService {
         ds.setTenant(tenant);
         ds.setCreatedBy(username);
         ds.setLastModifiedBy(username);
+        // Encrypt the password only when one was supplied
         if (ds.getPasswordEnc() != null && !ds.getPasswordEnc().isBlank()) {
             ds.setPasswordEnc(encryptionService.encrypt(ds.getPasswordEnc()));
         }
@@ -104,6 +105,7 @@ public class SchedulerDatasourceService {
         existing.setSchemaName(dsData.getSchemaName());
         existing.setJdbcUrlOverride(dsData.getJdbcUrlOverride());
         existing.setUsername(dsData.getUsername());
+        // Replace the stored password only when a new non-blank value is supplied
         if (dsData.getPasswordEnc() != null && !dsData.getPasswordEnc().isBlank()) {
             existing.setPasswordEnc(encryptionService.encrypt(dsData.getPasswordEnc()));
         }

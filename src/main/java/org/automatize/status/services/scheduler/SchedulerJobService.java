@@ -61,9 +61,11 @@ public class SchedulerJobService {
     @Transactional(readOnly = true)
     public Page<SchedulerJob> listJobs(UUID tenantId, JobStatus status, JobType type,
                                        String search, Pageable pageable) {
+        // A free-text search term takes precedence over other filters
         if (search != null && !search.isBlank()) {
             return jobRepository.searchByTenant(tenantId, search, pageable);
         }
+        // A specific status filter was provided
         if (status != null) {
             return jobRepository.findByTenantIdAndStatusIn(tenantId, List.of(status), pageable);
         }
@@ -98,6 +100,7 @@ public class SchedulerJobService {
      * @return the saved job
      */
     public SchedulerJob createJob(SchedulerJob jobData, UUID tenantId, String username) {
+        // Reject creation when the cron expression is invalid
         if (!cronValidationService.isValid(jobData.getCronExpression())) {
             throw new IllegalArgumentException("Invalid cron expression: "
                     + cronValidationService.getValidationError(jobData.getCronExpression()));
@@ -109,7 +112,9 @@ public class SchedulerJobService {
         jobData.setTenant(tenant);
         jobData.setCreatedBy(username);
         jobData.setLastModifiedBy(username);
+        // Default new jobs to ACTIVE status when none supplied
         if (jobData.getStatus() == null) jobData.setStatus(JobStatus.ACTIVE);
+        // Default new jobs to enabled when not specified
         if (jobData.getEnabled() == null) jobData.setEnabled(true);
 
         String tz = jobData.getTimeZone() != null ? jobData.getTimeZone() : "UTC";
@@ -119,6 +124,7 @@ public class SchedulerJobService {
 
         SchedulerJob saved = jobRepository.save(jobData);
 
+        // Register with the cron engine only when enabled and ACTIVE
         if (Boolean.TRUE.equals(saved.getEnabled()) && saved.getStatus() == JobStatus.ACTIVE) {
             engineService.registerJob(saved);
         }
@@ -140,7 +146,9 @@ public class SchedulerJobService {
         SchedulerJob existing = jobRepository.findByIdAndTenantId(jobId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
 
+        // Re-validate and recompute next run only when the cron expression changed
         if (!existing.getCronExpression().equals(jobData.getCronExpression())) {
+            // Reject the update when the new cron expression is invalid
             if (!cronValidationService.isValid(jobData.getCronExpression())) {
                 throw new IllegalArgumentException("Invalid cron expression: "
                         + cronValidationService.getValidationError(jobData.getCronExpression()));

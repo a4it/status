@@ -65,6 +65,7 @@ public class SchedulerEngineService {
     @PostConstruct
     @Transactional(readOnly = true)
     public void init() {
+        // Engine disabled via configuration — skip registration
         if (!schedulerEnabled) {
             logger.info("Scheduler engine is disabled via configuration");
             return;
@@ -92,6 +93,7 @@ public class SchedulerEngineService {
      */
     public void registerJob(SchedulerJob job) {
         unregisterJob(job.getId());
+        // Do not schedule jobs that are disabled or not ACTIVE
         if (!Boolean.TRUE.equals(job.getEnabled()) || job.getStatus() != JobStatus.ACTIVE) {
             return;
         }
@@ -118,6 +120,7 @@ public class SchedulerEngineService {
      */
     public void unregisterJob(UUID jobId) {
         ScheduledFuture<?> future = scheduledTasks.remove(jobId);
+        // Cancel the pending task only when one was registered
         if (future != null) {
             // false = do not interrupt a currently-running execution
             future.cancel(false);
