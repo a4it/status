@@ -42,6 +42,7 @@ public class ProgramExecutorService {
      * @param run    the run record to populate with outcome details
      */
     public void execute(SchedulerProgramConfig config, SchedulerJobRun run) {
+        // Missing configuration cannot be executed
         if (config == null) {
             run.setStatus(JobRunStatus.FAILURE);
             run.setErrorMessage("Program configuration is missing");
@@ -54,10 +55,12 @@ public class ProgramExecutorService {
             List<String> command = buildCommand(config);
             ProcessBuilder pb = new ProcessBuilder(command);
 
+            // Apply a custom working directory when configured
             if (config.getWorkingDirectory() != null && !config.getWorkingDirectory().isBlank()) {
                 pb.directory(new java.io.File(config.getWorkingDirectory()));
             }
 
+            // Inject custom environment variables when configured
             if (config.getEnvironmentVars() != null && !config.getEnvironmentVars().isEmpty()) {
                 pb.environment().putAll(config.getEnvironmentVars());
             }
@@ -77,6 +80,7 @@ public class ProgramExecutorService {
             stdoutThread.join(5000);
             stderrThread.join(5000);
 
+            // Process did not exit within the timeout — kill it and mark TIMEOUT
             if (!finished) {
                 process.destroyForcibly();
                 run.setStatus(JobRunStatus.TIMEOUT);
@@ -91,6 +95,7 @@ public class ProgramExecutorService {
             run.setStdoutOutput(stdout.toString());
             run.setStderrOutput(stderr.toString());
             run.setStatus(exitCode == 0 ? JobRunStatus.SUCCESS : JobRunStatus.FAILURE);
+            // Non-zero exit code indicates a failed program
             if (exitCode != 0) {
                 run.setErrorMessage("Process exited with code " + exitCode);
             }
@@ -110,19 +115,23 @@ public class ProgramExecutorService {
      */
     private List<String> buildCommand(SchedulerProgramConfig config) {
         List<String> command = new ArrayList<>();
+        // Shell-wrap mode: run the command through a shell interpreter
         if (Boolean.TRUE.equals(config.getShellWrap())) {
             String shell = config.getShellPath() != null ? config.getShellPath() : "/bin/bash";
             command.add(shell);
             command.add("-c");
             StringBuilder cmd = new StringBuilder(config.getCommand());
+            // Append each argument onto the single shell command string
             if (config.getArguments() != null) {
                 for (String arg : config.getArguments()) {
                     cmd.append(" ").append(arg);
                 }
             }
             command.add(cmd.toString());
+        // Direct mode: pass the command and arguments as separate tokens
         } else {
             command.add(config.getCommand());
+            // Append arguments as discrete command tokens
             if (config.getArguments() != null) {
                 command.addAll(config.getArguments());
             }
@@ -137,6 +146,7 @@ public class ProgramExecutorService {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                // Only keep appending while under the output byte cap
                 if (sb.length() < maxBytes) {
                     sb.append(line).append("\n");
                 }

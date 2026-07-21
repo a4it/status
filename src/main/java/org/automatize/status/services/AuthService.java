@@ -155,10 +155,12 @@ public class AuthService {
      * @return a MessageResponse indicating success or failure with an appropriate message
      */
     public MessageResponse registerUser(RegisterRequest registerRequest) {
+        // Reject the registration if the requested username already exists
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
             return new MessageResponse("Username is already taken!", false);
         }
 
+        // Reject the registration if the requested email is already in use
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
             return new MessageResponse("Email is already in use!", false);
         }
@@ -175,6 +177,7 @@ public class AuthService {
         user.setCreatedBy(registerRequest.getUsername());
         user.setLastModifiedBy(registerRequest.getUsername());
 
+        // Associate the new user with an organization only when one was supplied
         if (registerRequest.getOrganizationId() != null) {
             Organization organization = organizationRepository.findById(registerRequest.getOrganizationId())
                     .orElseThrow(() -> new RuntimeException("Organization not found"));
@@ -201,6 +204,7 @@ public class AuthService {
     public AuthResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
         String refreshToken = refreshTokenRequest.getRefreshToken();
         
+        // Reject the request if the supplied refresh token is not a valid JWT
         if (!jwtUtils.validateJwtToken(refreshToken)) {
             throw new UnauthorizedException("Invalid refresh token");
         }
@@ -210,6 +214,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
 
         // HIGH-02: compare hash of incoming token against stored hash
+        // Reject the request if the incoming token hash does not match the stored hash
         if (!hashToken(refreshToken).equals(user.getRefreshToken())) {
             throw new UnauthorizedException("Refresh token mismatch");
         }
@@ -265,8 +270,19 @@ public class AuthService {
         }
     }
 
+    /**
+     * Logs out a user by invalidating their stored refresh token.
+     * <p>
+     * This method extracts the user ID from the provided JWT token,
+     * clears the stored refresh token, and clears the security context.
+     * </p>
+     *
+     * @param token the Authorization header value containing the Bearer token
+     * @return a MessageResponse indicating success or failure of the logout operation
+     */
     public MessageResponse logout(String token) {
         try {
+            // Reject the request when the Authorization header is missing or not a Bearer token
             if (token == null || !token.startsWith("Bearer ")) {
                 return new MessageResponse("Invalid authorization header", false);
             }
@@ -300,6 +316,7 @@ public class AuthService {
      * @throws RuntimeException if the user is not found
      */
     public AuthResponse getCurrentUser(String token) {
+        // Reject the request when the Authorization header is missing or not a Bearer token
         if (token == null || !token.startsWith("Bearer ")) {
             throw new UnauthorizedException("Invalid authorization header");
         }

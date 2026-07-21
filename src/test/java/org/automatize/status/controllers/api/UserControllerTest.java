@@ -39,6 +39,13 @@ class UserControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private UserService userService;
 
+    /**
+     * Builds a minimal active {@link User} fixture for use in stubbed service
+     * responses.
+     *
+     * @param id the identifier to assign to the user
+     * @return a populated sample {@link User}
+     */
     private User sampleUser(UUID id) {
         User u = new User();
         u.setId(id);
@@ -48,10 +55,21 @@ class UserControllerTest extends AbstractApiControllerTest {
         return u;
     }
 
+    /**
+     * Provides a valid JSON request body for creating or updating a user.
+     *
+     * @return a JSON string with the required user fields populated
+     */
     private String validUserJson() {
         return "{\"username\":\"johndoe\",\"email\":\"johndoe@example.com\",\"fullName\":\"John Doe\"}";
     }
 
+    /**
+     * Verifies that GET {@code /api/users} returns 200 with a paged JSON body
+     * whose content is populated from the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getAllUsers_returnsOkPage() throws Exception {
         when(userService.getAllUsers(any(), any(), any(), any(), any()))
@@ -62,6 +80,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.content[0].username").value("johndoe"));
     }
 
+    /**
+     * Verifies that GET {@code /api/users/{id}} returns 200 with the user when
+     * the service resolves it.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getUserById_found_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -72,6 +96,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that GET {@code /api/users/{id}} returns 404 when the service
+     * raises {@link ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getUserById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -82,6 +112,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies that POST {@code /api/users} with a valid body returns 201 and
+     * the created user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createUser_valid_returns201() throws Exception {
         when(userService.createUser(any())).thenReturn(sampleUser(UUID.randomUUID()));
@@ -91,6 +127,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that POST {@code /api/users} with a body missing the required
+     * email fails bean validation and returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createUser_missingEmail_returns400() throws Exception {
         String body = "{\"username\":\"johndoe\",\"fullName\":\"John Doe\"}";
@@ -98,6 +140,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that POST {@code /api/users} returns 409 when the service raises
+     * {@link DuplicateResourceException} for an existing username.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createUser_duplicate_returns409() throws Exception {
         when(userService.createUser(any()))
@@ -107,6 +155,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies that PUT {@code /api/users/{id}} with a valid body returns 200
+     * and the updated user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateUser_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -117,6 +171,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that PUT {@code /api/users/{id}} with a body missing the
+     * required username fails bean validation and returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateUser_missingUsername_returns400() throws Exception {
         UUID id = UUID.randomUUID();
@@ -125,6 +185,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that DELETE {@code /api/users/{id}} returns 200 with a success
+     * message and delegates deletion to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void deleteUser_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
@@ -136,6 +202,12 @@ class UserControllerTest extends AbstractApiControllerTest {
         verify(userService).deleteUser(id);
     }
 
+    /**
+     * Verifies that POST {@code /api/users/{id}/change-password} with a valid
+     * body returns 200 with a success message and delegates to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void changePassword_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -149,6 +221,12 @@ class UserControllerTest extends AbstractApiControllerTest {
         verify(userService).changePassword(eq(id), any());
     }
 
+    /**
+     * Verifies that POST {@code /api/users/{id}/change-password} with a body
+     * missing the new password fails bean validation and returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void changePassword_missingNewPassword_returns400() throws Exception {
         UUID id = UUID.randomUUID();
@@ -158,6 +236,13 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that POST {@code /api/users/{id}/change-password} returns 409
+     * when the service raises {@link BusinessRuleException} because the current
+     * password is incorrect.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void changePassword_wrongCurrent_returns409() throws Exception {
         UUID id = UUID.randomUUID();
@@ -170,6 +255,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies that PATCH {@code /api/users/{id}/enable} returns 200 with the
+     * enabled user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void enableUser_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -180,6 +271,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that PATCH {@code /api/users/{id}/disable} returns 200 with the
+     * disabled user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void disableUser_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -190,6 +287,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that PATCH {@code /api/users/{id}/role} with a valid {@code role}
+     * parameter returns 200 with the updated user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateUserRole_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -200,6 +303,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that PATCH {@code /api/users/{id}/role} without the required
+     * {@code role} parameter returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateUserRole_missingRoleParam_returns400() throws Exception {
         UUID id = UUID.randomUUID();
@@ -207,6 +316,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that GET {@code /api/users/organization/{organizationId}} returns
+     * 200 with a JSON array of the users belonging to the organization.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getUsersByOrganization_returns200List() throws Exception {
         UUID orgId = UUID.randomUUID();
@@ -217,6 +332,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].username").value("johndoe"));
     }
 
+    /**
+     * Verifies that GET {@code /api/users/profile} returns 200 with the profile
+     * of the currently authenticated user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getCurrentUserProfile_returns200() throws Exception {
         when(userService.getCurrentUserProfile()).thenReturn(sampleUser(UUID.randomUUID()));
@@ -226,6 +347,12 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
+    /**
+     * Verifies that PUT {@code /api/users/profile} with a valid body returns 200
+     * with the updated profile of the currently authenticated user.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateCurrentUserProfile_valid_returns200() throws Exception {
         when(userService.updateCurrentUserProfile(any())).thenReturn(sampleUser(UUID.randomUUID()));

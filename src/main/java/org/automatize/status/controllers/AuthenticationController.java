@@ -65,19 +65,21 @@ public class AuthenticationController {
     @GetMapping("/login")
     public String showLoginForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // Already-authenticated (non-anonymous) users skip the login form and go to the dashboard
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
             return REDIRECT_ADMIN;
         }
-        
+
         model.addAttribute(ATTR_APPLICATION_NAME, applicationName);
         model.addAttribute(ATTR_SERVER_PORT, serverPort);
-        
+
         return "authentication/login";
     }
 
     /**
      * Handles user logout by clearing JWT cookies.
      *
+     * @param request the HTTP request, used to determine whether the connection is secure
      * @param response the HTTP response for cookie manipulation
      * @param redirectAttributes attributes for flash messages
      * @return redirect to login page
@@ -111,6 +113,7 @@ public class AuthenticationController {
     /**
      * Handles POST logout requests by delegating to the GET logout handler.
      *
+     * @param request the HTTP request, used to determine whether the connection is secure
      * @param response the HTTP response for cookie manipulation
      * @param redirectAttributes attributes for flash messages
      * @return redirect to login page
@@ -132,6 +135,7 @@ public class AuthenticationController {
      */
     @GetMapping("/register")
     public String showRegisterForm(Model model, RedirectAttributes redirectAttributes) {
+        // Registration disabled by configuration: warn and redirect to login
         if (!registrationEnabled) {
             redirectAttributes.addFlashAttribute("errorMessage", "Registration is currently disabled.");
             redirectAttributes.addFlashAttribute("messageType", "warning");
@@ -139,6 +143,7 @@ public class AuthenticationController {
         }
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // Already-authenticated (non-anonymous) users skip registration and go to the dashboard
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
             return REDIRECT_ADMIN;
         }
@@ -161,6 +166,7 @@ public class AuthenticationController {
     @GetMapping("/forgot-password")
     public String showForgotPasswordForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // Already-authenticated (non-anonymous) users skip password recovery and go to the dashboard
         if (auth != null && auth.isAuthenticated() && !auth.getPrincipal().equals(ANONYMOUS_USER)) {
             return REDIRECT_ADMIN;
         }

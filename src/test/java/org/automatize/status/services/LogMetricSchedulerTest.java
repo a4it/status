@@ -12,6 +12,11 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link LogMetricScheduler}.
+ *
+ * <p>Testing approach: the scheduler is tested in isolation with Mockito. Its
+ * {@link LogMetricService} collaborator is a {@code @Mock} injected via
+ * {@code @InjectMocks}, and the tests verify that the scheduled trigger delegates to
+ * the service and that failures from the service are swallowed rather than propagated.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class LogMetricSchedulerTest {
@@ -22,6 +27,10 @@ class LogMetricSchedulerTest {
     @InjectMocks
     private LogMetricScheduler scheduler;
 
+    /**
+     * Verifies that the scheduled {@code aggregate} trigger delegates to
+     * {@link LogMetricService#aggregateRecentLogs()}.
+     */
     @Test
     void aggregate_delegatesToService() {
         scheduler.aggregate();
@@ -29,6 +38,10 @@ class LogMetricSchedulerTest {
         verify(logMetricService).aggregateRecentLogs();
     }
 
+    /**
+     * Verifies that if the underlying service throws, the scheduled {@code aggregate}
+     * call swallows the exception (does not propagate) while still invoking the service.
+     */
     @Test
     void aggregate_serviceThrows_exceptionIsSwallowed() {
         doThrow(new RuntimeException("boom")).when(logMetricService).aggregateRecentLogs();

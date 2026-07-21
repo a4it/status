@@ -50,6 +50,13 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
      */
     @TestConfiguration
     static class SecurityArgumentResolverConfig implements WebMvcConfigurer {
+        /**
+         * Registers the {@link AuthenticationPrincipalArgumentResolver} so that
+         * {@code @AuthenticationPrincipal UserPrincipal} parameters resolve
+         * correctly within the WebMvc slice.
+         *
+         * @param resolvers the mutable list of argument resolvers to contribute to
+         */
         @Override
         public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
             resolvers.add(new AuthenticationPrincipalArgumentResolver());
@@ -61,6 +68,11 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
 
     private final UUID principalId = UUID.randomUUID();
 
+    /**
+     * Seeds the {@link SecurityContextHolder} with an authenticated SUPERADMIN
+     * {@link UserPrincipal} before each test, since {@code addFilters = false}
+     * skips the JWT filter chain that would normally populate it.
+     */
     @BeforeEach
     void setUpPrincipal() {
         var authorities = List.of(new SimpleGrantedAuthority("ROLE_SUPERADMIN"));
@@ -71,11 +83,22 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
                 new UsernamePasswordAuthenticationToken(principal, null, authorities));
     }
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test to avoid leaking
+     * authentication state between tests.
+     */
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal active {@link Tenant} fixture for use in stubbed service
+     * responses.
+     *
+     * @param id the identifier to assign to the tenant
+     * @return a populated sample {@link Tenant}
+     */
     private Tenant sampleTenant(UUID id) {
         Tenant t = new Tenant();
         t.setId(id);
@@ -84,6 +107,13 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
         return t;
     }
 
+    /**
+     * Builds a minimal active {@link Organization} fixture for use in stubbed
+     * service responses.
+     *
+     * @param id the identifier to assign to the organization
+     * @return a populated sample {@link Organization}
+     */
     private Organization sampleOrg(UUID id) {
         Organization o = new Organization();
         o.setId(id);
@@ -92,6 +122,12 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
         return o;
     }
 
+    /**
+     * Builds a sample {@link ContextResponse} representing a fully selected
+     * superadmin context, used to stub context switch/current-context calls.
+     *
+     * @return a populated sample {@link ContextResponse}
+     */
     private ContextResponse sampleContext() {
         ContextResponse r = new ContextResponse();
         r.setAccessToken("ctx-token");
@@ -102,6 +138,12 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies that GET {@code /api/context/tenants} returns 200 with a JSON
+     * array of the active tenants supplied by the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getTenants_returns200List() throws Exception {
         when(tenantContextService.getActiveTenants())
@@ -112,6 +154,12 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Globex"));
     }
 
+    /**
+     * Verifies that GET {@code /api/context/tenants/{tenantId}/organizations}
+     * returns 200 with a JSON array of the organizations for the given tenant.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getOrganizations_returns200List() throws Exception {
         UUID tenantId = UUID.randomUUID();
@@ -123,6 +171,13 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Acme"));
     }
 
+    /**
+     * Verifies that POST {@code /api/context/switch} with a valid tenant and
+     * organization returns 200 and the resulting context payload (access token
+     * and selected-context flag).
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void switchContext_valid_returns200() throws Exception {
         when(tenantContextService.switchContext(any(), any(), any())).thenReturn(sampleContext());
@@ -134,6 +189,12 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.hasSelectedContext").value(true));
     }
 
+    /**
+     * Verifies that POST {@code /api/context/switch} returns 404 when the
+     * service raises {@link ResourceNotFoundException} for an unknown tenant.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void switchContext_tenantNotFound_returns404() throws Exception {
         when(tenantContextService.switchContext(any(), any(), any()))
@@ -144,6 +205,12 @@ class TenantContextControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies that GET {@code /api/context/current} returns 200 with the
+     * current context details resolved for the authenticated principal.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getCurrentContext_returns200() throws Exception {
         when(tenantContextService.getCurrentContext(any())).thenReturn(sampleContext());

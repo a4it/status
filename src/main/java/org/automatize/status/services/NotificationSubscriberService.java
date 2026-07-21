@@ -106,6 +106,7 @@ public class NotificationSubscriberService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new ResourceNotFoundException("Status app not found with id: " + appId));
 
+        // Reject duplicate subscriptions of the same email to this application
         if (subscriberRepository.existsByAppIdAndEmail(appId, email)) {
             throw new DuplicateResourceException("Email already subscribed to this application");
         }
@@ -139,17 +140,21 @@ public class NotificationSubscriberService {
         NotificationSubscriber subscriber = subscriberRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Subscriber not found with id: " + id));
 
+        // Apply an email change only when a different address is supplied
         if (email != null && !email.equals(subscriber.getEmail())) {
+            // Ensure the new email is not already subscribed to the same application
             if (subscriberRepository.existsByAppIdAndEmail(subscriber.getApp().getId(), email)) {
                 throw new DuplicateResourceException("Email already subscribed to this application");
             }
             subscriber.setEmail(email);
         }
 
+        // Update the display name when one is provided
         if (name != null) {
             subscriber.setName(name);
         }
 
+        // Update the active flag when one is provided
         if (isActive != null) {
             subscriber.setIsActive(isActive);
         }
@@ -167,6 +172,7 @@ public class NotificationSubscriberService {
      * @throws RuntimeException if subscriber not found
      */
     public void deleteSubscriber(UUID id) {
+        // Fail fast when the subscriber to delete does not exist
         if (!subscriberRepository.existsById(id)) {
             throw new ResourceNotFoundException("Subscriber not found with id: " + id);
         }
@@ -224,6 +230,7 @@ public class NotificationSubscriberService {
     private String getCurrentUsername() {
         try {
             Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            // Only a String principal carries a directly usable username
             if (principal instanceof String) {
                 return (String) principal;
             }

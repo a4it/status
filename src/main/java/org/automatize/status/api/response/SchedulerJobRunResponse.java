@@ -70,54 +70,88 @@ public class SchedulerJobRunResponse {
     // Getters / setters
     // -------------------------------------------------------------------------
 
+    /** Gets the run ID. @return the run ID */
     public UUID getId() { return id; }
+    /** Sets the run ID. @param id the run ID to set */
     public void setId(UUID id) { this.id = id; }
 
+    /** Gets the parent job ID. @return the job ID */
     public UUID getJobId() { return jobId; }
+    /** Sets the parent job ID. @param jobId the job ID to set */
     public void setJobId(UUID jobId) { this.jobId = jobId; }
 
+    /** Gets the job name. @return the job name */
     public String getJobName() { return jobName; }
+    /** Sets the job name. @param jobName the job name to set */
     public void setJobName(String jobName) { this.jobName = jobName; }
 
+    /** Gets the trigger type. @return the trigger type */
     public String getTriggerType() { return triggerType; }
+    /** Sets the trigger type. @param triggerType the trigger type to set */
     public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
 
+    /** Gets the run status. @return the run status */
     public String getStatus() { return status; }
+    /** Sets the run status. @param status the run status to set */
     public void setStatus(String status) { this.status = status; }
 
+    /** Gets the attempt number. @return the attempt number */
     public Integer getAttemptNumber() { return attemptNumber; }
+    /** Sets the attempt number. @param attemptNumber the attempt number to set */
     public void setAttemptNumber(Integer attemptNumber) { this.attemptNumber = attemptNumber; }
 
+    /** Gets the start timestamp. @return the start timestamp */
     public ZonedDateTime getStartedAt() { return startedAt; }
+    /** Sets the start timestamp. @param startedAt the start timestamp to set */
     public void setStartedAt(ZonedDateTime startedAt) { this.startedAt = startedAt; }
 
+    /** Gets the finish timestamp. @return the finish timestamp */
     public ZonedDateTime getFinishedAt() { return finishedAt; }
+    /** Sets the finish timestamp. @param finishedAt the finish timestamp to set */
     public void setFinishedAt(ZonedDateTime finishedAt) { this.finishedAt = finishedAt; }
 
+    /** Gets the run duration in milliseconds. @return the duration in milliseconds */
     public Long getDurationMs() { return durationMs; }
+    /** Sets the run duration in milliseconds. @param durationMs the duration to set */
     public void setDurationMs(Long durationMs) { this.durationMs = durationMs; }
 
+    /** Gets the captured standard output. @return the standard output */
     public String getStdoutOutput() { return stdoutOutput; }
+    /** Sets the captured standard output. @param stdoutOutput the standard output to set */
     public void setStdoutOutput(String stdoutOutput) { this.stdoutOutput = stdoutOutput; }
 
+    /** Gets the captured standard error output. @return the standard error output */
     public String getStderrOutput() { return stderrOutput; }
+    /** Sets the captured standard error output. @param stderrOutput the standard error output to set */
     public void setStderrOutput(String stderrOutput) { this.stderrOutput = stderrOutput; }
 
+    /** Gets the process exit code. @return the exit code */
     public Integer getExitCode() { return exitCode; }
+    /** Sets the process exit code. @param exitCode the exit code to set */
     public void setExitCode(Integer exitCode) { this.exitCode = exitCode; }
 
+    /** Gets the HTTP status code. @return the HTTP status code */
     public Integer getHttpStatusCode() { return httpStatusCode; }
+    /** Sets the HTTP status code. @param httpStatusCode the HTTP status code to set */
     public void setHttpStatusCode(Integer httpStatusCode) { this.httpStatusCode = httpStatusCode; }
 
+    /** Gets the number of rows affected. @return the rows affected */
     public Long getRowsAffected() { return rowsAffected; }
+    /** Sets the number of rows affected. @param rowsAffected the rows affected to set */
     public void setRowsAffected(Long rowsAffected) { this.rowsAffected = rowsAffected; }
 
+    /** Gets the response body. @return the response body */
     public String getResponseBody() { return responseBody; }
+    /** Sets the response body. @param responseBody the response body to set */
     public void setResponseBody(String responseBody) { this.responseBody = responseBody; }
 
+    /** Gets the error message. @return the error message */
     public String getErrorMessage() { return errorMessage; }
+    /** Sets the error message. @param errorMessage the error message to set */
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
 
+    /** Gets the identifier of who triggered the run. @return the triggering actor */
     public String getTriggeredBy() { return triggeredBy; }
+    /** Sets the identifier of who triggered the run. @param triggeredBy the triggering actor to set */
     public void setTriggeredBy(String triggeredBy) { this.triggeredBy = triggeredBy; }
 }

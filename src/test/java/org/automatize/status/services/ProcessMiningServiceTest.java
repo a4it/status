@@ -47,6 +47,17 @@ class ProcessMiningServiceTest {
     private final ZonedDateTime from = ZonedDateTime.now().minusDays(1);
     private final ZonedDateTime to = ZonedDateTime.now();
 
+    /**
+     * Builds a {@link Log} fixture populated with the supplied trace id, service,
+     * level, message and timestamp.
+     *
+     * @param traceId the trace identifier grouping the log into a case
+     * @param service the originating service name (may be {@code null})
+     * @param level   the log level (e.g. INFO, ERROR)
+     * @param message the log message
+     * @param ts      the log timestamp
+     * @return a populated {@link Log} instance
+     */
     private Log log(String traceId, String service, String level, String message, ZonedDateTime ts) {
         Log l = new Log();
         l.setTraceId(traceId);
@@ -57,18 +68,34 @@ class ProcessMiningServiceTest {
         return l;
     }
 
+    /**
+     * Builds a {@link StatusApp} fixture with the given name.
+     *
+     * @param name the application/service name
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp app(String name) {
         StatusApp a = new StatusApp();
         a.setName(name);
         return a;
     }
 
+    /**
+     * Builds a {@link StatusComponent} fixture with the given name.
+     *
+     * @param name the component name
+     * @return a populated {@link StatusComponent} instance
+     */
     private StatusComponent component(String name) {
         StatusComponent c = new StatusComponent();
         c.setName(name);
         return c;
     }
 
+    /**
+     * Verifies that an unrecognised scope short-circuits to an empty, non-truncated
+     * response and never queries the log repository for trace ids.
+     */
     @Test
     void buildCases_unknownScope_returnsEmptyResponse() {
         ProcessMiningResponse resp = service.buildCases("mystery", UUID.randomUUID(), null,
@@ -80,6 +107,10 @@ class ProcessMiningServiceTest {
         verify(logRepository, never()).findDistinctTraceIdsForServices(any(), any(), any(), any(), any());
     }
 
+    /**
+     * Verifies that a platform scope resolving to services but no matching trace ids
+     * yields an empty, non-truncated response and skips fetching logs by trace id.
+     */
     @Test
     void buildCases_platformScopeNoTraceIds_returnsEmptyResponse() {
         UUID platformId = UUID.randomUUID();
@@ -95,6 +126,10 @@ class ProcessMiningServiceTest {
         verify(logRepository, never()).findByTraceIdIn(any());
     }
 
+    /**
+     * Verifies that an application scope resolves service names from the component
+     * repository (via {@code findByAppId}) rather than the app repository.
+     */
     @Test
     void buildCases_applicationScope_resolvesComponentNames() {
         UUID appId = UUID.randomUUID();
@@ -109,6 +144,10 @@ class ProcessMiningServiceTest {
         verify(statusComponentRepository).findByAppId(appId);
     }
 
+    /**
+     * Verifies that logs sharing a trace id are grouped into a single case, sorted
+     * ascending by timestamp, and mapped to events carrying a non-blank icon.
+     */
     @Test
     void buildCases_groupsByTraceIdAndMapsEventsWithIcons() {
         UUID platformId = UUID.randomUUID();
@@ -139,6 +178,10 @@ class ProcessMiningServiceTest {
         assertThat(c.getEvents().get(0).getIcon()).isNotBlank();
     }
 
+    /**
+     * Verifies that a case with fewer events than the requested minimum is filtered
+     * out, producing an empty response with a zero total case count.
+     */
     @Test
     void buildCases_belowMinEvents_caseFilteredOut() {
         UUID platformId = UUID.randomUUID();
@@ -156,6 +199,10 @@ class ProcessMiningServiceTest {
         assertThat(resp.getTotalCases()).isZero();
     }
 
+    /**
+     * Verifies that when the number of trace ids reaches the max-cases limit the
+     * response is flagged as truncated while still returning all cases.
+     */
     @Test
     void buildCases_traceIdsEqualMaxCases_flagsTruncated() {
         UUID platformId = UUID.randomUUID();
@@ -174,6 +221,10 @@ class ProcessMiningServiceTest {
         assertThat(resp.getCases()).hasSize(2);
     }
 
+    /**
+     * Verifies that a log with a null service and an unrecognised level maps to the
+     * default activity ("unknown") and the default icon.
+     */
     @Test
     void buildCases_nullServiceAndUnknownLevel_useDefaults() {
         UUID platformId = UUID.randomUUID();
@@ -191,6 +242,10 @@ class ProcessMiningServiceTest {
         assertThat(event.getIcon()).isEqualTo("📋");            // default icon for unknown level
     }
 
+    /**
+     * Verifies that the tenant id, time window and resolved service names are passed
+     * through unchanged to the log repository's trace-id lookup.
+     */
     @Test
     void buildCases_passesTenantAndWindowThrough() {
         UUID platformId = UUID.randomUUID();

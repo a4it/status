@@ -37,6 +37,18 @@ public class SchedulerRunApiController {
     // List runs for the tenant with optional filters
     // -------------------------------------------------------------------------
 
+    /**
+     * Lists job run records for the current tenant, optionally filtered by job.
+     * <p>
+     * HTTP GET {@code /api/scheduler/runs}
+     * </p>
+     *
+     * @param page the zero-based page index (default 0)
+     * @param size the page size (default 20)
+     * @param jobId optional filter restricting results to a single job
+     * @param status optional filter by run status
+     * @return ResponseEntity containing a page of job run responses
+     */
     @GetMapping
     public ResponseEntity<Page<SchedulerJobRunResponse>> listRuns(
             @RequestParam(defaultValue = "0") int page,
@@ -49,9 +61,11 @@ public class SchedulerRunApiController {
         Pageable pageable = PageRequest.of(page, size);
 
         Page<SchedulerJobRun> runs;
+        // When a job id is supplied, scope the query to that job's runs
         if (jobId != null) {
             runs = runRepository.findByJobIdOrderByStartedAtDesc(jobId, pageable);
         } else {
+            // Otherwise return all runs belonging to the tenant
             runs = runRepository.findByTenantIdOrderByStartedAtDesc(tenantId, pageable);
         }
 
@@ -62,6 +76,16 @@ public class SchedulerRunApiController {
     // Get single run with full output
     // -------------------------------------------------------------------------
 
+    /**
+     * Retrieves a single job run, including its full captured output.
+     * <p>
+     * HTTP GET {@code /api/scheduler/runs/{id}}
+     * </p>
+     *
+     * @param id the UUID of the job run
+     * @return ResponseEntity containing the job run response
+     * @throws RuntimeException if no run exists with the given id
+     */
     @GetMapping("/{id}")
     public ResponseEntity<SchedulerJobRunResponse> getRun(@PathVariable UUID id) {
         SchedulerJobRun run = runRepository.findById(id)
@@ -73,6 +97,17 @@ public class SchedulerRunApiController {
     // Get runs for a specific job
     // -------------------------------------------------------------------------
 
+    /**
+     * Retrieves a paginated list of run records for a specific job.
+     * <p>
+     * HTTP GET {@code /api/scheduler/runs/job/{jobId}}
+     * </p>
+     *
+     * @param jobId the UUID of the job whose runs are requested
+     * @param page the zero-based page index (default 0)
+     * @param size the page size (default 20)
+     * @return ResponseEntity containing a page of job run responses
+     */
     @GetMapping("/job/{jobId}")
     public ResponseEntity<Page<SchedulerJobRunResponse>> getRunsForJob(
             @PathVariable UUID jobId,
@@ -88,6 +123,16 @@ public class SchedulerRunApiController {
     // Delete a run
     // -------------------------------------------------------------------------
 
+    /**
+     * Deletes a job run record.
+     * <p>
+     * HTTP DELETE {@code /api/scheduler/runs/{id}}. Restricted to the ADMIN role.
+     * </p>
+     *
+     * @param id the UUID of the job run to delete
+     * @return ResponseEntity containing a success message
+     * @throws RuntimeException if no run exists with the given id
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MessageResponse> deleteRun(@PathVariable UUID id) {
@@ -101,6 +146,11 @@ public class SchedulerRunApiController {
     // Utility
     // -------------------------------------------------------------------------
 
+    /**
+     * Resolves the currently authenticated user from the security context.
+     *
+     * @return the {@link UserPrincipal} for the current request
+     */
     private UserPrincipal currentPrincipal() {
         return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

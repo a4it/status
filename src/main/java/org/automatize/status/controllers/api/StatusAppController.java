@@ -172,6 +172,12 @@ public class StatusAppController {
         return ResponseEntity.ok(apps);
     }
 
+    /**
+     * Retrieves all status applications belonging to a specific platform.
+     *
+     * @param platformId the UUID of the platform
+     * @return ResponseEntity containing a list of status applications
+     */
     @GetMapping("/platform/{platformId}")
     public ResponseEntity<List<StatusAppResponse>> getStatusAppsByPlatform(@PathVariable UUID platformId) {
         List<StatusAppResponse> apps = statusAppService.getStatusAppsByPlatform(platformId);

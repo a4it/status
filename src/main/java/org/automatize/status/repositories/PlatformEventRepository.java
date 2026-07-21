@@ -110,6 +110,18 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable);
 
+    /**
+     * Finds a page of platform events applying optional filters on app, component, severity,
+     * and event-time range, ordered by event time descending. Null filter arguments are ignored.
+     *
+     * @param appId the app to filter by, or {@code null} for all apps
+     * @param componentId the component to filter by, or {@code null} for all components
+     * @param severity the severity to filter by, or {@code null} for all severities
+     * @param startDate the lower bound of the event-time range (inclusive), or {@code null}
+     * @param endDate the upper bound of the event-time range (inclusive), or {@code null}
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching the supplied filters, most recent first
+     */
     @Query(value = "SELECT * FROM platform_events e WHERE " +
            "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
            "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
@@ -124,18 +136,6 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
            "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
            "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate)",
            nativeQuery = true)
-    /**
-     * Finds a page of platform events applying optional filters on app, component, severity,
-     * and event-time range, ordered by event time descending. Null filter arguments are ignored.
-     *
-     * @param appId the app to filter by, or {@code null} for all apps
-     * @param componentId the component to filter by, or {@code null} for all components
-     * @param severity the severity to filter by, or {@code null} for all severities
-     * @param startDate the lower bound of the event-time range (inclusive), or {@code null}
-     * @param endDate the upper bound of the event-time range (inclusive), or {@code null}
-     * @param pageable pagination and sorting parameters
-     * @return a page of events matching the supplied filters, most recent first
-     */
     Page<PlatformEvent> findWithFilters(
             @Param("appId") UUID appId,
             @Param("componentId") UUID componentId,
@@ -144,6 +144,20 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
             @Param("endDate") ZonedDateTime endDate,
             Pageable pageable);
 
+    /**
+     * Finds a page of platform events applying the same optional filters as
+     * {@link #findWithFilters}, additionally restricted to events whose message,
+     * details, or source contain the given search text (case-insensitive).
+     *
+     * @param appId the app to filter by, or {@code null} for all apps
+     * @param componentId the component to filter by, or {@code null} for all components
+     * @param severity the severity to filter by, or {@code null} for all severities
+     * @param startDate the lower bound of the event-time range (inclusive), or {@code null}
+     * @param endDate the upper bound of the event-time range (inclusive), or {@code null}
+     * @param searchText the case-insensitive substring matched against message, details, and source
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching the filters and search text, most recent first
+     */
     @Query(value = "SELECT * FROM platform_events e WHERE " +
            "(CAST(:appId AS uuid) IS NULL OR e.app_id = :appId) AND " +
            "(CAST(:componentId AS uuid) IS NULL OR e.component_id = :componentId) AND " +
@@ -173,11 +187,29 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
             @Param("searchText") String searchText,
             Pageable pageable);
 
+    /**
+     * Counts the total number of platform events belonging to a specific status app.
+     *
+     * @param appId the unique identifier of the status app
+     * @return the count of events for the specified app
+     */
     @Query("SELECT COUNT(e) FROM PlatformEvent e WHERE e.app.id = :appId")
     Long countByAppId(@Param("appId") UUID appId);
 
+    /**
+     * Counts the number of platform events for a status app with a specific severity.
+     *
+     * @param appId the unique identifier of the status app
+     * @param severity the severity to count
+     * @return the count of matching events
+     */
     @Query("SELECT COUNT(e) FROM PlatformEvent e WHERE e.app.id = :appId AND e.severity = :severity")
     Long countByAppIdAndSeverity(@Param("appId") UUID appId, @Param("severity") String severity);
 
+    /**
+     * Deletes all platform events belonging to a specific status app.
+     *
+     * @param appId the unique identifier of the status app whose events should be removed
+     */
     void deleteByAppId(UUID appId);
 }

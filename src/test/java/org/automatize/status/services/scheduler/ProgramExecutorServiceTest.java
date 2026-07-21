@@ -35,6 +35,10 @@ class ProgramExecutorServiceTest {
     // execute() - null config guard
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the null-config guard on {@code execute}.
+     * Expected outcome: run status is FAILURE with a "configuration is missing" message.
+     */
     @Test
     void execute_nullConfig_setsFailureWithMessage() {
         SchedulerJobRun run = new SchedulerJobRun();
@@ -49,6 +53,10 @@ class ProgramExecutorServiceTest {
     // buildCommand()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies command assembly without shell wrapping passes the command and args directly.
+     * Expected outcome: the list contains exactly the command followed by its arguments.
+     */
     @Test
     void buildCommand_noShellWrap_passesCommandAndArgsDirectly() {
         SchedulerProgramConfig config = new SchedulerProgramConfig();
@@ -62,6 +70,10 @@ class ProgramExecutorServiceTest {
         assertThat(command).containsExactly("/usr/bin/ls", "-l", "/tmp");
     }
 
+    /**
+     * Verifies command assembly with no arguments and no shell wrapping.
+     * Expected outcome: the list contains only the command.
+     */
     @Test
     void buildCommand_noShellWrapNoArgs_returnsCommandOnly() {
         SchedulerProgramConfig config = new SchedulerProgramConfig();
@@ -74,6 +86,10 @@ class ProgramExecutorServiceTest {
         assertThat(command).containsExactly("/usr/bin/uptime");
     }
 
+    /**
+     * Verifies shell wrapping with the default shell wraps the command in {@code /bin/bash -c}.
+     * Expected outcome: the list is {@code [/bin/bash, -c, "<command> <args>"]}.
+     */
     @Test
     void buildCommand_shellWrapDefaultShell_wrapsInBashDashC() {
         SchedulerProgramConfig config = new SchedulerProgramConfig();
@@ -87,6 +103,10 @@ class ProgramExecutorServiceTest {
         assertThat(command).containsExactly("/bin/bash", "-c", "echo hi world");
     }
 
+    /**
+     * Verifies shell wrapping honours a configured custom shell path.
+     * Expected outcome: the list uses the configured shell with {@code -c}.
+     */
     @Test
     void buildCommand_shellWrapCustomShell_usesConfiguredShell() {
         SchedulerProgramConfig config = new SchedulerProgramConfig();
@@ -104,6 +124,10 @@ class ProgramExecutorServiceTest {
     // readStream()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the bounded stream reader captures all lines when under the byte limit.
+     * Expected outcome: the buffer contains the full stream content.
+     */
     @Test
     void readStream_belowLimit_capturesAllLines() {
         InputStream in = new ByteArrayInputStream("line1\nline2\n".getBytes(StandardCharsets.UTF_8));
@@ -114,6 +138,10 @@ class ProgramExecutorServiceTest {
         assertThat(sb.toString()).isEqualTo("line1\nline2\n");
     }
 
+    /**
+     * Verifies the bounded stream reader stops appending once the byte limit is exceeded.
+     * Expected outcome: only the first line is retained; later lines are dropped.
+     */
     @Test
     void readStream_aboveLimit_stopsAppending() {
         InputStream in = new ByteArrayInputStream("line1\nline2\n".getBytes(StandardCharsets.UTF_8));

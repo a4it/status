@@ -47,11 +47,22 @@ class JwtAuthenticationFilterTest {
     @InjectMocks
     private JwtAuthenticationFilter filter;
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test so authentication
+     * set by the filter in one test does not leak into the next.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Verifies that a valid {@code Authorization: Bearer} token results in an
+     * authenticated {@link SecurityContextHolder} whose principal is the loaded
+     * {@code UserDetails}, and that the filter chain proceeds.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_validBearerToken_setsAuthenticationAndContinuesChain() throws Exception {
         // Arrange
@@ -78,6 +89,13 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    /**
+     * Verifies that when the token carries tenant and organization claims, the
+     * filter uses the context-aware {@code loadUserByIdWithContext} lookup,
+     * authenticates, and continues the chain.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_tokenWithContext_usesContextAwareLookup() throws Exception {
         // Arrange
@@ -106,6 +124,12 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    /**
+     * Verifies that when no {@code Authorization} header is present the context
+     * stays unauthenticated, no user lookup occurs, and the chain still proceeds.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_missingToken_doesNotAuthenticateButContinuesChain() throws Exception {
         // Arrange
@@ -122,6 +146,12 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    /**
+     * Verifies that when the token fails validation the context stays
+     * unauthenticated and the chain still proceeds.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_invalidToken_doesNotAuthenticateButContinuesChain() throws Exception {
         // Arrange
@@ -140,6 +170,13 @@ class JwtAuthenticationFilterTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    /**
+     * Verifies that for a static-resource request the filter skips JWT
+     * processing entirely (no token validation), leaves the context
+     * unauthenticated, and forwards the request down the chain.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_staticResource_skipsJwtProcessing() throws Exception {
         // Arrange
@@ -156,6 +193,13 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 
+    /**
+     * Verifies that when the user lookup throws, the filter swallows the
+     * exception (logging it), leaves the context unauthenticated, and still
+     * continues the chain.
+     *
+     * @throws Exception if filter processing fails
+     */
     @Test
     void doFilterInternal_userLookupThrows_swallowsExceptionAndContinuesChain() throws Exception {
         // Arrange

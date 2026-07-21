@@ -484,6 +484,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 6 ──────────────────────────────────────────────────────────────
     // Guest checkout — Auth Service skipped entirely
     // Gateway → Order → Payment → Notification
+    /**
+     * Builds the guest-checkout trace: Gateway → Order → Inventory → Payment → Notification,
+     * with the Auth Service skipped entirely because no login is required.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> guestCheckout(Tenant tenant, List<StatusApp> apps, String traceId,
                                     ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -500,6 +511,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 7 ──────────────────────────────────────────────────────────────
     // Fraud detected — stops after Fraud Detection, Order/Payment/Notify never called
     // Gateway → Auth → Fraud Detection → blocked
+    /**
+     * Builds the fraud-detected trace: Gateway → Auth → Fraud Detection blocks the order when
+     * the risk score exceeds the threshold; Order/Payment/Notify are never called.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> fraudDetected(Tenant tenant, List<StatusApp> apps, String traceId,
                                     ZonedDateTime base, Random rng) {
         int userId = rng.nextInt(9000) + 1000;
@@ -516,6 +538,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 8 ──────────────────────────────────────────────────────────────
     // Internal scheduled batch job — no API Gateway, no Auth Service
     // Order → Inventory → Payment → Notification
+    /**
+     * Builds the internal scheduled-batch-job trace: Order → Inventory → Payment → Notification,
+     * with no API Gateway or Auth Service because the flow is triggered internally.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> scheduledBatchJob(Tenant tenant, List<StatusApp> apps, String traceId,
                                         ZonedDateTime base, Random rng) {
         int batchSize = 10 + rng.nextInt(90);
@@ -531,6 +564,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 9 ──────────────────────────────────────────────────────────────
     // Search-driven full order — includes Search Service at head of trace
     // Search → Gateway → Auth → Order → Inventory → Payment → Notification
+    /**
+     * Builds the search-driven order trace: Search → Gateway → Auth → Order → Inventory →
+     * Payment → Notification, with the Search Service at the head of the trace.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> searchDrivenOrder(Tenant tenant, List<StatusApp> apps, String traceId,
                                         ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -552,6 +596,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 10 ─────────────────────────────────────────────────────────────
     // Payment fails once, retries and succeeds — Notification sent after retry
     // Gateway → Auth → Order → Inventory → Payment(fail) → Payment(retry) → Notification
+    /**
+     * Builds the payment-retry-success trace: the first Payment attempt fails, a retry succeeds
+     * and the Notification is sent afterwards.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> paymentRetrySuccess(Tenant tenant, List<StatusApp> apps, String traceId,
                                           ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -570,6 +625,18 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // ── Helpers ────────────────────────────────────────────────────────────────
 
+    /**
+     * Creates a single {@link Log} entry for a trace, tagging it with the service name,
+     * trace id, timestamp, level, message and a short random request id.
+     *
+     * @param tenant    the tenant the log belongs to
+     * @param app       the service (app) that emitted the log
+     * @param traceId   the correlation id shared by the trace
+     * @param timestamp the timestamp of the log entry
+     * @param level     the log level (e.g. INFO, WARNING, ERROR, CRITICAL)
+     * @param message   the log message
+     * @return the constructed (unpersisted) log entry
+     */
     private Log log(Tenant tenant, StatusApp app, String traceId, ZonedDateTime timestamp,
                     String level, String message) {
         Log log = new Log();
@@ -583,15 +650,33 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         return log;
     }
 
+    /**
+     * Generates a random demo order identifier of the form {@code ORD-NNNNN}.
+     *
+     * @param rng the random generator used to draw the numeric suffix
+     * @return the generated order id
+     */
     private String orderId(Random rng) {
         return "ORD-" + (10000 + rng.nextInt(90000));
     }
 
+    /**
+     * Generates a random currency amount string of the form {@code $D.CC}.
+     *
+     * @param rng the random generator used to draw the amount
+     * @return the formatted currency amount
+     */
     private String currency(Random rng) {
         int cents = 500 + rng.nextInt(29500);
         return "$" + (cents / 100) + "." + String.format("%02d", cents % 100);
     }
 
+    /**
+     * Generates a random IPv4 address string for demo log messages.
+     *
+     * @param rng the random generator used to draw the octets
+     * @return the generated dotted-quad IP address
+     */
     private String randomIp(Random rng) {
         return rng.nextInt(255) + "." + rng.nextInt(255) + "." + rng.nextInt(255) + "." + rng.nextInt(255);
     }

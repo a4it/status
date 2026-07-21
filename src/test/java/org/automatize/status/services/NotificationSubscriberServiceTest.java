@@ -31,6 +31,12 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link NotificationSubscriberService}.
+ *
+ * <p>Testing approach: pure Mockito unit tests. The subscriber and status-app repositories are
+ * mocked and injected into the service so behaviour (read mapping, create/update/delete rules,
+ * duplicate and not-found handling, and query delegation) is exercised without a database. A
+ * {@link SecurityContextHolder} authentication is seeded per test to supply the "current user"
+ * that the service stamps onto audit fields, and is cleared after each test.
  */
 @ExtendWith(MockitoExtension.class)
 class NotificationSubscriberServiceTest {
@@ -44,17 +50,30 @@ class NotificationSubscriberServiceTest {
     @InjectMocks
     private NotificationSubscriberService service;
 
+    /**
+     * Seeds the security context with a "tester" authentication before each test so the service can
+     * resolve the current username for audit fields such as createdBy/lastModifiedBy.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, java.util.List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal {@link StatusApp} fixture with the given id and a fixed name.
+     *
+     * @param id the identifier to assign to the app
+     * @return a populated {@link StatusApp} for use in tests
+     */
     private StatusApp app(UUID id) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -62,6 +81,14 @@ class NotificationSubscriberServiceTest {
         return app;
     }
 
+    /**
+     * Builds an active, verified {@link NotificationSubscriber} fixture linked to the given app.
+     *
+     * @param id    the identifier to assign to the subscriber
+     * @param app   the status app the subscriber belongs to
+     * @param email the subscriber's email address
+     * @return a populated {@link NotificationSubscriber} for use in tests
+     */
     private NotificationSubscriber subscriber(UUID id, StatusApp app, String email) {
         NotificationSubscriber sub = new NotificationSubscriber();
         sub.setId(id);
@@ -75,6 +102,10 @@ class NotificationSubscriberServiceTest {
 
     // ----------------------------------------------------------------- reads
 
+    /**
+     * Verifies that subscribers found for an app id are mapped to response objects carrying the
+     * subscriber email plus the owning app's id and name.
+     */
     @Test
     void getSubscribersByAppId_mapsToResponses() {
         UUID appId = UUID.randomUUID();
@@ -90,6 +121,10 @@ class NotificationSubscriberServiceTest {
         assertThat(result.get(0).getAppName()).isEqualTo("Platform");
     }
 
+    /**
+     * Verifies that {@code getAllSubscribers} returns a response for every subscriber found by the
+     * repository.
+     */
     @Test
     void getAllSubscribers_mapsToResponses() {
         StatusApp app = app(UUID.randomUUID());
@@ -100,6 +135,10 @@ class NotificationSubscriberServiceTest {
         assertThat(service.getAllSubscribers()).hasSize(2);
     }
 
+    /**
+     * Verifies that fetching an existing subscriber by id returns a response with the matching id
+     * and email.
+     */
     @Test
     void getSubscriberById_whenFound_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -112,6 +151,10 @@ class NotificationSubscriberServiceTest {
         assertThat(response.getEmail()).isEqualTo("a@x.com");
     }
 
+    /**
+     * Verifies that fetching a non-existent subscriber by id throws {@link ResourceNotFoundException}
+     * with a "Subscriber not found" message.
+     */
     @Test
     void getSubscriberById_whenMissing_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -124,6 +167,10 @@ class NotificationSubscriberServiceTest {
 
     // ------------------------------------------------------------ createSubscriber
 
+    /**
+     * Verifies that creating a subscriber for an unknown app id throws
+     * {@link ResourceNotFoundException} with a "Status app not found" message.
+     */
     @Test
     void createSubscriber_whenAppNotFound_throwsResourceNotFound() {
         UUID appId = UUID.randomUUID();
@@ -134,6 +181,10 @@ class NotificationSubscriberServiceTest {
                 .hasMessageContaining("Status app not found");
     }
 
+    /**
+     * Verifies that creating a subscriber whose email is already subscribed to the app throws
+     * {@link DuplicateResourceException} with an "already subscribed" message.
+     */
     @Test
     void createSubscriber_whenEmailAlreadySubscribed_throwsDuplicate() {
         UUID appId = UUID.randomUUID();
@@ -145,6 +196,10 @@ class NotificationSubscriberServiceTest {
                 .hasMessageContaining("already subscribed");
     }
 
+    /**
+     * Verifies that a valid create request persists a subscriber with the correct app, email,
+     * active/verified flags and audit fields set to the current user, and returns a matching response.
+     */
     @Test
     void createSubscriber_whenValid_savesWithCurrentUserAndReturnsResponse() {
         UUID appId = UUID.randomUUID();
@@ -169,6 +224,9 @@ class NotificationSubscriberServiceTest {
 
     // ------------------------------------------------------------ updateSubscriber
 
+    /**
+     * Verifies that updating a non-existent subscriber throws {@link ResourceNotFoundException}.
+     */
     @Test
     void updateSubscriber_whenMissing_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -178,6 +236,10 @@ class NotificationSubscriberServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that changing a subscriber's email to one already used for the same app throws
+     * {@link DuplicateResourceException}.
+     */
     @Test
     void updateSubscriber_whenNewEmailAlreadyExists_throwsDuplicate() {
         UUID id = UUID.randomUUID();
@@ -191,6 +253,10 @@ class NotificationSubscriberServiceTest {
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
+    /**
+     * Verifies that a valid update mutates the subscriber's email, name and active flag, stamps the
+     * current user as last modifier, and returns a response reflecting the new email.
+     */
     @Test
     void updateSubscriber_whenValid_updatesFields() {
         UUID id = UUID.randomUUID();
@@ -210,6 +276,10 @@ class NotificationSubscriberServiceTest {
         assertThat(response.getEmail()).isEqualTo("new@x.com");
     }
 
+    /**
+     * Verifies that updating a subscriber with an unchanged email skips the duplicate-email check
+     * (no call to {@code existsByAppIdAndEmail}).
+     */
     @Test
     void updateSubscriber_whenSameEmail_doesNotCheckDuplicate() {
         UUID id = UUID.randomUUID();
@@ -225,6 +295,10 @@ class NotificationSubscriberServiceTest {
 
     // ------------------------------------------------------------ deleteSubscriber
 
+    /**
+     * Verifies that deleting a non-existent subscriber throws {@link ResourceNotFoundException} and
+     * never invokes the repository delete.
+     */
     @Test
     void deleteSubscriber_whenMissing_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -235,6 +309,9 @@ class NotificationSubscriberServiceTest {
         verify(subscriberRepository, never()).deleteById(any());
     }
 
+    /**
+     * Verifies that deleting an existing subscriber delegates to the repository's deleteById.
+     */
     @Test
     void deleteSubscriber_whenExists_deletes() {
         UUID id = UUID.randomUUID();
@@ -247,6 +324,10 @@ class NotificationSubscriberServiceTest {
 
     // ------------------------------------------------------------ queries
 
+    /**
+     * Verifies that {@code getActiveVerifiedSubscribers} returns the repository's list of active,
+     * verified subscribers unchanged.
+     */
     @Test
     void getActiveVerifiedSubscribers_returnsRepositoryResult() {
         UUID appId = UUID.randomUUID();
@@ -257,6 +338,9 @@ class NotificationSubscriberServiceTest {
         assertThat(service.getActiveVerifiedSubscribers(appId)).isEqualTo(subs);
     }
 
+    /**
+     * Verifies that {@code countSubscribersByAppId} returns the count reported by the repository.
+     */
     @Test
     void countSubscribersByAppId_returnsRepositoryCount() {
         UUID appId = UUID.randomUUID();

@@ -35,6 +35,13 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private NotificationSubscriberService subscriberService;
 
+    /**
+     * Builds a representative active, verified {@link NotificationSubscriberResponse}
+     * used to stub the service.
+     *
+     * @param id the subscriber id to assign
+     * @return a populated {@link NotificationSubscriberResponse}
+     */
     private NotificationSubscriberResponse sample(UUID id) {
         NotificationSubscriberResponse r = new NotificationSubscriberResponse();
         r.setId(id);
@@ -46,6 +53,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers} without filters returns
+     * 200 with all subscribers serialized (first entry's email).
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getAllSubscribers_noFilter_returnsOk() throws Exception {
         when(subscriberService.getAllSubscribers()).thenReturn(List.of(sample(UUID.randomUUID())));
@@ -55,6 +68,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].email").value("sub@example.com"));
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers?appId=...} returns 200 and
+     * delegates to {@link NotificationSubscriberService#getSubscribersByAppId}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getAllSubscribers_withAppId_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -67,6 +86,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         verify(subscriberService).getSubscribersByAppId(appId);
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers/{id}} for an existing
+     * subscriber returns 200 with the matching {@code id}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getSubscriberById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -77,6 +102,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers/{id}} maps a service
+     * {@link ResourceNotFoundException} to HTTP 404.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getSubscriberById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -87,6 +118,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} with a valid body
+     * returns 201 with the created subscriber's email.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_valid_returns201() throws Exception {
         when(subscriberService.createSubscriber(any(), any(), any())).thenReturn(sample(UUID.randomUUID()));
@@ -97,6 +134,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.email").value("sub@example.com"));
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} with a missing email
+     * fails bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_missingEmail_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"name\":\"Subscriber\"}";
@@ -104,6 +147,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} with a malformed email
+     * fails bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_invalidEmail_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"email\":\"not-an-email\"}";
@@ -111,6 +160,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} with a missing appId
+     * fails bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_missingAppId_returns400() throws Exception {
         String body = "{\"email\":\"sub@example.com\"}";
@@ -118,6 +173,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} maps a service
+     * {@link ResourceNotFoundException} (unknown app) to HTTP 404.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_appNotFound_returns404() throws Exception {
         when(subscriberService.createSubscriber(any(), any(), any()))
@@ -128,6 +189,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies {@code POST /api/notification-subscribers} maps a service
+     * {@link DuplicateResourceException} to HTTP 409.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createSubscriber_duplicate_returns409() throws Exception {
         when(subscriberService.createSubscriber(any(), any(), any()))
@@ -138,6 +205,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies {@code PUT /api/notification-subscribers/{id}} with a valid body
+     * returns 200 with the updated subscriber's {@code id}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void updateSubscriber_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -149,6 +222,13 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    /**
+     * Verifies {@code DELETE /api/notification-subscribers/{id}} returns 200 with
+     * {@code success=true} and delegates to
+     * {@link NotificationSubscriberService#deleteSubscriber}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void deleteSubscriber_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
@@ -160,6 +240,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
         verify(subscriberService).deleteSubscriber(id);
     }
 
+    /**
+     * Verifies {@code DELETE /api/notification-subscribers/{id}} maps a service
+     * {@link ResourceNotFoundException} to HTTP 404.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void deleteSubscriber_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -170,6 +256,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers/by-app/{appId}} returns
+     * 200 with the app's subscribers serialized (first entry's email).
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getSubscribersByApp_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -180,6 +272,12 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].email").value("sub@example.com"));
     }
 
+    /**
+     * Verifies {@code GET /api/notification-subscribers/count/{appId}} returns
+     * 200 with the count reported by the service.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getSubscriberCount_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();

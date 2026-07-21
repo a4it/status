@@ -187,19 +187,32 @@ public class ProcessMiningRetentionService {
 
     // ─── Core cleanup logic ───────────────────────────────────────────────────
 
+    /**
+     * Applies a single retention rule, deleting log records older than the rule's cutoff.
+     * <p>
+     * Scoping depends on the rule: a platform-scoped rule deletes by the platform's service
+     * names (optionally further narrowed to a tenant), whereas a tenant-only rule deletes by tenant.
+     * </p>
+     *
+     * @param rule the retention rule to apply
+     * @return the number of log records deleted
+     */
     private int applyRule(ProcessMiningRetentionRule rule) {
         ZonedDateTime cutoff = ZonedDateTime.now().minusDays(rule.getRetentionDays());
 
+        // Platform-scoped rule: delete by the service names belonging to the platform
         if (rule.getPlatform() != null) {
             List<String> serviceNames = statusAppRepository.findByPlatformId(rule.getPlatform().getId())
                     .stream()
                     .map(app -> app.getName())
                     .collect(Collectors.toList());
+            // No services under the platform means there is nothing to delete
             if (serviceNames.isEmpty()) {
                 return 0;
             }
             UUID tenantId = rule.getTenant() != null ? rule.getTenant().getId() : null;
             return deleteByServicesAndCutoff(cutoff, serviceNames, tenantId);
+        // Tenant-only rule: delete all of the tenant's logs past the cutoff
         } else if (rule.getTenant() != null) {
             return deleteByTenantAndCutoff(cutoff, rule.getTenant().getId());
         }
@@ -207,18 +220,34 @@ public class ProcessMiningRetentionService {
         return 0;
     }
 
+    /**
+     * Deletes log records older than the cutoff for the given service names, optionally scoped to a tenant.
+     *
+     * @param cutoff the timestamp before which logs are deleted
+     * @param serviceNames the service names whose logs should be considered
+     * @param tenantId optional tenant id to further scope the deletion; may be null
+     * @return the number of log records deleted
+     */
     private int deleteByServicesAndCutoff(ZonedDateTime cutoff, List<String> serviceNames, UUID tenantId) {
         String jpql = "DELETE FROM Log l WHERE l.logTimestamp < :cutoff AND l.service IN :services" +
                 (tenantId != null ? " AND l.tenant.id = :tenantId" : "");
         var query = entityManager.createQuery(jpql)
                 .setParameter("cutoff", cutoff)
                 .setParameter("services", serviceNames);
+        // Bind the tenant filter only when the deletion is tenant-scoped
         if (tenantId != null) {
             query.setParameter("tenantId", tenantId);
         }
         return query.executeUpdate();
     }
 
+    /**
+     * Deletes all log records for a tenant that are older than the cutoff.
+     *
+     * @param cutoff the timestamp before which logs are deleted
+     * @param tenantId the tenant whose logs should be deleted
+     * @return the number of log records deleted
+     */
     private int deleteByTenantAndCutoff(ZonedDateTime cutoff, UUID tenantId) {
         return entityManager.createQuery(
                 "DELETE FROM Log l WHERE l.logTimestamp < :cutoff AND l.tenant.id = :tenantId")
@@ -229,10 +258,18 @@ public class ProcessMiningRetentionService {
 
     // ─── Mapping ──────────────────────────────────────────────────────────────
 
+    /**
+     * Applies fields from a request onto a retention rule entity, resolving optional tenant and platform references.
+     *
+     * @param rule the target retention rule entity to populate
+     * @param req the source request containing rule data
+     * @throws NoSuchElementException if the referenced tenant or platform is not found
+     */
     private void applyRequest(ProcessMiningRetentionRule rule, ProcessMiningRetentionRequest req) {
         rule.setRetentionDays(req.getRetentionDays());
         rule.setEnabled(req.isEnabled());
 
+        // Resolve the tenant reference when provided, otherwise clear it (applies to all tenants)
         if (req.getTenantId() != null) {
             Tenant tenant = tenantRepository.findById(req.getTenantId())
                     .orElseThrow(() -> new NoSuchElementException("Tenant not found: " + req.getTenantId()));
@@ -241,6 +278,7 @@ public class ProcessMiningRetentionService {
             rule.setTenant(null);
         }
 
+        // Resolve the platform reference when provided, otherwise clear it (applies to all platforms)
         if (req.getPlatformId() != null) {
             StatusPlatform platform = statusPlatformRepository.findById(req.getPlatformId())
                     .orElseThrow(() -> new NoSuchElementException("Platform not found: " + req.getPlatformId()));
@@ -250,6 +288,12 @@ public class ProcessMiningRetentionService {
         }
     }
 
+    /**
+     * Maps a retention rule entity to its response representation.
+     *
+     * @param rule the retention rule entity to map
+     * @return the mapped ProcessMiningRetentionResponse
+     */
     private ProcessMiningRetentionResponse toResponse(ProcessMiningRetentionRule rule) {
         ProcessMiningRetentionResponse resp = new ProcessMiningRetentionResponse();
         resp.setId(rule.getId());
@@ -259,11 +303,13 @@ public class ProcessMiningRetentionService {
         resp.setLastRunDeletedCount(rule.getLastRunDeletedCount());
         resp.setCreatedAt(rule.getCreatedAt());
 
+        // Expose tenant identity only when the rule is tenant-scoped
         if (rule.getTenant() != null) {
             resp.setTenantId(rule.getTenant().getId());
             resp.setTenantName(rule.getTenant().getName());
         }
 
+        // Expose platform identity when scoped, otherwise label it as applying to all platforms
         if (rule.getPlatform() != null) {
             resp.setPlatformId(rule.getPlatform().getId());
             resp.setPlatformName(rule.getPlatform().getName());

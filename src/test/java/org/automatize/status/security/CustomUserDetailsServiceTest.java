@@ -30,6 +30,15 @@ class CustomUserDetailsServiceTest {
     @InjectMocks
     private CustomUserDetailsService service;
 
+    /**
+     * Builds a fully-populated, enabled {@link User} fixture for use as the
+     * repository's return value in tests.
+     *
+     * @param id       the user id to assign
+     * @param username the username (also used to derive the email)
+     * @param role     the role string to assign
+     * @return the constructed {@link User}
+     */
     private User buildUser(UUID id, String username, String role) {
         User user = new User();
         user.setId(id);
@@ -41,6 +50,11 @@ class CustomUserDetailsServiceTest {
         return user;
     }
 
+    /**
+     * Verifies that when the repository finds a user by username/email,
+     * {@code loadUserByUsername} returns a {@link UserPrincipal} carrying that
+     * username.
+     */
     @Test
     void loadUserByUsername_userFound_returnsUserPrincipal() {
         // Arrange
@@ -55,6 +69,10 @@ class CustomUserDetailsServiceTest {
         assertThat(details.getUsername()).isEqualTo("jdoe");
     }
 
+    /**
+     * Verifies that when no user matches, {@code loadUserByUsername} throws
+     * {@link UsernameNotFoundException} whose message includes the searched name.
+     */
     @Test
     void loadUserByUsername_userNotFound_throwsUsernameNotFoundException() {
         // Arrange
@@ -66,6 +84,10 @@ class CustomUserDetailsServiceTest {
                 .hasMessageContaining("ghost");
     }
 
+    /**
+     * Verifies that when the repository finds a user by id, {@code loadUserById}
+     * returns a {@link UserPrincipal} carrying that id.
+     */
     @Test
     void loadUserById_userFound_returnsUserPrincipal() {
         // Arrange
@@ -81,6 +103,10 @@ class CustomUserDetailsServiceTest {
         assertThat(((UserPrincipal) details).getId()).isEqualTo(id);
     }
 
+    /**
+     * Verifies that when no user has the given id, {@code loadUserById} throws
+     * {@link UsernameNotFoundException} whose message includes the id.
+     */
     @Test
     void loadUserById_userNotFound_throwsUsernameNotFoundException() {
         // Arrange
@@ -93,6 +119,11 @@ class CustomUserDetailsServiceTest {
                 .hasMessageContaining(id.toString());
     }
 
+    /**
+     * Verifies that {@code loadUserByIdWithContext} returns a
+     * {@link UserPrincipal} stamped with the supplied tenant and organization
+     * ids and with context selection no longer required.
+     */
     @Test
     void loadUserByIdWithContext_userFound_returnsPrincipalWithContext() {
         // Arrange
@@ -116,6 +147,10 @@ class CustomUserDetailsServiceTest {
         assertThat(principal.isRequiresContextSelection()).isFalse();
     }
 
+    /**
+     * Verifies that when no user has the given id,
+     * {@code loadUserByIdWithContext} throws {@link UsernameNotFoundException}.
+     */
     @Test
     void loadUserByIdWithContext_userNotFound_throwsUsernameNotFoundException() {
         // Arrange

@@ -39,6 +39,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private OrganizationService organizationService;
 
+    /**
+     * Builds a representative {@link Organization} used to stub the service.
+     *
+     * @param id the organization id to assign
+     * @return a populated {@link Organization} named {@code Acme} with status {@code ACTIVE}
+     */
     private Organization sampleOrg(UUID id) {
         Organization o = new Organization();
         o.setId(id);
@@ -47,10 +53,22 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         return o;
     }
 
+    /**
+     * Provides a valid organization request JSON body (name and type) for
+     * create/update tests.
+     *
+     * @return a JSON string that passes bean validation
+     */
     private String validOrgJson() {
         return "{\"name\":\"Acme\",\"organizationType\":\"CUSTOMER\"}";
     }
 
+    /**
+     * Verifies {@code GET /api/organizations} returns 200 with a paged result
+     * whose first content entry has the expected name.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getAllOrganizations_returnsOkPage() throws Exception {
         when(organizationService.getAllOrganizations(any(), any(), any(), any()))
@@ -61,6 +79,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code GET /api/organizations/{id}} for an existing organization
+     * returns 200 with the expected name.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getOrganizationById_found_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -71,6 +95,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code GET /api/organizations/{id}} maps a service
+     * {@link ResourceNotFoundException} to HTTP 404.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getOrganizationById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -81,6 +111,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies {@code POST /api/organizations} with a valid body returns 201 with
+     * the created organization's name.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createOrganization_valid_returns201() throws Exception {
         when(organizationService.createOrganization(any())).thenReturn(sampleOrg(UUID.randomUUID()));
@@ -90,6 +126,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code POST /api/organizations} with a missing name fails bean
+     * validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createOrganization_missingName_returns400() throws Exception {
         String body = "{\"organizationType\":\"CUSTOMER\"}";
@@ -97,6 +139,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/organizations} with a missing organization type
+     * fails bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createOrganization_missingType_returns400() throws Exception {
         String body = "{\"name\":\"Acme\"}";
@@ -104,6 +152,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/organizations} maps a service
+     * {@link DuplicateResourceException} to HTTP 409.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void createOrganization_duplicate_returns409() throws Exception {
         when(organizationService.createOrganization(any()))
@@ -113,6 +167,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies {@code PUT /api/organizations/{id}} with a valid body returns 200
+     * with the updated organization's name.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void updateOrganization_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -124,6 +184,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code PUT /api/organizations/{id}} with a missing organization
+     * type fails bean validation and returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void updateOrganization_missingType_returns400() throws Exception {
         UUID id = UUID.randomUUID();
@@ -133,6 +199,13 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code DELETE /api/organizations/{id}} returns 200 with
+     * {@code success=true} and delegates to
+     * {@link OrganizationService#deleteOrganization}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void deleteOrganization_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
@@ -144,6 +217,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
         verify(organizationService).deleteOrganization(id);
     }
 
+    /**
+     * Verifies {@code DELETE /api/organizations/{id}} maps a service
+     * {@link BusinessRuleException} (active users) to HTTP 409.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void deleteOrganization_hasActiveUsers_returns409() throws Exception {
         UUID id = UUID.randomUUID();
@@ -154,6 +233,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies {@code GET /api/organizations/tenant/{tenantId}} returns 200 with
+     * the tenant's organizations serialized (first entry's name).
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getOrganizationsByTenant_returns200List() throws Exception {
         UUID tenantId = UUID.randomUUID();
@@ -165,6 +250,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code GET /api/organizations/current} returns 200 with the current
+     * user's organization name.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getCurrentUserOrganization_returns200() throws Exception {
         when(organizationService.getCurrentUserOrganization()).thenReturn(sampleOrg(UUID.randomUUID()));
@@ -174,6 +265,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code PATCH /api/organizations/{id}/status} with a valid status
+     * param returns 200 and delegates to {@link OrganizationService#updateStatus}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void updateOrganizationStatus_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -184,6 +281,12 @@ class OrganizationControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies {@code PATCH /api/organizations/{id}/status} with the required
+     * {@code status} param missing returns 400.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void updateOrganizationStatus_missingStatusParam_returns400() throws Exception {
         UUID id = UUID.randomUUID();

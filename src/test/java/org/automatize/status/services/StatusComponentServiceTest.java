@@ -53,17 +53,33 @@ class StatusComponentServiceTest {
     @InjectMocks
     private StatusComponentService statusComponentService;
 
+    private static final String OPERATIONAL = "OPERATIONAL";
+
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal {@link StatusApp} fixture for use in tests.
+     *
+     * @param id     the identifier to assign to the app
+     * @param status the status value to assign to the app
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp newApp(UUID id, String status) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -72,6 +88,15 @@ class StatusComponentServiceTest {
         return app;
     }
 
+    /**
+     * Builds a minimal {@link StatusComponent} fixture linked to the given app.
+     *
+     * @param id     the identifier to assign to the component
+     * @param app    the owning {@link StatusApp}
+     * @param name   the component name
+     * @param status the status value to assign to the component
+     * @return a populated {@link StatusComponent} instance
+     */
     private StatusComponent newComponent(UUID id, StatusApp app, String name, String status) {
         StatusComponent component = new StatusComponent();
         component.setId(id);
@@ -81,11 +106,14 @@ class StatusComponentServiceTest {
         return component;
     }
 
+    /**
+     * Verifies that requesting an existing component by id returns a response mapping its id and name.
+     */
     @Test
     void getComponentById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        when(statusComponentRepository.findById(id)).thenReturn(Optional.of(newComponent(id, app, "API", "OPERATIONAL")));
+        StatusApp app = newApp(UUID.randomUUID(), OPERATIONAL);
+        when(statusComponentRepository.findById(id)).thenReturn(Optional.of(newComponent(id, app, "API", OPERATIONAL)));
 
         StatusComponentResponse response = statusComponentService.getComponentById(id);
 
@@ -93,6 +121,9 @@ class StatusComponentServiceTest {
         assertThat(response.getName()).isEqualTo("API");
     }
 
+    /**
+     * Verifies that requesting a component whose id does not exist throws {@link ResourceNotFoundException}.
+     */
     @Test
     void getComponentById_notFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -102,10 +133,14 @@ class StatusComponentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that creating a component with a unique name persists it, assigns the next
+     * position (count + 1) and generates a non-blank API key.
+     */
     @Test
     void createComponent_uniqueName_savesAndAssignsPosition() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
         StatusComponentRequest request = new StatusComponentRequest();
         request.setAppId(appId);
         request.setName("Database");
@@ -122,6 +157,9 @@ class StatusComponentServiceTest {
         assertThat(response.getApiKey()).isNotBlank();
     }
 
+    /**
+     * Verifies that creating a component for a non-existent app throws {@link ResourceNotFoundException}.
+     */
     @Test
     void createComponent_appNotFound_throwsResourceNotFound() {
         UUID appId = UUID.randomUUID();
@@ -134,10 +172,14 @@ class StatusComponentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that creating a component whose name already exists within the app throws
+     * {@link DuplicateResourceException} and never persists the component.
+     */
     @Test
     void createComponent_duplicateName_throwsDuplicateResource() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
         StatusComponentRequest request = new StatusComponentRequest();
         request.setAppId(appId);
         request.setName("Dup");
@@ -149,11 +191,15 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that updating a component while keeping the same name applies the new field values
+     * and saves the component.
+     */
     @Test
     void updateComponent_sameName_updatesAndSaves() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusComponent component = newComponent(id, app, "API", "OPERATIONAL");
+        StatusApp app = newApp(UUID.randomUUID(), OPERATIONAL);
+        StatusComponent component = newComponent(id, app, "API", OPERATIONAL);
         component.setApiKey("existing");
 
         StatusComponentRequest request = new StatusComponentRequest();
@@ -169,6 +215,9 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository).save(component);
     }
 
+    /**
+     * Verifies that updating a component whose id does not exist throws {@link ResourceNotFoundException}.
+     */
     @Test
     void updateComponent_notFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -178,12 +227,16 @@ class StatusComponentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that renaming a component to a name already used by another component in the same app
+     * throws {@link DuplicateResourceException}.
+     */
     @Test
     void updateComponent_renameToExistingName_throwsDuplicateResource() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
-        StatusComponent component = newComponent(id, app, "old", "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
+        StatusComponent component = newComponent(id, app, "old", OPERATIONAL);
 
         StatusComponentRequest request = new StatusComponentRequest();
         request.setName("new");
@@ -195,12 +248,15 @@ class StatusComponentServiceTest {
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
+    /**
+     * Verifies that setting a component to MAJOR_OUTAGE recomputes and persists the parent app status as MAJOR_OUTAGE.
+     */
     @Test
     void updateStatus_componentMajorOutage_setsAppMajorOutage() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
-        StatusComponent component = newComponent(id, app, "API", "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
+        StatusComponent component = newComponent(id, app, "API", OPERATIONAL);
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -215,12 +271,15 @@ class StatusComponentServiceTest {
         verify(statusAppRepository).save(app);
     }
 
+    /**
+     * Verifies that setting a component to PARTIAL_OUTAGE recomputes and persists the parent app status as DEGRADED.
+     */
     @Test
     void updateStatus_componentDegraded_setsAppDegraded() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
-        StatusComponent component = newComponent(id, app, "API", "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
+        StatusComponent component = newComponent(id, app, "API", OPERATIONAL);
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -235,6 +294,9 @@ class StatusComponentServiceTest {
         verify(statusAppRepository).save(app);
     }
 
+    /**
+     * Verifies that when all components are OPERATIONAL the parent app status is recomputed and persisted as OPERATIONAL.
+     */
     @Test
     void updateStatus_allOperational_setsAppOperational() {
         UUID id = UUID.randomUUID();
@@ -244,37 +306,44 @@ class StatusComponentServiceTest {
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
-        StatusComponent operational = newComponent(UUID.randomUUID(), app, "A", "OPERATIONAL");
+        StatusComponent operational = newComponent(UUID.randomUUID(), app, "A", OPERATIONAL);
         when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of(operational));
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusAppRepository.save(any(StatusApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        statusComponentService.updateStatus(id, "OPERATIONAL");
+        statusComponentService.updateStatus(id, OPERATIONAL);
 
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(OPERATIONAL);
         verify(statusAppRepository).save(app);
     }
 
+    /**
+     * Verifies that updating a component's status when the app has no components leaves the app
+     * untouched (never saved).
+     */
     @Test
     void updateStatus_noComponents_leavesAppUntouched() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
-        StatusComponent component = newComponent(id, app, "API", "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
+        StatusComponent component = newComponent(id, app, "API", OPERATIONAL);
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));
         when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of());
 
-        statusComponentService.updateStatus(id, "OPERATIONAL");
+        statusComponentService.updateStatus(id, OPERATIONAL);
 
         verify(statusAppRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that a component with no linked incidents or maintenances is deleted.
+     */
     @Test
     void deleteComponent_noIncidentsOrMaintenance_deletes() {
         UUID id = UUID.randomUUID();
-        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "API", "OPERATIONAL");
+        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), OPERATIONAL), "API", OPERATIONAL);
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusIncidentComponentRepository.countByComponentId(id)).thenReturn(0L);
         when(statusMaintenanceComponentRepository.countByComponentId(id)).thenReturn(0L);
@@ -284,10 +353,14 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository).delete(component);
     }
 
+    /**
+     * Verifies that deleting a component still linked to incidents throws {@link BusinessRuleException}
+     * and never deletes the component.
+     */
     @Test
     void deleteComponent_activeIncidents_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
-        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "API", "OPERATIONAL");
+        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), OPERATIONAL), "API", OPERATIONAL);
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusIncidentComponentRepository.countByComponentId(id)).thenReturn(1L);
 
@@ -296,10 +369,14 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that deleting a component still linked to maintenances throws {@link BusinessRuleException}
+     * and never deletes the component.
+     */
     @Test
     void deleteComponent_scheduledMaintenance_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
-        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "API", "OPERATIONAL");
+        StatusComponent component = newComponent(id, newApp(UUID.randomUUID(), OPERATIONAL), "API", OPERATIONAL);
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusIncidentComponentRepository.countByComponentId(id)).thenReturn(0L);
         when(statusMaintenanceComponentRepository.countByComponentId(id)).thenReturn(3L);
@@ -309,13 +386,16 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that reordering components applies the requested position to each component and saves them all.
+     */
     @Test
     void reorderComponents_updatesPositionsForEach() {
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusComponent c1 = newComponent(id1, app, "A", "OPERATIONAL");
-        StatusComponent c2 = newComponent(id2, app, "B", "OPERATIONAL");
+        StatusApp app = newApp(UUID.randomUUID(), OPERATIONAL);
+        StatusComponent c1 = newComponent(id1, app, "A", OPERATIONAL);
+        StatusComponent c2 = newComponent(id2, app, "B", OPERATIONAL);
 
         ComponentOrderRequest o1 = new ComponentOrderRequest();
         o1.setComponentId(id1);
@@ -335,6 +415,9 @@ class StatusComponentServiceTest {
         verify(statusComponentRepository, times(2)).save(any(StatusComponent.class));
     }
 
+    /**
+     * Verifies that reordering fails with {@link ResourceNotFoundException} when a referenced component id does not exist.
+     */
     @Test
     void reorderComponents_componentNotFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -347,10 +430,14 @@ class StatusComponentServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that creating a component without optional fields applies the expected defaults:
+     * OPERATIONAL status and check-inheritance from the app enabled.
+     */
     @Test
     void createComponent_defaultsAppliedForOptionalFields() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "OPERATIONAL");
+        StatusApp app = newApp(appId, OPERATIONAL);
         StatusComponentRequest request = new StatusComponentRequest();
         request.setAppId(appId);
         request.setName("Cache");
@@ -364,7 +451,7 @@ class StatusComponentServiceTest {
         statusComponentService.createComponent(request);
 
         verify(statusComponentRepository).save(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(captor.getValue().getStatus()).isEqualTo(OPERATIONAL);
         assertThat(captor.getValue().getCheckInheritFromApp()).isTrue();
     }
 }

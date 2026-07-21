@@ -68,6 +68,13 @@ public class LogIngestionService {
                 .orElseThrow(() -> new RuntimeException("Invalid or inactive API key"));
     }
 
+    /**
+     * Computes the lowercase hexadecimal SHA-256 hash of the given input.
+     *
+     * @param input the string to hash
+     * @return the hex-encoded SHA-256 digest
+     * @throws org.automatize.status.exceptions.HashingException if the SHA-256 algorithm is unavailable
+     */
     private String sha256Hex(String input) {
         try {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
@@ -94,12 +101,14 @@ public class LogIngestionService {
     public Log ingest(UUID tenantId, ZonedDateTime timestamp, String level, String service,
                       String message, String metadata, String traceId, String requestId) {
         List<DropRule> activeRules = dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc();
+        // Skip storage entirely when an active drop rule matches this entry
         if (isDropped(activeRules, level, service, message)) {
             logger.debug("Log dropped by drop rule: level={}, service={}", level, service);
             return null;
         }
 
         Log log = new Log();
+        // Attach the tenant only when a tenant id was supplied
         if (tenantId != null) {
             tenantRepository.findById(tenantId).ifPresent(log::setTenant);
         }
@@ -135,10 +144,13 @@ public class LogIngestionService {
                         .collect(Collectors.toMap(Tenant::getId, t -> t));
 
         for (LogEntry entry : entries) {
+            // Only build and queue the log when no active drop rule matches
             if (!isDropped(activeRules, entry.level(), entry.service(), entry.message())) {
                 Log log = new Log();
+                // Attach the tenant only when the entry specifies a tenant id
                 if (entry.tenantId() != null) {
                     Tenant tenant = tenantMap.get(entry.tenantId());
+                    // Guard against tenant ids that did not resolve to a loaded entity
                     if (tenant != null) {
                         log.setTenant(tenant);
                     }
@@ -201,8 +213,18 @@ public class LogIngestionService {
     // Private helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Determines whether a log entry should be dropped based on the active rules.
+     *
+     * @param rules   the active drop rules to evaluate
+     * @param level   the log level of the entry
+     * @param service the service that produced the entry
+     * @param message the log message
+     * @return true if any rule matches the entry, false otherwise
+     */
     private boolean isDropped(List<DropRule> rules, String level, String service, String message) {
         for (DropRule rule : rules) {
+            // A single matching rule is enough to drop the entry
             if (matchesRule(rule, level, service, message)) {
                 return true;
             }
@@ -210,13 +232,27 @@ public class LogIngestionService {
         return false;
     }
 
+    /**
+     * Evaluates a single drop rule against a log entry. A rule matches only when
+     * every one of its non-null criteria (level, service, message pattern) is
+     * satisfied by the entry.
+     *
+     * @param rule    the drop rule to evaluate
+     * @param level   the log level of the entry
+     * @param service the service that produced the entry
+     * @param message the log message
+     * @return true if the rule matches the entry, false otherwise
+     */
     private boolean matchesRule(DropRule rule, String level, String service, String message) {
+        // Reject when the rule constrains level and the entry level differs
         if (rule.getLevel() != null && !rule.getLevel().equalsIgnoreCase(level)) {
             return false;
         }
+        // Reject when the rule constrains service and the entry service differs
         if (rule.getService() != null && !rule.getService().equalsIgnoreCase(service)) {
             return false;
         }
+        // Reject when the rule has a message pattern the entry message does not contain
         if (rule.getMessagePattern() != null && message != null &&
                 !message.toLowerCase().contains(rule.getMessagePattern().toLowerCase())) {
             return false;

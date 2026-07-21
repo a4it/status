@@ -351,6 +351,10 @@ class ProcessMiningRetentionServiceTest {
         verify(entityManager, never()).createQuery(anyString());
     }
 
+    /**
+     * Verifies that a tenant-only rule deletes data scoped by tenant and never resolves services
+     * by platform.
+     */
     @Test
     void runRetentionNow_tenantOnlyRule_deletesByTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -371,6 +375,10 @@ class ProcessMiningRetentionServiceTest {
         verify(statusAppRepository, never()).findByPlatformId(any());
     }
 
+    /**
+     * Verifies that a rule scoped to neither platform nor tenant deletes nothing, issues no delete
+     * query, yet still saves the rule to record the run.
+     */
     @Test
     void runRetentionNow_ruleWithNeitherPlatformNorTenant_deletesNothing() {
         ProcessMiningRetentionRule r = rule(UUID.randomUUID(), 30);
@@ -384,6 +392,9 @@ class ProcessMiningRetentionServiceTest {
         verify(retentionRuleRepository).save(r);
     }
 
+    /**
+     * Verifies that running retention with no enabled rules returns zero totals and empty details.
+     */
     @Test
     void runRetentionNow_noRules_returnsZeroTotals() {
         when(retentionRuleRepository.findByEnabledTrue()).thenReturn(List.of());
@@ -397,6 +408,10 @@ class ProcessMiningRetentionServiceTest {
 
     // ── scheduledRun ──────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that the scheduled entry point delegates to the retention run logic by querying
+     * enabled rules.
+     */
     @Test
     void scheduledRun_delegatesToRunRetentionNow() {
         when(retentionRuleRepository.findByEnabledTrue()).thenReturn(List.of());

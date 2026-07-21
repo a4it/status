@@ -52,11 +52,21 @@ class UptimeHistoryServiceTest {
     @InjectMocks
     private UptimeHistoryService uptimeHistoryService;
 
+    /**
+     * Enables the service before each test by setting its {@code enabled} flag to true
+     * via reflection, since it is normally driven by configuration.
+     */
     @BeforeEach
     void enableService() {
         ReflectionTestUtils.setField(uptimeHistoryService, "enabled", true);
     }
 
+    /**
+     * Builds a {@link StatusApp} test fixture with the given identifier.
+     *
+     * @param id the app identifier to assign
+     * @return a populated {@link StatusApp} instance for use in tests
+     */
     private StatusApp newApp(UUID id) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -64,6 +74,14 @@ class UptimeHistoryServiceTest {
         return app;
     }
 
+    /**
+     * Builds a {@link StatusIncident} that fully spans the given date, starting the day
+     * before and resolving two days after, with the supplied severity.
+     *
+     * @param date     the date the incident should cover
+     * @param severity the severity value to assign
+     * @return a populated {@link StatusIncident} instance for use in tests
+     */
     private StatusIncident incidentSpanningDate(LocalDate date, String severity) {
         StatusIncident incident = new StatusIncident();
         incident.setId(UUID.randomUUID());
@@ -73,6 +91,10 @@ class UptimeHistoryServiceTest {
         return incident;
     }
 
+    /**
+     * Verifies that {@code calculateDailyUptime} performs no work when the service is
+     * disabled, never touching the app repository.
+     */
     @Test
     void calculateDailyUptime_disabled_doesNothing() {
         ReflectionTestUtils.setField(uptimeHistoryService, "enabled", false);
@@ -82,6 +104,10 @@ class UptimeHistoryServiceTest {
         verify(statusAppRepository, never()).findAll();
     }
 
+    /**
+     * Verifies that {@code calculateDailyUptime} processes each app and persists an
+     * uptime history record when the service is enabled.
+     */
     @Test
     void calculateDailyUptime_enabled_processesApps() {
         UUID appId = UUID.randomUUID();
@@ -95,6 +121,10 @@ class UptimeHistoryServiceTest {
         verify(statusUptimeHistoryRepository).save(any(StatusUptimeHistory.class));
     }
 
+    /**
+     * Verifies that {@code calculateUptimeForDate} records an OPERATIONAL status with
+     * zero outage minutes and 100% uptime when there are no incidents on the date.
+     */
     @Test
     void calculateUptimeForDate_noIncidents_savesOperationalFullUptime() {
         UUID appId = UUID.randomUUID();
@@ -114,6 +144,10 @@ class UptimeHistoryServiceTest {
         assertThat(record.getUptimePercentage().doubleValue()).isEqualTo(100.0);
     }
 
+    /**
+     * Verifies that {@code calculateUptimeForDate} records a MAJOR_OUTAGE status with
+     * positive outage minutes when a critical incident spans the date.
+     */
     @Test
     void calculateUptimeForDate_severeIncident_savesMajorOutage() {
         UUID appId = UUID.randomUUID();
@@ -133,6 +167,10 @@ class UptimeHistoryServiceTest {
         assertThat(record.getOutageMinutes()).isPositive();
     }
 
+    /**
+     * Verifies that {@code calculateUptimeForDate} records a DEGRADED status with
+     * positive degraded minutes and zero outage minutes when a minor incident spans the date.
+     */
     @Test
     void calculateUptimeForDate_minorIncident_savesDegraded() {
         UUID appId = UUID.randomUUID();
@@ -153,6 +191,10 @@ class UptimeHistoryServiceTest {
         assertThat(record.getOutageMinutes()).isZero();
     }
 
+    /**
+     * Verifies that {@code calculateUptimeForDate} persists two uptime history records
+     * (one for the app and one for its component) when the app has a component.
+     */
     @Test
     void calculateUptimeForDate_withComponent_savesAppAndComponentRecords() {
         UUID appId = UUID.randomUUID();
@@ -174,6 +216,10 @@ class UptimeHistoryServiceTest {
         verify(statusUptimeHistoryRepository, times(2)).save(any(StatusUptimeHistory.class));
     }
 
+    /**
+     * Verifies that {@code backfillUptimeHistory} processes the requested number of days,
+     * returning that count and invoking app processing once per day.
+     */
     @Test
     void backfillUptimeHistory_processesRequestedNumberOfDays() {
         when(statusAppRepository.findAll()).thenReturn(List.of());

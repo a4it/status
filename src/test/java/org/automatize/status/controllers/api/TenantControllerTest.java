@@ -36,6 +36,13 @@ class TenantControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private TenantService tenantService;
 
+    /**
+     * Builds a minimal active {@link Tenant} fixture for use in stubbed service
+     * responses.
+     *
+     * @param id the identifier to assign to the tenant
+     * @return a populated sample {@link Tenant}
+     */
     private Tenant sampleTenant(UUID id) {
         Tenant t = new Tenant();
         t.setId(id);
@@ -44,6 +51,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
         return t;
     }
 
+    /**
+     * Verifies that GET {@code /api/tenants} returns 200 with a paged JSON body
+     * whose content is populated from the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getAllTenants_returnsOkPage() throws Exception {
         when(tenantService.getAllTenants(any(), any()))
@@ -54,6 +67,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.content[0].name").value("Globex"));
     }
 
+    /**
+     * Verifies that GET {@code /api/tenants/{id}} returns 200 with the tenant
+     * when the service resolves it.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getTenantById_found_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -64,6 +83,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Globex"));
     }
 
+    /**
+     * Verifies that GET {@code /api/tenants/{id}} returns 404 when the service
+     * raises {@link ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getTenantById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -74,6 +99,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies that POST {@code /api/tenants} with a valid body returns 201 and
+     * the created tenant.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createTenant_valid_returns201() throws Exception {
         when(tenantService.createTenant(any())).thenReturn(sampleTenant(UUID.randomUUID()));
@@ -84,6 +115,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Globex"));
     }
 
+    /**
+     * Verifies that POST {@code /api/tenants} with a body missing the required
+     * name fails bean validation and returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createTenant_missingName_returns400() throws Exception {
         String body = "{}";
@@ -91,6 +128,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that POST {@code /api/tenants} returns 409 when the service
+     * raises {@link DuplicateResourceException} for an existing tenant name.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void createTenant_duplicate_returns409() throws Exception {
         when(tenantService.createTenant(any()))
@@ -101,6 +144,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isConflict());
     }
 
+    /**
+     * Verifies that PUT {@code /api/tenants/{id}} with a valid body returns 200
+     * and the updated tenant.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateTenant_valid_returns200() throws Exception {
         UUID id = UUID.randomUUID();
@@ -112,6 +161,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Globex"));
     }
 
+    /**
+     * Verifies that PUT {@code /api/tenants/{id}} with a body missing the
+     * required name fails bean validation and returns 400.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void updateTenant_missingName_returns400() throws Exception {
         UUID id = UUID.randomUUID();
@@ -120,6 +175,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that DELETE {@code /api/tenants/{id}} returns 200 with a success
+     * message and delegates deletion to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void deleteTenant_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
@@ -131,6 +192,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
         verify(tenantService).deleteTenant(id);
     }
 
+    /**
+     * Verifies that GET {@code /api/tenants/name/{name}} returns 200 with the
+     * tenant when the service resolves it by name.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getTenantByName_found_returns200() throws Exception {
         when(tenantService.getTenantByName("Globex")).thenReturn(sampleTenant(UUID.randomUUID()));
@@ -140,6 +207,12 @@ class TenantControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Globex"));
     }
 
+    /**
+     * Verifies that GET {@code /api/tenants/name/{name}} returns 404 when the
+     * service raises {@link ResourceNotFoundException} for an unknown name.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void getTenantByName_notFound_returns404() throws Exception {
         when(tenantService.getTenantByName("Missing"))

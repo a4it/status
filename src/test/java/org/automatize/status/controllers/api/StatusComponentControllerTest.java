@@ -38,6 +38,12 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private StatusComponentService statusComponentService;
 
+    /**
+     * Builds a sample {@link StatusComponentResponse} for stubbing service returns.
+     *
+     * @param id the identifier to assign to the response
+     * @return a sample component response with representative field values
+     */
     private StatusComponentResponse sampleResponse(UUID id) {
         StatusComponentResponse r = new StatusComponentResponse();
         r.setId(id);
@@ -47,6 +53,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/components returns 200 OK with a paged JSON body of components.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getAllComponents_returnsOkPage() throws Exception {
         when(statusComponentService.getAllComponents(any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
@@ -57,6 +68,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/components/{id} returns 200 OK with the component when it exists.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getComponentById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusComponentService.getComponentById(id)).thenReturn(sampleResponse(id));
@@ -67,6 +83,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/components/{id} maps {@link ResourceNotFoundException} to 404 Not Found.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getComponentById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusComponentService.getComponentById(id))
@@ -77,6 +98,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/components with a valid body returns 201 Created and echoes the component.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createComponent_valid_returns201() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusComponentService.createComponent(any())).thenReturn(sampleResponse(id));
@@ -88,6 +114,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/components with a missing name fails bean validation with 400 Bad Request.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createComponent_missingName_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\"}";
         mockMvc.perform(post("/api/components").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -95,6 +126,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/components maps {@link DuplicateResourceException} to 409 Conflict.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createComponent_duplicate_returns409() throws Exception {
         when(statusComponentService.createComponent(any()))
                 .thenThrow(new DuplicateResourceException("Component with name already exists in this app: API"));
@@ -105,6 +141,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies DELETE /api/components/{id} returns 200 OK with a success message and delegates to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void deleteComponent_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -116,6 +157,11 @@ class StatusComponentControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies DELETE /api/components/{id} maps {@link BusinessRuleException} for active incidents to 409 Conflict.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void deleteComponent_hasActiveIncidents_returns409() throws Exception {
         UUID id = UUID.randomUUID();
         doThrow(new BusinessRuleException("Cannot delete component with active incidents"))

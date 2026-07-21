@@ -36,6 +36,13 @@ class LogControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private LogApiKeyService logApiKeyService;
 
+    /**
+     * Builds a sample {@link Log} entity populated with representative field values
+     * for use as service-mock return data.
+     *
+     * @param id the identifier to assign to the log
+     * @return a fully populated {@link Log} instance
+     */
     private Log sampleLog(UUID id) {
         Log log = new Log();
         log.setId(id);
@@ -48,6 +55,12 @@ class LogControllerTest extends AbstractApiControllerTest {
 
     // ─── POST /api/logs ────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that a well-formed log with a valid {@code X-Log-Api-Key} header is
+     * ingested and returns {@code 201 Created} with the persisted log's fields in the body.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_validWithApiKey_returns201() throws Exception {
         when(logIngestionService.validateApiKey("k")).thenReturn(new LogApiKey());
@@ -63,6 +76,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.service").value("orders"));
     }
 
+    /**
+     * Verifies that when the ingestion service drops the log (returns {@code null}),
+     * the endpoint responds {@code 200 OK} with {@code success=true} rather than 201.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_droppedByRule_returnsOkMessage() throws Exception {
         when(logIngestionService.validateApiKey("k")).thenReturn(new LogApiKey());
@@ -77,6 +96,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    /**
+     * Verifies that an ingestion request lacking the {@code X-Log-Api-Key} header is
+     * rejected with {@code 401 Unauthorized} and {@code success=false}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_missingApiKeyHeader_returns401() throws Exception {
         String body = "{\"level\":\"INFO\",\"service\":\"orders\",\"message\":\"order placed\"}";
@@ -86,6 +111,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies that when API key validation throws (invalid or inactive key), the
+     * endpoint returns {@code 401 Unauthorized} with {@code success=false}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_invalidApiKey_returns401() throws Exception {
         when(logIngestionService.validateApiKey("bad"))
@@ -99,6 +130,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies that a request body omitting the required {@code level} field fails
+     * bean validation and returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_missingLevel_returns400() throws Exception {
         String body = "{\"service\":\"orders\",\"message\":\"order placed\"}";
@@ -108,6 +145,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that a request body carrying an unsupported {@code level} value
+     * (e.g. {@code TRACE}) fails validation and returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingest_invalidLevelValue_returns400() throws Exception {
         String body = "{\"level\":\"TRACE\",\"service\":\"orders\",\"message\":\"order placed\"}";
@@ -119,6 +162,12 @@ class LogControllerTest extends AbstractApiControllerTest {
 
     // ─── POST /api/logs/batch ──────────────────────────────────────────────────
 
+    /**
+     * Verifies that a valid batch of logs with a valid API key returns {@code 201 Created}
+     * reporting the number of stored logs and {@code success=true}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingestBatch_validWithApiKey_returns201() throws Exception {
         when(logIngestionService.validateApiKey("k")).thenReturn(new LogApiKey());
@@ -133,6 +182,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    /**
+     * Verifies that a batch ingestion request without the {@code X-Log-Api-Key} header
+     * is rejected with {@code 401 Unauthorized}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingestBatch_missingApiKeyHeader_returns401() throws Exception {
         String body = "{\"logs\":[{\"level\":\"ERROR\",\"service\":\"orders\",\"message\":\"boom\"}]}";
@@ -141,6 +196,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * Verifies that a batch request with an empty {@code logs} array fails validation
+     * and returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void ingestBatch_emptyLogs_returns400() throws Exception {
         String body = "{\"logs\":[]}";
@@ -152,6 +213,12 @@ class LogControllerTest extends AbstractApiControllerTest {
 
     // ─── GET endpoints ─────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that {@code GET /api/logs} returns {@code 200 OK} with a paged result
+     * whose first entry reflects the mocked log's service.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getLogs_returnsOkPage() throws Exception {
         when(logIngestionService.searchLogs(any(), any(), any(), any(), any(), any(), any()))
@@ -162,6 +229,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.content[0].service").value("orders"));
     }
 
+    /**
+     * Verifies that {@code GET /api/logs/{id}} for an existing log returns
+     * {@code 200 OK} with the log's fields in the body.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -172,6 +245,11 @@ class LogControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.level").value("INFO"));
     }
 
+    /**
+     * Verifies that when the service throws a plain {@link RuntimeException} for an
+     * unknown id (no {@code @ResponseStatus} mapping), the exception propagates out of
+     * {@code perform()} rather than being resolved to an HTTP status.
+     */
     @Test
     void getById_notFound_propagates() {
         UUID id = UUID.randomUUID();
@@ -183,6 +261,12 @@ class LogControllerTest extends AbstractApiControllerTest {
                 () -> mockMvc.perform(get("/api/logs/{id}", id)));
     }
 
+    /**
+     * Verifies that {@code GET /api/logs/services} returns {@code 200 OK} with the
+     * distinct service names supplied by the service.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getServices_returnsOk() throws Exception {
         when(logIngestionService.getDistinctServices()).thenReturn(List.of("orders", "billing"));

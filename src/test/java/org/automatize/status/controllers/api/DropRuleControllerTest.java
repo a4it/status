@@ -31,6 +31,14 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private DropRuleService dropRuleService;
 
+    /**
+     * Builds a fully populated sample {@link DropRule} for use as service stub
+     * output, with fixed level, service, message pattern, and active flag.
+     *
+     * @param id   the identifier to assign to the rule
+     * @param name the name to assign to the rule
+     * @return a populated {@link DropRule} instance
+     */
     private DropRule sampleRule(UUID id, String name) {
         DropRule r = new DropRule();
         r.setId(id);
@@ -42,6 +50,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies that listing drop rules returns {@code 200 OK} with the rules
+     * from the mocked service serialized into the JSON array.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void findAll_returnsOk() throws Exception {
         when(dropRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID(), "drop-debug")));
@@ -51,6 +65,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("drop-debug"));
     }
 
+    /**
+     * Verifies that fetching an existing drop rule by id returns {@code 200 OK}
+     * with the rule's fields (e.g. {@code level}) in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void findById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -61,6 +81,11 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.level").value("DEBUG"));
     }
 
+    /**
+     * Verifies that when the service throws a plain {@link RuntimeException} for a
+     * missing rule, the exception propagates out of {@code perform()} (there is no
+     * {@code @ResponseStatus} or resolver to map it to an HTTP status).
+     */
     @Test
     void findById_notFound_propagates() {
         UUID id = UUID.randomUUID();
@@ -72,6 +97,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 () -> mockMvc.perform(get("/api/drop-rules/{id}", id)));
     }
 
+    /**
+     * Verifies that creating a valid drop rule returns {@code 201 Created} with
+     * the created rule's {@code name} in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void create_valid_returns201() throws Exception {
         DropRule rule = sampleRule(UUID.randomUUID(), "drop-debug");
@@ -84,6 +115,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("drop-debug"));
     }
 
+    /**
+     * Verifies that creating a drop rule without the required {@code name} field
+     * fails validation and returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void create_missingName_returns400() throws Exception {
         String body = "{\"level\":\"DEBUG\"}";
@@ -92,6 +129,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that updating a drop rule returns {@code 200 OK} with the updated
+     * {@code name} reflected in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void update_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -105,6 +148,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("drop-debug-updated"));
     }
 
+    /**
+     * Verifies that toggling a drop rule's active state returns {@code 200 OK}
+     * with the new {@code isActive} value in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void toggle_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -117,6 +166,13 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.isActive").value(false));
     }
 
+    /**
+     * Verifies that deleting a drop rule returns {@code 200 OK} with
+     * {@code success=true} and that the service's {@code delete} method is invoked
+     * with the requested id.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void delete_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();

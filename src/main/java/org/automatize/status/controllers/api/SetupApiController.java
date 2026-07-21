@@ -17,6 +17,28 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * <p>
+ * REST API controller for the first-run application setup wizard.
+ * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Report setup completion status</li>
+ *   <li>Test the database connection during setup</li>
+ *   <li>Create the initial tenant, organization, and admin account</li>
+ *   <li>Read and persist grouped configuration properties</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Base route: {@code /api/setup}. These endpoints are intended to be used before
+ * setup is complete; mutating operations reject requests once setup has finished.
+ * </p>
+ *
+ * @see SetupService
+ */
 @RestController
 @RequestMapping("/api/setup")
 public class SetupApiController {
@@ -28,13 +50,32 @@ public class SetupApiController {
     @Autowired
     private SetupService setupService;
 
+    /**
+     * Returns the current setup status of the application.
+     * <p>
+     * HTTP GET {@code /api/setup/status}
+     * </p>
+     *
+     * @return ResponseEntity containing the setup status
+     */
     @GetMapping("/status")
     public ResponseEntity<SetupStatusResponse> getStatus() {
         return ResponseEntity.ok(setupService.getStatus());
     }
 
+    /**
+     * Tests the supplied database connection details during setup.
+     * <p>
+     * HTTP POST {@code /api/setup/test-connection}
+     * </p>
+     *
+     * @param request the validated connection test request
+     * @return ResponseEntity with the connection result, HTTP 403 if setup is already
+     *         complete, or HTTP 400 if the connection failed
+     */
     @PostMapping("/test-connection")
     public ResponseEntity<MessageResponse> testConnection(@Valid @RequestBody SetupTestConnectionRequest request) {
+        // Reject the operation when setup has already been completed
         if (setupService.isSetupAlreadyComplete()) {
             return ResponseEntity.status(403).body(new MessageResponse(SETUP_ALREADY_COMPLETE, false));
         }
@@ -44,8 +85,19 @@ public class SetupApiController {
                 : ResponseEntity.badRequest().body(result);
     }
 
+    /**
+     * Creates the initial tenant during setup.
+     * <p>
+     * HTTP POST {@code /api/setup/tenant}
+     * </p>
+     *
+     * @param request the validated tenant creation request
+     * @return ResponseEntity containing the created tenant, HTTP 403 if setup is already
+     *         complete, or HTTP 400 with an error message on failure
+     */
     @PostMapping("/tenant")
     public ResponseEntity<?> createTenant(@Valid @RequestBody SetupTenantRequest request) {
+        // Reject the operation when setup has already been completed
         if (setupService.isSetupAlreadyComplete()) {
             return ResponseEntity.status(403).body(new MessageResponse(SETUP_ALREADY_COMPLETE, false));
         }
@@ -58,8 +110,19 @@ public class SetupApiController {
         }
     }
 
+    /**
+     * Creates the initial organization during setup.
+     * <p>
+     * HTTP POST {@code /api/setup/organization}
+     * </p>
+     *
+     * @param request the validated organization creation request
+     * @return ResponseEntity containing the created organization, HTTP 403 if setup is
+     *         already complete, or HTTP 400 with an error message on failure
+     */
     @PostMapping("/organization")
     public ResponseEntity<?> createOrganization(@Valid @RequestBody SetupOrganizationRequest request) {
+        // Reject the operation when setup has already been completed
         if (setupService.isSetupAlreadyComplete()) {
             return ResponseEntity.status(403).body(new MessageResponse(SETUP_ALREADY_COMPLETE, false));
         }
@@ -72,13 +135,25 @@ public class SetupApiController {
         }
     }
 
+    /**
+     * Creates the initial administrator account and marks setup as complete.
+     * <p>
+     * HTTP POST {@code /api/setup/admin}
+     * </p>
+     *
+     * @param request the validated admin creation request
+     * @return ResponseEntity confirming completion, HTTP 403 if setup is already complete,
+     *         or HTTP 400 with an error message on failure
+     */
     @PostMapping("/admin")
     public ResponseEntity<MessageResponse> createAdmin(@Valid @RequestBody SetupAdminRequest request) {
+        // Reject the operation when setup has already been completed
         if (setupService.isSetupAlreadyComplete()) {
             return ResponseEntity.status(403).body(new MessageResponse(SETUP_ALREADY_COMPLETE, false));
         }
         try {
             MessageResponse result = setupService.createAdmin(request);
+            // Abort and surface the error when admin creation did not succeed
             if (!result.isSuccess()) {
                 return ResponseEntity.badRequest().body(result);
             }
@@ -90,6 +165,15 @@ public class SetupApiController {
         }
     }
 
+    /**
+     * Retrieves configurable application properties grouped by category.
+     * <p>
+     * HTTP GET {@code /api/setup/properties}
+     * </p>
+     *
+     * @return ResponseEntity containing grouped property entries, or HTTP 400 with an
+     *         error message on failure
+     */
     @GetMapping("/properties")
     public ResponseEntity<?> getProperties() {
         try {
@@ -101,6 +185,16 @@ public class SetupApiController {
         }
     }
 
+    /**
+     * Persists updated application configuration properties.
+     * <p>
+     * HTTP POST {@code /api/setup/properties}
+     * </p>
+     *
+     * @param request the properties to save
+     * @return ResponseEntity with a success message, or HTTP 400 with an error message
+     *         on failure
+     */
     @PostMapping("/properties")
     public ResponseEntity<MessageResponse> saveProperties(@RequestBody SetupPropertiesRequest request) {
         try {

@@ -28,6 +28,12 @@ class LogMetricControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private LogMetricService logMetricService;
 
+    /**
+     * Builds a sample {@link LogMetric} entity populated with representative field
+     * values for use as service-mock return data.
+     *
+     * @return a fully populated {@link LogMetric} instance
+     */
     private LogMetric sampleMetric() {
         LogMetric m = new LogMetric();
         m.setId(UUID.randomUUID());
@@ -39,6 +45,12 @@ class LogMetricControllerTest extends AbstractApiControllerTest {
         return m;
     }
 
+    /**
+     * Verifies that {@code GET /api/log-metrics} without a {@code tenantId} param returns
+     * {@code 200 OK} and delegates to {@link LogMetricService#findSince}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getMetrics_noTenant_returnsOk() throws Exception {
         when(logMetricService.findSince(any())).thenReturn(List.of(sampleMetric()));
@@ -51,6 +63,12 @@ class LogMetricControllerTest extends AbstractApiControllerTest {
         verify(logMetricService).findSince(any());
     }
 
+    /**
+     * Verifies that supplying a {@code tenantId} param returns {@code 200 OK} and routes
+     * the call to the tenant-scoped {@link LogMetricService#findByTenantSince}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getMetrics_withTenant_usesTenantScopedQuery() throws Exception {
         UUID tenantId = UUID.randomUUID();

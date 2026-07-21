@@ -41,6 +41,11 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private StatusComponentRepository statusComponentRepository;
 
+    /**
+     * Stubs the mocked {@link HealthCheckSettingsService} with default values
+     * (enabled, scheduler interval, thread pool size, default interval/timeout)
+     * shared by the settings-related tests.
+     */
     private void stubSettings() {
         when(settingsService.isEnabled()).thenReturn(true);
         when(settingsService.getSchedulerIntervalMs()).thenReturn(10000L);
@@ -49,6 +54,13 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
         when(settingsService.getDefaultTimeoutSeconds()).thenReturn(10);
     }
 
+    /**
+     * Verifies that fetching health-check settings returns {@code 200 OK} with the
+     * stubbed {@code enabled}, {@code schedulerIntervalMs}, and
+     * {@code threadPoolSize} values in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void getSettings_returnsOk() throws Exception {
         stubSettings();
@@ -60,6 +72,12 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.threadPoolSize").value(10));
     }
 
+    /**
+     * Verifies that updating health-check settings returns {@code 200 OK} with the
+     * resulting {@code enabled} flag in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void updateSettings_returnsOk() throws Exception {
         stubSettings();
@@ -71,6 +89,12 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
+    /**
+     * Verifies that requesting health-check status with no matching entities
+     * returns {@code 200 OK} with an empty JSON array.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void getHealthCheckStatus_returnsOkArray() throws Exception {
         when(statusAppRepository.findAll()).thenReturn(List.of());
@@ -82,6 +106,13 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    /**
+     * Verifies that requesting health-check status with {@code platformId},
+     * {@code status}, and {@code checkEnabled} query parameters returns
+     * {@code 200 OK} with a JSON array.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void getHealthCheckStatus_withFilters_returnsOk() throws Exception {
         when(statusAppRepository.findAll()).thenReturn(List.of());
@@ -95,6 +126,12 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$").isArray());
     }
 
+    /**
+     * Verifies that triggering all health checks returns {@code 200 OK} with
+     * {@code success=true} and a message reporting the number of triggered entities.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void triggerAllChecks_returnsOk() throws Exception {
         when(healthCheckScheduler.triggerAllChecks()).thenReturn(3);
@@ -105,6 +142,13 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.message").value("Triggered health checks for 3 entities"));
     }
 
+    /**
+     * Verifies that triggering an app health check returns {@code 200 OK} with the
+     * {@link HealthCheckTriggerResponse} fields ({@code success}, {@code durationMs})
+     * in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void triggerAppCheck_returnsOk() throws Exception {
         when(healthCheckScheduler.triggerAppCheck(any()))
@@ -116,6 +160,13 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.durationMs").value(5));
     }
 
+    /**
+     * Verifies that triggering a component health check returns {@code 200 OK} and
+     * surfaces an unsuccessful {@link HealthCheckTriggerResponse} with
+     * {@code success=false} in the JSON body.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void triggerComponentCheck_returnsOk() throws Exception {
         when(healthCheckScheduler.triggerComponentCheck(any()))

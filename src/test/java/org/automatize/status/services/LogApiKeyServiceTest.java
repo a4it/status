@@ -25,6 +25,12 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link LogApiKeyService} — key generation, SHA-256 hashing,
  * prefix display, activation toggling and CRUD lookups.
+ *
+ * <p>Testing approach: the service is exercised in isolation using Mockito. The
+ * {@link LogApiKeyRepository} and {@link TenantRepository} collaborators are
+ * {@code @Mock}s injected via {@code @InjectMocks}, and repository {@code save}
+ * calls are stubbed to echo their argument so the service's in-memory mutations
+ * can be asserted directly.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class LogApiKeyServiceTest {
@@ -40,6 +46,10 @@ class LogApiKeyServiceTest {
 
     // ── findAll / findById ────────────────────────────────────────────────────
 
+    /**
+     * Verifies that {@link LogApiKeyService#findAll()} returns exactly the list
+     * supplied by the repository's ordered-by-creation query.
+     */
     @Test
     void findAll_returnsRepositoryOrderedList() {
         LogApiKey k = new LogApiKey();
@@ -48,6 +58,10 @@ class LogApiKeyServiceTest {
         assertThat(service.findAll()).containsExactly(k);
     }
 
+    /**
+     * Verifies that {@link LogApiKeyService#findById(UUID)} returns the key when the
+     * repository finds a matching record.
+     */
     @Test
     void findById_present_returnsKey() {
         UUID id = UUID.randomUUID();
@@ -57,6 +71,10 @@ class LogApiKeyServiceTest {
         assertThat(service.findById(id)).isSameAs(k);
     }
 
+    /**
+     * Verifies that {@link LogApiKeyService#findById(UUID)} throws a
+     * {@link RuntimeException} mentioning "Log API key not found" when no record exists.
+     */
     @Test
     void findById_missing_throwsRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -69,6 +87,11 @@ class LogApiKeyServiceTest {
 
     // ── create ────────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that creating a key without a tenant generates an active key with a
+     * 64-char SHA-256 hash, an 8-char prefix matching the start of the raw key, exposes
+     * the raw key once, and never consults the tenant repository.
+     */
     @Test
     void create_noTenant_generatesHashedKeyAndPrefixAndExposesRawOnce() {
         when(logApiKeyRepository.save(any(LogApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -88,6 +111,10 @@ class LogApiKeyServiceTest {
         verify(tenantRepository, never()).findById(any());
     }
 
+    /**
+     * Verifies that creating a key with a tenant id resolves the tenant via the
+     * repository and attaches it to the new key.
+     */
     @Test
     void create_withTenant_attachesResolvedTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -101,6 +128,10 @@ class LogApiKeyServiceTest {
         assertThat(result.getTenant()).isSameAs(tenant);
     }
 
+    /**
+     * Verifies that successive create calls generate distinct raw keys and distinct
+     * hashes.
+     */
     @Test
     void create_generatesUniqueKeysAcrossInvocations() {
         when(logApiKeyRepository.save(any(LogApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -114,6 +145,9 @@ class LogApiKeyServiceTest {
 
     // ── toggleActive ──────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that toggling an active key flips it to inactive.
+     */
     @Test
     void toggleActive_activeKey_becomesInactive() {
         UUID id = UUID.randomUUID();
@@ -127,6 +161,10 @@ class LogApiKeyServiceTest {
         assertThat(result.getIsActive()).isFalse();
     }
 
+    /**
+     * Verifies that toggling a key whose active flag is null treats it as inactive and
+     * sets it to active.
+     */
     @Test
     void toggleActive_nullActive_becomesTrue() {
         UUID id = UUID.randomUUID();
@@ -142,6 +180,10 @@ class LogApiKeyServiceTest {
 
     // ── delete ────────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that deleting an existing key looks it up and delegates removal to the
+     * repository.
+     */
     @Test
     void delete_existingKey_delegatesToRepository() {
         UUID id = UUID.randomUUID();
@@ -153,6 +195,10 @@ class LogApiKeyServiceTest {
         verify(logApiKeyRepository).delete(k);
     }
 
+    /**
+     * Verifies that deleting a missing key throws a {@link RuntimeException} and never
+     * calls the repository's delete method.
+     */
     @Test
     void delete_missingKey_throwsRuntimeException() {
         UUID id = UUID.randomUUID();

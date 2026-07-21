@@ -37,6 +37,14 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link LogIngestionService}. Also exercises the drop-rule
  * matching logic (private helpers) through the public ingest / ingestBatch methods.
+ *
+ * <p>Testing approach: the service is tested in isolation with Mockito. Its
+ * repository collaborators ({@link LogRepository}, {@link LogApiKeyRepository},
+ * {@link DropRuleRepository}, {@link TenantRepository}) are {@code @Mock}s injected
+ * via {@code @InjectMocks}, {@code save}/{@code saveAll} calls are stubbed to echo
+ * their argument, and {@link ArgumentCaptor}s inspect the persisted entities. The
+ * {@code retentionDays} field is set through {@link ReflectionTestUtils} since it is
+ * normally supplied by configuration.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class LogIngestionServiceTest {
@@ -56,11 +64,23 @@ class LogIngestionServiceTest {
     @InjectMocks
     private LogIngestionService service;
 
+    /**
+     * Seeds the config-backed {@code retentionDays} field (default 30) before each test
+     * so purge/retention logic has a defined value.
+     */
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(service, "retentionDays", 30);
     }
 
+    /**
+     * Builds an active {@link DropRule} with the given match criteria.
+     *
+     * @param level          the level the rule matches, or {@code null} for any level
+     * @param svc            the service the rule matches, or {@code null} for any service
+     * @param messagePattern the substring the message must contain, or {@code null} for any message
+     * @return a new active drop rule configured with the supplied criteria
+     */
     private DropRule rule(String level, String svc, String messagePattern) {
         DropRule r = new DropRule();
         r.setLevel(level);
@@ -72,6 +92,10 @@ class LogIngestionServiceTest {
 
     // ── validateApiKey ────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that {@link LogIngestionService#validateApiKey(String)} returns the key
+     * when an active key with the matching hash exists.
+     */
     @Test
     void validateApiKey_activeKeyExists_returnsKey() {
         LogApiKey key = new LogApiKey();
@@ -84,6 +108,10 @@ class LogIngestionServiceTest {
         assertThat(result).isSameAs(key);
     }
 
+    /**
+     * Verifies that {@link LogIngestionService#validateApiKey(String)} throws a
+     * {@link RuntimeException} mentioning "Invalid or inactive" when no active key matches.
+     */
     @Test
     void validateApiKey_noMatch_throwsRuntimeException() {
         when(logApiKeyRepository.findByKeyHashAndIsActiveTrue(anyString()))
@@ -94,6 +122,10 @@ class LogIngestionServiceTest {
                 .hasMessageContaining("Invalid or inactive");
     }
 
+    /**
+     * Verifies that validating the same raw key twice produces an identical 64-char
+     * SHA-256 hex hash for the repository lookup, confirming deterministic hashing.
+     */
     @Test
     void validateApiKey_hashesInputConsistently_sameKeyProducesSameLookup() {
         when(logApiKeyRepository.findByKeyHashAndIsActiveTrue(anyString()))
@@ -113,6 +145,10 @@ class LogIngestionServiceTest {
 
     // ── ingest ────────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that when no drop rule matches, the log is persisted with its level
+     * upper-cased, its service preserved, and a non-null timestamp.
+     */
     @Test
     void ingest_noMatchingRule_persistsLogWithUppercasedLevel() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -129,6 +165,10 @@ class LogIngestionServiceTest {
         assertThat(captor.getValue().getLogTimestamp()).isNotNull();
     }
 
+    /**
+     * Verifies that a log matching an active drop rule (by level) is dropped: the
+     * method returns null and no save occurs.
+     */
     @Test
     void ingest_matchingRule_dropsLogAndReturnsNull() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -140,6 +180,10 @@ class LogIngestionServiceTest {
         verify(logRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that a log whose level differs from a level-scoped drop rule is not
+     * dropped and is persisted.
+     */
     @Test
     void ingest_ruleLevelDiffersFromEntry_notDropped() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -151,6 +195,10 @@ class LogIngestionServiceTest {
         assertThat(result).isNotNull();
     }
 
+    /**
+     * Verifies that a log whose message contains the rule's message pattern as a
+     * substring is dropped (returns null).
+     */
     @Test
     void ingest_ruleMessagePatternMatchesSubstring_dropped() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -161,6 +209,10 @@ class LogIngestionServiceTest {
         assertThat(result).isNull();
     }
 
+    /**
+     * Verifies that when a rule specifies a message pattern but the incoming message is
+     * null, the pattern guard is skipped so the rule still matches and the log is dropped.
+     */
     @Test
     void ingest_ruleMessagePatternButNullMessage_matchesAndDrops() {
         // messagePattern set, but incoming message null → the pattern guard is skipped, rule matches
@@ -172,6 +224,10 @@ class LogIngestionServiceTest {
         assertThat(result).isNull();
     }
 
+    /**
+     * Verifies that a log whose service differs from a service-scoped drop rule is not
+     * dropped and is persisted.
+     */
     @Test
     void ingest_ruleServiceMismatch_notDropped() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -183,6 +239,10 @@ class LogIngestionServiceTest {
         assertThat(result).isNotNull();
     }
 
+    /**
+     * Verifies that ingesting with a tenant id resolves the tenant via the repository
+     * and attaches it to the persisted log.
+     */
     @Test
     void ingest_withTenantId_attachesResolvedTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -202,6 +262,10 @@ class LogIngestionServiceTest {
 
     // ── ingestBatch ───────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that batch ingestion drops entries matching a rule and persists the rest,
+     * returning the kept count and saving only the surviving logs.
+     */
     @Test
     void ingestBatch_mixOfDroppedAndKept_returnsKeptCount() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -221,6 +285,10 @@ class LogIngestionServiceTest {
         assertThat(captor.getValue()).hasSize(2);
     }
 
+    /**
+     * Verifies that batch ingestion resolves tenants in a single bulk
+     * {@code findAllById} call (never per-entry {@code findById}) and attaches them.
+     */
     @Test
     void ingestBatch_preloadsTenantsOnce_attachesToMatchingEntries() {
         UUID tenantId = UUID.randomUUID();
@@ -242,6 +310,10 @@ class LogIngestionServiceTest {
         verify(tenantRepository, never()).findById(any());
     }
 
+    /**
+     * Verifies that when no entry carries a tenant id, batch ingestion skips the tenant
+     * lookup entirely while still persisting the logs.
+     */
     @Test
     void ingestBatch_noTenantIds_skipsTenantLookup() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
@@ -259,6 +331,10 @@ class LogIngestionServiceTest {
 
     // ── searchLogs / getById / getDistinctServices ────────────────────────────
 
+    /**
+     * Verifies that {@link LogIngestionService#searchLogs} delegates to the repository's
+     * search query and returns its page of results.
+     */
     @Test
     void searchLogs_delegatesToRepositoryWithUnsortedPageable() {
         Page<Log> page = new PageImpl<>(List.of(new Log()));
@@ -271,6 +347,10 @@ class LogIngestionServiceTest {
         verify(logRepository).searchLogs(any(), any(), any(), any(), any(), any(), any(Pageable.class));
     }
 
+    /**
+     * Verifies that {@link LogIngestionService#getById(UUID)} returns the log when the
+     * repository finds a matching record.
+     */
     @Test
     void getById_present_returnsLog() {
         UUID id = UUID.randomUUID();
@@ -280,6 +360,10 @@ class LogIngestionServiceTest {
         assertThat(service.getById(id)).isSameAs(log);
     }
 
+    /**
+     * Verifies that {@link LogIngestionService#getById(UUID)} throws a
+     * {@link RuntimeException} mentioning "Log not found" when no record exists.
+     */
     @Test
     void getById_missing_throwsRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -290,6 +374,10 @@ class LogIngestionServiceTest {
                 .hasMessageContaining("Log not found");
     }
 
+    /**
+     * Verifies that {@link LogIngestionService#getDistinctServices()} returns the
+     * repository's list of distinct service names.
+     */
     @Test
     void getDistinctServices_returnsRepositoryList() {
         when(logRepository.findDistinctServices()).thenReturn(List.of("a", "b"));
@@ -299,6 +387,10 @@ class LogIngestionServiceTest {
 
     // ── purgeOldLogs ──────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that {@link LogIngestionService#purgeOldLogs()} deletes logs using a
+     * cutoff derived from the configured {@code retentionDays} (here 7 days ago).
+     */
     @Test
     void purgeOldLogs_deletesUsingConfiguredCutoff() {
         ReflectionTestUtils.setField(service, "retentionDays", 7);

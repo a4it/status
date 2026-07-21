@@ -56,77 +56,170 @@ public class SchedulerProgramConfig {
     @Column(name = "run_as_user", length = 255)
     private String runAsUser;
 
+    /**
+     * Default constructor required by JPA.
+     */
     public SchedulerProgramConfig() {
     }
 
+    /**
+     * Gets the unique identifier of the program configuration.
+     *
+     * @return the UUID of the configuration
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Sets the unique identifier of the program configuration.
+     *
+     * @param id the UUID to set
+     */
     public void setId(UUID id) {
         this.id = id;
     }
 
+    /**
+     * Gets the job this configuration belongs to.
+     *
+     * @return the associated {@link SchedulerJob}
+     */
     public SchedulerJob getJob() {
         return job;
     }
 
+    /**
+     * Sets the job this configuration belongs to.
+     *
+     * @param job the {@link SchedulerJob} to associate
+     */
     public void setJob(SchedulerJob job) {
         this.job = job;
     }
 
+    /**
+     * Gets the command or executable path to run.
+     *
+     * @return the command
+     */
     public String getCommand() {
         return command;
     }
 
+    /**
+     * Sets the command or executable path to run.
+     *
+     * @param command the command to set
+     */
     public void setCommand(String command) {
         this.command = command;
     }
 
+    /**
+     * Gets the list of command-line arguments.
+     *
+     * @return the argument list
+     */
     public List<String> getArguments() {
         return arguments;
     }
 
+    /**
+     * Sets the list of command-line arguments.
+     *
+     * @param arguments the argument list to set
+     */
     public void setArguments(List<String> arguments) {
         this.arguments = arguments;
     }
 
+    /**
+     * Gets the working directory in which the command is executed.
+     *
+     * @return the working directory path
+     */
     public String getWorkingDirectory() {
         return workingDirectory;
     }
 
+    /**
+     * Sets the working directory in which the command is executed.
+     *
+     * @param workingDirectory the working directory path to set
+     */
     public void setWorkingDirectory(String workingDirectory) {
         this.workingDirectory = workingDirectory;
     }
 
+    /**
+     * Gets the environment variables passed to the process.
+     *
+     * @return the map of environment variable names to values
+     */
     public Map<String, String> getEnvironmentVars() {
         return environmentVars;
     }
 
+    /**
+     * Sets the environment variables passed to the process.
+     *
+     * @param environmentVars the map of environment variable names to values to set
+     */
     public void setEnvironmentVars(Map<String, String> environmentVars) {
         this.environmentVars = environmentVars;
     }
 
+    /**
+     * Indicates whether the command is wrapped in a shell invocation.
+     *
+     * @return {@code true} if shell-wrapped, {@code false} otherwise
+     */
     public Boolean getShellWrap() {
         return shellWrap;
     }
 
+    /**
+     * Sets whether the command is wrapped in a shell invocation.
+     *
+     * @param shellWrap the shell-wrap flag to set
+     */
     public void setShellWrap(Boolean shellWrap) {
         this.shellWrap = shellWrap;
     }
 
+    /**
+     * Gets the path to the shell used when shell-wrapping is enabled.
+     *
+     * @return the shell path
+     */
     public String getShellPath() {
         return shellPath;
     }
 
+    /**
+     * Sets the path to the shell used when shell-wrapping is enabled.
+     *
+     * @param shellPath the shell path to set
+     */
     public void setShellPath(String shellPath) {
         this.shellPath = shellPath;
     }
 
+    /**
+     * Gets the OS user the process should run as, if specified.
+     *
+     * @return the run-as user, or {@code null} to use the default
+     */
     public String getRunAsUser() {
         return runAsUser;
     }
 
+    /**
+     * Sets the OS user the process should run as.
+     *
+     * @param runAsUser the run-as user to set
+     */
     public void setRunAsUser(String runAsUser) {
         this.runAsUser = runAsUser;
     }

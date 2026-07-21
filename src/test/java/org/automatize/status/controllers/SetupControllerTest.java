@@ -20,6 +20,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"app.setup.completed=false"})
 class SetupControllerTest extends AbstractApiControllerTest {
 
+    /**
+     * Verifies that when {@code app.setup.completed=false}, {@code GET /setup}
+     * responds 200 OK, renders the {@code setup/wizard} view, and exposes the
+     * {@code applicationName} attribute.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void wizard_setupNotCompleted_returnsWizardView() throws Exception {
         mockMvc.perform(get("/setup"))
@@ -28,6 +35,13 @@ class SetupControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attributeExists("applicationName"));
     }
 
+    /**
+     * Verifies that the trailing-slash variant {@code GET /setup/} also responds
+     * 200 OK and renders the {@code setup/wizard} view when setup is not
+     * completed.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void wizard_setupNotCompleted_trailingSlash_returnsWizardView() throws Exception {
         mockMvc.perform(get("/setup/"))

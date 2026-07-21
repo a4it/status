@@ -42,17 +42,32 @@ class TenantServiceTest {
     @InjectMocks
     private TenantService tenantService;
 
+    /**
+     * Establishes an authenticated security context before each test so that auditing
+     * fields can resolve the current username.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, java.util.List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication
+     * state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds an active {@link Tenant} test fixture with the given identifier and name.
+     *
+     * @param id   the tenant identifier to assign
+     * @param name the tenant name to assign
+     * @return a populated {@link Tenant} instance for use in tests
+     */
     private Tenant buildTenant(UUID id, String name) {
         Tenant tenant = new Tenant();
         tenant.setId(id);
@@ -61,6 +76,10 @@ class TenantServiceTest {
         return tenant;
     }
 
+    /**
+     * Verifies that {@code getAllTenants} returns the full paged result from the
+     * repository when no search term is supplied.
+     */
     @Test
     void getAllTenants_noSearch_returnsAllTenantsPage() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -72,6 +91,10 @@ class TenantServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getAllTenants} returns a paged result when a search term
+     * is supplied.
+     */
     @Test
     void getAllTenants_withSearch_returnsPage() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -83,6 +106,9 @@ class TenantServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that {@code getTenantById} returns the tenant when one exists for the id.
+     */
     @Test
     void getTenantById_existing_returnsTenant() {
         UUID id = UUID.randomUUID();
@@ -94,6 +120,10 @@ class TenantServiceTest {
         assertThat(result).isSameAs(tenant);
     }
 
+    /**
+     * Verifies that {@code getTenantById} throws {@link ResourceNotFoundException}
+     * when no tenant exists for the id.
+     */
     @Test
     void getTenantById_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
@@ -103,6 +133,9 @@ class TenantServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code getTenantByName} returns the tenant when one exists for the name.
+     */
     @Test
     void getTenantByName_existing_returnsTenant() {
         Tenant tenant = buildTenant(UUID.randomUUID(), "Acme");
@@ -113,6 +146,10 @@ class TenantServiceTest {
         assertThat(result).isSameAs(tenant);
     }
 
+    /**
+     * Verifies that {@code getTenantByName} throws {@link ResourceNotFoundException}
+     * when no tenant exists for the name.
+     */
     @Test
     void getTenantByName_missing_throwsResourceNotFoundException() {
         when(tenantRepository.findByName("Nope")).thenReturn(Optional.empty());
@@ -121,6 +158,10 @@ class TenantServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code createTenant} persists a new tenant when the name is unique,
+     * defaulting the active flag to true and stamping the creating user.
+     */
     @Test
     void createTenant_uniqueName_savesTenant() {
         TenantRequest request = new TenantRequest();
@@ -138,6 +179,10 @@ class TenantServiceTest {
         verify(tenantRepository).save(any(Tenant.class));
     }
 
+    /**
+     * Verifies that {@code createTenant} throws {@link DuplicateResourceException} and
+     * saves nothing when a tenant with the same name already exists.
+     */
     @Test
     void createTenant_duplicateName_throwsDuplicateResourceException() {
         TenantRequest request = new TenantRequest();
@@ -150,6 +195,10 @@ class TenantServiceTest {
         verify(tenantRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code updateTenant} updates the tenant without a duplicate-name
+     * check when the name is unchanged, and stamps the modifying user.
+     */
     @Test
     void updateTenant_sameName_updatesWithoutDuplicateCheck() {
         UUID id = UUID.randomUUID();
@@ -168,6 +217,10 @@ class TenantServiceTest {
         assertThat(result.getLastModifiedBy()).isEqualTo("system");
     }
 
+    /**
+     * Verifies that {@code updateTenant} throws {@link DuplicateResourceException} and
+     * saves nothing when the name is changed to one already taken by another tenant.
+     */
     @Test
     void updateTenant_newDuplicateName_throwsDuplicateResourceException() {
         UUID id = UUID.randomUUID();
@@ -184,6 +237,10 @@ class TenantServiceTest {
         verify(tenantRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code updateTenant} throws {@link ResourceNotFoundException}
+     * when no tenant exists for the id.
+     */
     @Test
     void updateTenant_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
@@ -196,6 +253,9 @@ class TenantServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code deleteTenant} deletes the tenant when one exists for the id.
+     */
     @Test
     void deleteTenant_existing_deletesTenant() {
         UUID id = UUID.randomUUID();
@@ -207,6 +267,10 @@ class TenantServiceTest {
         verify(tenantRepository).delete(tenant);
     }
 
+    /**
+     * Verifies that {@code deleteTenant} throws {@link ResourceNotFoundException} and
+     * deletes nothing when no tenant exists for the id.
+     */
     @Test
     void deleteTenant_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();

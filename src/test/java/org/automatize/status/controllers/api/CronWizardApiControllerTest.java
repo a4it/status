@@ -34,6 +34,13 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/cron/validate
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that a valid cron expression yields {@code 200 OK} with
+     * {@code valid=true}, a populated {@code humanReadable} description, a
+     * non-empty {@code nextRuns} array, and a {@code null} {@code error}.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void validate_validExpression_returnsOkValidTrue() throws Exception {
         String expr = "0 * * * * *";
@@ -52,6 +59,13 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
+    /**
+     * Verifies that an invalid cron expression still returns {@code 200 OK} but
+     * with {@code valid=false}, the service-provided {@code error} message, and a
+     * {@code null} {@code humanReadable} field.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void validate_invalidExpression_returnsOkValidFalseWithError() throws Exception {
         String expr = "not-a-cron";
@@ -71,6 +85,12 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/cron/preview
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that the preview endpoint returns {@code 200 OK} with a JSON array
+     * of upcoming execution times for a valid expression, timezone, and count.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void preview_returnsOkListOfExecutions() throws Exception {
         when(cronValidationService.getNextExecutions(eq("0 * * * * *"), eq("UTC"), anyInt()))
@@ -84,6 +104,12 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0]").exists());
     }
 
+    /**
+     * Verifies that posting an empty body (missing expression) still returns
+     * {@code 200 OK} with an empty JSON array rather than an error.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void preview_missingExpression_returnsOkEmptyList() throws Exception {
         when(cronValidationService.getNextExecutions(eq(""), eq("UTC"), anyInt()))
@@ -100,6 +126,12 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/cron/presets
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that the presets endpoint returns {@code 200 OK} with the static
+     * list of named cron presets, asserting the first entry's name and expression.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void presets_returnsOkStaticList() throws Exception {
         mockMvc.perform(get("/api/scheduler/cron/presets"))
@@ -113,6 +145,12 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/cron/timezones
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that the timezones endpoint returns {@code 200 OK} with the list
+     * of available timezone identifiers supplied by the mocked service.
+     *
+     * @throws Exception if the request cannot be performed
+     */
     @Test
     void timezones_returnsOkList() throws Exception {
         when(cronValidationService.getAvailableTimezones())

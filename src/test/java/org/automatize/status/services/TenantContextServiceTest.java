@@ -48,6 +48,13 @@ class TenantContextServiceTest {
     @InjectMocks
     private TenantContextService tenantContextService;
 
+    /**
+     * Builds a {@link User} test fixture with the given identifier and role.
+     *
+     * @param id   the user identifier to assign
+     * @param role the security role to assign
+     * @return a populated {@link User} instance for use in tests
+     */
     private User buildUser(UUID id, String role) {
         User user = new User();
         user.setId(id);
@@ -57,6 +64,13 @@ class TenantContextServiceTest {
         return user;
     }
 
+    /**
+     * Builds a {@link Tenant} test fixture with the given identifier and active flag.
+     *
+     * @param id     the tenant identifier to assign
+     * @param active whether the tenant should be marked active
+     * @return a populated {@link Tenant} instance for use in tests
+     */
     private Tenant buildTenant(UUID id, boolean active) {
         Tenant tenant = new Tenant();
         tenant.setId(id);
@@ -65,6 +79,14 @@ class TenantContextServiceTest {
         return tenant;
     }
 
+    /**
+     * Builds an {@link Organization} test fixture with the given identifier, status and owning tenant.
+     *
+     * @param id     the organization identifier to assign
+     * @param status the status value to assign
+     * @param tenant the owning tenant to associate
+     * @return a populated {@link Organization} instance for use in tests
+     */
     private Organization buildOrg(UUID id, String status, Tenant tenant) {
         Organization org = new Organization();
         org.setId(id);
@@ -74,6 +96,10 @@ class TenantContextServiceTest {
         return org;
     }
 
+    /**
+     * Verifies that {@code getActiveTenants} delegates to the repository and returns
+     * exactly the list of active tenants it provides.
+     */
     @Test
     void getActiveTenants_delegatesToRepository() {
         List<Tenant> tenants = List.of(buildTenant(UUID.randomUUID(), true));
@@ -82,6 +108,10 @@ class TenantContextServiceTest {
         assertThat(tenantContextService.getActiveTenants()).isEqualTo(tenants);
     }
 
+    /**
+     * Verifies that {@code getOrganizationsForTenant} returns the active organizations
+     * looked up by tenant id and {@code ACTIVE} status.
+     */
     @Test
     void getOrganizationsForTenant_returnsActiveOrganizations() {
         UUID tenantId = UUID.randomUUID();
@@ -91,6 +121,10 @@ class TenantContextServiceTest {
         assertThat(tenantContextService.getOrganizationsForTenant(tenantId)).isEqualTo(orgs);
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link ResourceNotFoundException}
+     * when the acting user cannot be found.
+     */
     @Test
     void switchContext_userNotFound_throwsResourceNotFoundException() {
         UUID userId = UUID.randomUUID();
@@ -100,6 +134,10 @@ class TenantContextServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link AccessDeniedException}
+     * when the acting user is not a superadmin.
+     */
     @Test
     void switchContext_nonSuperadmin_throwsAccessDeniedException() {
         UUID userId = UUID.randomUUID();
@@ -109,6 +147,10 @@ class TenantContextServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link ResourceNotFoundException}
+     * when the requested tenant cannot be found.
+     */
     @Test
     void switchContext_tenantNotFound_throwsResourceNotFoundException() {
         UUID userId = UUID.randomUUID();
@@ -120,6 +162,10 @@ class TenantContextServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link BusinessRuleException} with the
+     * message "Tenant is not active" when the requested tenant is inactive.
+     */
     @Test
     void switchContext_inactiveTenant_throwsBusinessRuleException() {
         UUID userId = UUID.randomUUID();
@@ -132,6 +178,10 @@ class TenantContextServiceTest {
                 .hasMessage("Tenant is not active");
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link ResourceNotFoundException}
+     * when the requested organization cannot be found.
+     */
     @Test
     void switchContext_organizationNotFound_throwsResourceNotFoundException() {
         UUID userId = UUID.randomUUID();
@@ -145,6 +195,10 @@ class TenantContextServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link BusinessRuleException} with the
+     * message "Organization is not active" when the requested organization is inactive.
+     */
     @Test
     void switchContext_inactiveOrganization_throwsBusinessRuleException() {
         UUID userId = UUID.randomUUID();
@@ -160,6 +214,11 @@ class TenantContextServiceTest {
                 .hasMessage("Organization is not active");
     }
 
+    /**
+     * Verifies that {@code switchContext} throws {@link BusinessRuleException} with the
+     * message "Organization does not belong to the selected tenant" when the organization
+     * belongs to a different tenant than the one requested.
+     */
     @Test
     void switchContext_organizationNotInTenant_throwsBusinessRuleException() {
         UUID userId = UUID.randomUUID();
@@ -176,6 +235,10 @@ class TenantContextServiceTest {
                 .hasMessage("Organization does not belong to the selected tenant");
     }
 
+    /**
+     * Verifies that {@code switchContext} returns a fully populated {@link ContextResponse}
+     * (including the generated context token) for a valid superadmin request.
+     */
     @Test
     void switchContext_validRequest_returnsContextResponse() {
         UUID userId = UUID.randomUUID();
@@ -202,6 +265,10 @@ class TenantContextServiceTest {
         assertThat(response.isHasSelectedContext()).isTrue();
     }
 
+    /**
+     * Verifies that {@code getCurrentContext} resolves and populates the tenant and
+     * organization names when the principal has a selected context.
+     */
     @Test
     void getCurrentContext_withSelectedContext_populatesNames() {
         UUID tenantId = UUID.randomUUID();
@@ -224,6 +291,10 @@ class TenantContextServiceTest {
         assertThat(response.isHasSelectedContext()).isTrue();
     }
 
+    /**
+     * Verifies that {@code getCurrentContext} returns a response with null tenant details
+     * and performs no repository lookups when the principal has no selected context.
+     */
     @Test
     void getCurrentContext_noContext_returnsResponseWithoutLookups() {
         User user = buildUser(UUID.randomUUID(), "USER");

@@ -19,6 +19,11 @@ public class LogMetricScheduler {
     @Autowired
     private LogMetricService logMetricService;
 
+    /**
+     * Scheduled task that runs every minute to aggregate recent raw logs into
+     * the log_metrics table. Any failure is logged and swallowed so that a
+     * single failed run does not stop future scheduled executions.
+     */
     @Scheduled(cron = "0 * * * * *")
     public void aggregate() {
         try {

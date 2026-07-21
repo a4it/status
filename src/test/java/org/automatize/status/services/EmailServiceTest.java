@@ -116,6 +116,10 @@ class EmailServiceTest {
         verify(mailSender, never()).send(any(MimeMessage.class));
     }
 
+    /**
+     * Verifies that when email is enabled, an HTML email is dispatched exactly once as a
+     * {@link MimeMessage}.
+     */
     @Test
     void sendHtmlEmail_whenEnabled_sendsMimeMessage() {
         when(mailSender.createMimeMessage()).thenReturn(newMimeMessage());
@@ -127,6 +131,10 @@ class EmailServiceTest {
 
     // --------------------------------------------------- incident delegation
 
+    /**
+     * Verifies that an incident notification, when email is enabled, is delegated to the
+     * HTML-email path and dispatched once as a {@link MimeMessage}.
+     */
     @Test
     void sendIncidentNotification_whenEnabled_sendsHtmlEmail() {
         when(mailSender.createMimeMessage()).thenReturn(newMimeMessage());
@@ -137,6 +145,10 @@ class EmailServiceTest {
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
 
+    /**
+     * Verifies that an incident notification, when email is disabled, sends nothing even
+     * with a null severity argument.
+     */
     @Test
     void sendIncidentNotification_whenDisabled_doesNotSend() {
         ReflectionTestUtils.setField(emailService, "emailEnabled", false);

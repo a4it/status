@@ -14,6 +14,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class UserPrincipalTest {
 
+    /**
+     * Builds a {@link User} fixture with a random id and derived email for use in
+     * principal-creation tests.
+     *
+     * @param username the username (also used to derive the email)
+     * @param role     the role string to assign
+     * @param enabled  whether the user is enabled
+     * @return the constructed {@link User}
+     */
     private User buildUser(String username, String role, boolean enabled) {
         User user = new User();
         user.setId(UUID.randomUUID());
@@ -25,6 +34,10 @@ class UserPrincipalTest {
         return user;
     }
 
+    /**
+     * Verifies that {@code create} maps the user's role to a {@code ROLE_}-prefixed
+     * authority and copies through the username, email, password, and role.
+     */
     @Test
     void create_userWithRole_mapsAuthorityWithRolePrefix() {
         // Arrange
@@ -43,6 +56,10 @@ class UserPrincipalTest {
         assertThat(principal.getPassword()).isEqualTo("hashed");
     }
 
+    /**
+     * Verifies that {@code create} defaults a user with a {@code null} role to the
+     * {@code ROLE_USER} authority.
+     */
     @Test
     void create_userWithNullRole_defaultsToRoleUser() {
         // Arrange
@@ -57,6 +74,10 @@ class UserPrincipalTest {
                 .containsExactly("ROLE_USER");
     }
 
+    /**
+     * Verifies that {@code create} populates the principal's organization id from
+     * the user's associated organization.
+     */
     @Test
     void create_userWithOrganization_populatesOrganizationId() {
         // Arrange
@@ -73,6 +94,10 @@ class UserPrincipalTest {
         assertThat(principal.getOrganizationId()).isEqualTo(orgId);
     }
 
+    /**
+     * Verifies that a SUPERADMIN principal created via {@code create} requires
+     * context selection and has not yet selected a context.
+     */
     @Test
     void create_superadminUser_requiresContextSelection() {
         // Arrange
@@ -86,6 +111,10 @@ class UserPrincipalTest {
         assertThat(principal.hasSelectedContext()).isFalse();
     }
 
+    /**
+     * Verifies that a regular USER principal created via {@code create} does not
+     * require context selection.
+     */
     @Test
     void create_regularUser_doesNotRequireContextSelection() {
         // Arrange
@@ -98,6 +127,10 @@ class UserPrincipalTest {
         assertThat(principal.isRequiresContextSelection()).isFalse();
     }
 
+    /**
+     * Verifies that a principal created from a disabled user reports
+     * {@code isEnabled() == false}.
+     */
     @Test
     void create_disabledUser_isEnabledReturnsFalse() {
         // Arrange
@@ -110,6 +143,11 @@ class UserPrincipalTest {
         assertThat(principal.isEnabled()).isFalse();
     }
 
+    /**
+     * Verifies that a principal created from an enabled user reports all account
+     * status flags (enabled, non-expired, non-locked, credentials non-expired) as
+     * {@code true}.
+     */
     @Test
     void create_enabledUser_accountStatusFlagsAreTrue() {
         // Arrange
@@ -125,6 +163,11 @@ class UserPrincipalTest {
         assertThat(principal.isCredentialsNonExpired()).isTrue();
     }
 
+    /**
+     * Verifies that {@code createWithContext} stamps the principal with the given
+     * tenant and organization ids, clears the context-selection requirement, and
+     * marks a context as selected.
+     */
     @Test
     void createWithContext_setsTenantAndOrgAndSelectedContext() {
         // Arrange

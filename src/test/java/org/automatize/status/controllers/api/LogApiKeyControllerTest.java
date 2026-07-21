@@ -30,6 +30,14 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private LogApiKeyService logApiKeyService;
 
+    /**
+     * Builds a sample active {@link LogApiKey} with a fixed key prefix for use in
+     * mocked service responses.
+     *
+     * @param id   the key identifier to assign
+     * @param name the display name to assign
+     * @return a populated, active {@link LogApiKey}
+     */
     private LogApiKey sampleKey(UUID id, String name) {
         LogApiKey k = new LogApiKey();
         k.setId(id);
@@ -39,6 +47,12 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
         return k;
     }
 
+    /**
+     * Verifies {@code GET /api/log-api-keys} returns 200 with the mocked keys'
+     * {@code name} and {@code keyPrefix} JSON fields.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void findAll_returnsOk() throws Exception {
         when(logApiKeyService.findAll())
@@ -50,6 +64,12 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].keyPrefix").value("abcd1234"));
     }
 
+    /**
+     * Verifies {@code POST /api/log-api-keys} with a valid name returns 201 with the
+     * created key's {@code name} and the one-time {@code rawKey} in the JSON body.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void create_valid_returns201WithRawKey() throws Exception {
         LogApiKey key = sampleKey(UUID.randomUUID(), "ci-key");
@@ -64,6 +84,12 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.rawKey").value("sk_live_rawsecret"));
     }
 
+    /**
+     * Verifies {@code POST /api/log-api-keys} with a body missing the required name
+     * returns 400 Bad Request.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void create_missingName_returns400() throws Exception {
         mockMvc.perform(post("/api/log-api-keys")
@@ -71,6 +97,12 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies {@code POST /api/log-api-keys/{id}/toggle} returns 200 with the
+     * updated {@code isActive} state from the mocked service.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void toggle_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -83,6 +115,12 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.isActive").value(false));
     }
 
+    /**
+     * Verifies {@code DELETE /api/log-api-keys/{id}} returns 200 with a success
+     * message and delegates to {@link LogApiKeyService#delete}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void delete_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();

@@ -90,6 +90,10 @@ class SetupServiceTest {
     @InjectMocks
     private SetupService setupService;
 
+    /**
+     * Injects the {@code @Value} config fields (setup flag, datasource URL and
+     * username) into the service under test before each test.
+     */
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(setupService, "setupCompleted", false);
@@ -101,6 +105,10 @@ class SetupServiceTest {
     // isSetupAlreadyComplete
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that {@code isSetupAlreadyComplete} returns {@code false} when the
+     * setup-completed flag is unset.
+     */
     @Test
     void isSetupAlreadyComplete_whenFlagFalse_returnsFalse() {
         ReflectionTestUtils.setField(setupService, "setupCompleted", false);
@@ -108,6 +116,10 @@ class SetupServiceTest {
         assertThat(setupService.isSetupAlreadyComplete()).isFalse();
     }
 
+    /**
+     * Verifies that {@code isSetupAlreadyComplete} returns {@code true} when the
+     * setup-completed flag is set.
+     */
     @Test
     void isSetupAlreadyComplete_whenFlagTrue_returnsTrue() {
         ReflectionTestUtils.setField(setupService, "setupCompleted", true);
@@ -119,6 +131,13 @@ class SetupServiceTest {
     // getStatus
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that with a valid DB connection, a resolvable Flyway version and no
+     * tenants, the status reports a connected DB, the Flyway version and an empty
+     * tenant/organization state.
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenDbConnectedAndNoTenants_reportsHealthyEmptyState() throws Exception {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
@@ -146,6 +165,13 @@ class SetupServiceTest {
         assertThat(status.isOrganizationCreated()).isFalse();
     }
 
+    /**
+     * Verifies that when acquiring a DB connection throws, the status reports the DB
+     * as not connected, captures the error message and defaults the Flyway version
+     * to "unknown".
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenDbConnectionThrows_reportsDbErrorAndNotConnected() throws Exception {
         when(dataSource.getConnection()).thenThrow(new java.sql.SQLException("connection refused"));
@@ -159,6 +185,11 @@ class SetupServiceTest {
         assertThat(status.getFlywayVersion()).isEqualTo("unknown");
     }
 
+    /**
+     * Verifies that a null Flyway bean results in a reported version of "unknown".
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenFlywayNull_reportsUnknownVersion() throws Exception {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
@@ -172,6 +203,12 @@ class SetupServiceTest {
         assertThat(status.getFlywayVersion()).isEqualTo("unknown");
     }
 
+    /**
+     * Verifies that when Flyway reports no current migration the status reports a
+     * version of "none".
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenFlywayHasNoCurrentMigration_reportsNone() throws Exception {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
@@ -189,6 +226,12 @@ class SetupServiceTest {
         assertThat(status.getFlywayVersion()).isEqualTo("none");
     }
 
+    /**
+     * Verifies that when a tenant and an organization already exist the status flags
+     * both as created and exposes their ids.
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenTenantAndOrganizationExist_reportsBothCreatedWithIds() throws Exception {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
@@ -214,6 +257,12 @@ class SetupServiceTest {
         assertThat(status.getOrganizationId()).isEqualTo(orgId);
     }
 
+    /**
+     * Verifies that when a tenant exists but no organization does, the status flags
+     * the tenant as created and the organization as not created.
+     *
+     * @throws Exception if the mocked connection setup throws
+     */
     @Test
     void getStatus_whenTenantExistsButNoOrganization_reportsTenantOnly() throws Exception {
         Connection conn = org.mockito.Mockito.mock(Connection.class);
@@ -240,6 +289,11 @@ class SetupServiceTest {
     // createTenant
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that {@code createTenant} delegates to {@link TenantService} with a
+     * request carrying the supplied name and an active flag, returning the created
+     * tenant.
+     */
     @Test
     void createTenant_always_delegatesToTenantServiceWithActiveTenant() {
         SetupTenantRequest request = new SetupTenantRequest();
@@ -263,6 +317,11 @@ class SetupServiceTest {
     // createOrganization
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that {@code createOrganization} delegates to
+     * {@link OrganizationService} with a request carrying the supplied fields and an
+     * ACTIVE status, returning the created organization.
+     */
     @Test
     void createOrganization_always_delegatesToOrganizationServiceWithActiveStatus() {
         UUID tenantId = UUID.randomUUID();
@@ -294,6 +353,10 @@ class SetupServiceTest {
     // createAdmin
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that when the username is already taken {@code createAdmin} returns a
+     * failure response and never persists a user.
+     */
     @Test
     void createAdmin_whenUsernameTaken_returnsFailureAndDoesNotSave() {
         SetupAdminRequest request = adminRequest(UUID.randomUUID());
@@ -306,6 +369,10 @@ class SetupServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that when the email is already in use {@code createAdmin} returns a
+     * failure response and never persists a user.
+     */
     @Test
     void createAdmin_whenEmailInUse_returnsFailureAndDoesNotSave() {
         SetupAdminRequest request = adminRequest(UUID.randomUUID());
@@ -319,6 +386,11 @@ class SetupServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that a valid request linked to an existing organization persists a
+     * SUPERADMIN user with an encoded password, the correct profile fields and the
+     * resolved organization.
+     */
     @Test
     void createAdmin_whenValidWithOrganization_savesSuperadminWithEncodedPassword() {
         UUID orgId = UUID.randomUUID();
@@ -351,6 +423,10 @@ class SetupServiceTest {
         assertThat(saved.getOrganization()).isSameAs(org);
     }
 
+    /**
+     * Verifies that when no organization id is supplied the admin is saved without an
+     * organization and no organization lookup is performed.
+     */
     @Test
     void createAdmin_whenOrganizationIdNull_savesAdminWithoutOrganizationLookup() {
         SetupAdminRequest request = adminRequest(null);

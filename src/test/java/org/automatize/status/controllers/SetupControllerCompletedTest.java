@@ -20,6 +20,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"app.setup.completed=true"})
 class SetupControllerCompletedTest extends AbstractApiControllerTest {
 
+    /**
+     * Verifies that when {@code app.setup.completed=true}, {@code GET /setup}
+     * issues a 3xx redirect to {@code /login} instead of serving the wizard.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void wizard_setupCompleted_redirectsToLogin() throws Exception {
         mockMvc.perform(get("/setup"))

@@ -70,6 +70,7 @@ public class AuthController {
             HttpServletResponse response) {
         // HIGH-04: rate limit login attempts per client IP
         String clientIp = request.getRemoteAddr();
+        // Reject the attempt when this client IP has exceeded the allowed login rate
         if (!loginRateLimiter.isAllowed(clientIp)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
         }
@@ -97,6 +98,7 @@ public class AuthController {
      */
     @PostMapping("/register")
     public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
+        // Registration disabled by configuration: return 403 Forbidden
         if (!registrationEnabled) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(new MessageResponse("Registration is currently disabled.", false));

@@ -22,7 +22,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link LogMetricService}.
+ * Unit tests for {@link LogMetricService} — query delegation and the
+ * aggregate-recent-logs upsert branches (create new bucket vs. increment existing).
+ *
+ * <p>Testing approach: the service is tested in isolation with Mockito. Its
+ * {@link LogMetricRepository} and {@link LogRepository} collaborators are
+ * {@code @Mock}s injected via {@code @InjectMocks}; repository queries are stubbed and
+ * {@link ArgumentCaptor}s inspect the {@link LogMetric} entities passed to {@code save}.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class LogMetricServiceTest {
@@ -38,6 +44,10 @@ class LogMetricServiceTest {
 
     // ── simple query delegation ───────────────────────────────────────────────
 
+    /**
+     * Verifies that {@link LogMetricService#findSince} delegates to the repository and
+     * returns its list of metrics.
+     */
     @Test
     void findSince_delegatesToRepository() {
         ZonedDateTime since = ZonedDateTime.now().minusHours(1);
@@ -47,6 +57,10 @@ class LogMetricServiceTest {
         assertThat(service.findSince(since)).containsExactly(m);
     }
 
+    /**
+     * Verifies that {@link LogMetricService#findByTenantSince} delegates to the
+     * tenant-scoped repository query and returns its result.
+     */
     @Test
     void findByTenantSince_delegatesToRepository() {
         UUID tenantId = UUID.randomUUID();
@@ -57,6 +71,10 @@ class LogMetricServiceTest {
         verify(logMetricRepository).findByTenantSince(tenantId, since);
     }
 
+    /**
+     * Verifies that {@link LogMetricService#sumCountSince} returns the repository's sum
+     * when it is non-null.
+     */
     @Test
     void sumCountSince_nonNullResult_returnsValue() {
         ZonedDateTime since = ZonedDateTime.now().minusMinutes(5);
@@ -65,6 +83,10 @@ class LogMetricServiceTest {
         assertThat(service.sumCountSince("svc", "ERROR", since)).isEqualTo(17L);
     }
 
+    /**
+     * Verifies that {@link LogMetricService#sumCountSince} coalesces a null repository
+     * result to zero.
+     */
     @Test
     void sumCountSince_nullResult_returnsZero() {
         ZonedDateTime since = ZonedDateTime.now().minusMinutes(5);
@@ -75,6 +97,11 @@ class LogMetricServiceTest {
 
     // ── aggregateRecentLogs (upsert branches) ─────────────────────────────────
 
+    /**
+     * Verifies the create branch of aggregation: when no existing metric matches the
+     * bucket, a new MINUTE-bucket {@link LogMetric} is saved with the aggregated service,
+     * level, count, and resolved tenant.
+     */
     @Test
     void aggregateRecentLogs_newBucket_createsMetricWithTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -97,6 +124,10 @@ class LogMetricServiceTest {
         assertThat(saved.getTenant().getId()).isEqualTo(tenantId);
     }
 
+    /**
+     * Verifies that when the aggregated row has a null tenant id, a new metric is saved
+     * with a null tenant and the aggregated count.
+     */
     @Test
     void aggregateRecentLogs_nullTenant_createsMetricWithoutTenant() {
         Object[] row = new Object[]{null, "billing", "INFO", 3L};
@@ -113,6 +144,11 @@ class LogMetricServiceTest {
         assertThat(captor.getValue().getCount()).isEqualTo(3L);
     }
 
+    /**
+     * Verifies the increment branch of aggregation: when a metric already exists for the
+     * bucket, its count is increased by the aggregated amount (10 + 4 = 14) and the same
+     * entity is re-saved.
+     */
     @Test
     void aggregateRecentLogs_existingBucket_incrementsCount() {
         Object[] row = new Object[]{null, "billing", "INFO", 4L};
@@ -134,6 +170,9 @@ class LogMetricServiceTest {
         assertThat(captor.getValue().getCount()).isEqualTo(14L);
     }
 
+    /**
+     * Verifies that when the aggregation query returns no rows, no metric is saved.
+     */
     @Test
     void aggregateRecentLogs_noRows_savesNothing() {
         when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.of());

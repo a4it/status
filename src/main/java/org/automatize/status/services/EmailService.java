@@ -197,7 +197,9 @@ public class EmailService {
      * @return the hex color code
      */
     private String getSeverityColor(String severity) {
+        // Default color when no severity is provided
         if (severity == null) return "#6c757d";
+        // Map the severity level to its corresponding badge color
         return switch (severity.toUpperCase()) {
             case "CRITICAL" -> "#dc3545";
             case "MAJOR" -> "#fd7e14";
@@ -214,6 +216,7 @@ public class EmailService {
      * @return the escaped text
      */
     private String escapeHtml(String text) {
+        // Treat null input as an empty string
         if (text == null) return "";
         return text.replace("&", "&amp;")
                    .replace("<", "&lt;")

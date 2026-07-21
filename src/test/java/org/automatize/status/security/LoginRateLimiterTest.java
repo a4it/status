@@ -14,11 +14,19 @@ class LoginRateLimiterTest {
 
     private LoginRateLimiter rateLimiter;
 
+    /**
+     * Creates a fresh {@link LoginRateLimiter} before each test so per-IP
+     * attempt windows do not carry over between tests.
+     */
     @BeforeEach
     void setUp() {
         rateLimiter = new LoginRateLimiter();
     }
 
+    /**
+     * Verifies that the first ten attempts from a single IP are all allowed
+     * (within the budget).
+     */
     @Test
     void isAllowed_underLimit_returnsTrue() {
         // Act & Assert: first 10 attempts are allowed
@@ -29,6 +37,10 @@ class LoginRateLimiterTest {
         }
     }
 
+    /**
+     * Verifies that once the ten-attempt budget is exhausted, the eleventh
+     * attempt from the same IP is blocked.
+     */
     @Test
     void isAllowed_overLimit_returnsFalse() {
         // Arrange: exhaust the budget of 10 attempts
@@ -43,6 +55,10 @@ class LoginRateLimiterTest {
         assertThat(eleventh).isFalse();
     }
 
+    /**
+     * Verifies that attempt budgets are tracked per IP: blocking one IP does not
+     * affect a different, fresh IP.
+     */
     @Test
     void isAllowed_differentIps_trackedIndependently() {
         // Arrange: block the first IP

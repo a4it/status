@@ -47,6 +47,10 @@ class HealthCheckServiceTest {
 
     // ------------------------------------------------------ performCheck dispatch
 
+    /**
+     * Verifies that a null check type is treated as "no check configured" and reported as a
+     * successful, no-op result.
+     */
     @Test
     void performCheck_nullCheckType_returnsSuccessNoCheck() {
         HealthCheckResult result = healthCheckService.performCheck(null, "http://8.8.8.8", 5, 200);
@@ -55,6 +59,10 @@ class HealthCheckServiceTest {
         assertThat(result.message()).isEqualTo("No check configured");
     }
 
+    /**
+     * Verifies that an explicit "NONE" check type is treated as "no check configured" and
+     * reported as a successful, no-op result.
+     */
     @Test
     void performCheck_noneCheckType_returnsSuccessNoCheck() {
         HealthCheckResult result = healthCheckService.performCheck("NONE", "http://8.8.8.8", 5, 200);
@@ -63,6 +71,10 @@ class HealthCheckServiceTest {
         assertThat(result.message()).isEqualTo("No check configured");
     }
 
+    /**
+     * Verifies that an unrecognised check type yields a failure result naming the unknown
+     * type.
+     */
     @Test
     void performCheck_unknownCheckType_returnsFailure() {
         // 8.8.8.8 is a literal, publicly routable IP so SSRF validation passes without DNS.
@@ -72,6 +84,9 @@ class HealthCheckServiceTest {
         assertThat(result.message()).isEqualTo("Unknown check type: BOGUS");
     }
 
+    /**
+     * Verifies that a loopback host is rejected by SSRF validation with a "Blocked:" result.
+     */
     @Test
     void performCheck_loopbackHost_blockedBySsrf() {
         HealthCheckResult result = healthCheckService.performCheck("HTTP_GET", "http://127.0.0.1", 5, 200);
@@ -80,6 +95,10 @@ class HealthCheckServiceTest {
         assertThat(result.message()).startsWith("Blocked:");
     }
 
+    /**
+     * Verifies that a private-range host is rejected by SSRF validation with a "Blocked:"
+     * result.
+     */
     @Test
     void performCheck_privateHost_blockedBySsrf() {
         HealthCheckResult result = healthCheckService.performCheck("HTTP_GET", "http://10.0.0.1", 5, 200);
@@ -88,6 +107,10 @@ class HealthCheckServiceTest {
         assertThat(result.message()).startsWith("Blocked:");
     }
 
+    /**
+     * Verifies that a TCP check whose URL contains a non-numeric port fails with an
+     * "Invalid port number" result before any socket is opened.
+     */
     @Test
     void performCheck_tcpWithInvalidPort_returnsInvalidPort() {
         // Host resolves (literal public IP, SSRF passes); port parse fails deterministically, no socket opened.
@@ -99,6 +122,15 @@ class HealthCheckServiceTest {
 
     // --------------------------------------------------- updateAppCheckResult
 
+    /**
+     * Builds a {@link StatusApp} fixture with the given status, consecutive-failure count,
+     * and failure threshold for exercising the check-result bookkeeping.
+     *
+     * @param status              the initial status of the app
+     * @param consecutiveFailures the initial consecutive-failure counter
+     * @param threshold           the failure threshold at which status degrades
+     * @return a configured {@link StatusApp} test fixture
+     */
     private StatusApp appWith(String status, int consecutiveFailures, int threshold) {
         StatusApp app = new StatusApp();
         app.setName("app");
@@ -108,6 +140,10 @@ class HealthCheckServiceTest {
         return app;
     }
 
+    /**
+     * Verifies that a successful check on an operational app resets its failure counter,
+     * records the check outcome, saves it, and creates no incident.
+     */
     @Test
     void updateAppCheckResult_success_resetsFailuresAndSaves() {
         StatusApp app = appWith("OPERATIONAL", 2, 3);
@@ -123,6 +159,10 @@ class HealthCheckServiceTest {
         verifyNoInteractions(statusIncidentService);
     }
 
+    /**
+     * Verifies that a successful check on a degraded app restores it to operational and
+     * resolves its automated incidents.
+     */
     @Test
     void updateAppCheckResult_successWhenDegraded_restoresAndResolvesIncidents() {
         StatusApp app = appWith("DEGRADED_PERFORMANCE", 5, 3);
@@ -134,6 +174,10 @@ class HealthCheckServiceTest {
         verify(statusAppRepository).save(app);
     }
 
+    /**
+     * Verifies that a successful check on an app in major outage restores it to operational
+     * and resolves its automated incidents.
+     */
     @Test
     void updateAppCheckResult_successWhenMajorOutage_restoresAndResolvesIncidents() {
         StatusApp app = appWith("MAJOR_OUTAGE", 8, 3);
@@ -144,6 +188,10 @@ class HealthCheckServiceTest {
         verify(statusIncidentService).resolveAutomatedIncidents(app);
     }
 
+    /**
+     * Verifies that a failed check that keeps the failure count below the threshold
+     * increments the counter, leaves the status unchanged, creates no incident, and saves.
+     */
     @Test
     void updateAppCheckResult_failureBelowThreshold_noStatusChange() {
         StatusApp app = appWith("OPERATIONAL", 0, 3);
@@ -156,6 +204,10 @@ class HealthCheckServiceTest {
         verify(statusAppRepository).save(app);
     }
 
+    /**
+     * Verifies that a failed check reaching the threshold degrades the app's performance and
+     * creates a MAJOR automated incident.
+     */
     @Test
     void updateAppCheckResult_failureAtThreshold_degradesAndCreatesMajorIncident() {
         StatusApp app = appWith("OPERATIONAL", 2, 3);
@@ -167,6 +219,10 @@ class HealthCheckServiceTest {
         verify(statusIncidentService).createAutomatedIncident(app, "MAJOR", "down");
     }
 
+    /**
+     * Verifies that a failed check reaching twice the threshold escalates the app to major
+     * outage and creates a CRITICAL automated incident.
+     */
     @Test
     void updateAppCheckResult_failureAtDoubleThreshold_majorOutageAndCreatesCriticalIncident() {
         StatusApp app = appWith("DEGRADED_PERFORMANCE", 5, 3);
@@ -178,6 +234,10 @@ class HealthCheckServiceTest {
         verify(statusIncidentService).createAutomatedIncident(app, "CRITICAL", "down");
     }
 
+    /**
+     * Verifies that when the app's consecutive-failure count and threshold are null, a
+     * failed check applies the defaults (0 and 3): count becomes 1 with no status change.
+     */
     @Test
     void updateAppCheckResult_nullConsecutiveAndThreshold_usesDefaults() {
         StatusApp app = new StatusApp();
@@ -193,6 +253,15 @@ class HealthCheckServiceTest {
 
     // ------------------------------------------- updateComponentCheckResult
 
+    /**
+     * Builds a {@link StatusComponent} fixture with the given status, consecutive-failure
+     * count, and failure threshold for exercising the check-result bookkeeping.
+     *
+     * @param status              the initial status of the component
+     * @param consecutiveFailures the initial consecutive-failure counter
+     * @param threshold           the failure threshold at which status degrades
+     * @return a configured {@link StatusComponent} test fixture
+     */
     private StatusComponent componentWith(String status, int consecutiveFailures, int threshold) {
         StatusComponent component = new StatusComponent();
         component.setName("component");
@@ -202,6 +271,10 @@ class HealthCheckServiceTest {
         return component;
     }
 
+    /**
+     * Verifies that a successful check on an operational component resets its failure
+     * counter, records success, and saves it.
+     */
     @Test
     void updateComponentCheckResult_success_resetsFailuresAndSaves() {
         StatusComponent component = componentWith("OPERATIONAL", 2, 3);
@@ -213,6 +286,10 @@ class HealthCheckServiceTest {
         verify(statusComponentRepository).save(component);
     }
 
+    /**
+     * Verifies that a successful check on a degraded component restores it to operational
+     * and saves it.
+     */
     @Test
     void updateComponentCheckResult_successWhenDegraded_restoresToOperational() {
         StatusComponent component = componentWith("DEGRADED_PERFORMANCE", 5, 3);
@@ -223,6 +300,10 @@ class HealthCheckServiceTest {
         verify(statusComponentRepository).save(component);
     }
 
+    /**
+     * Verifies that a failed check reaching the threshold degrades the component's
+     * performance.
+     */
     @Test
     void updateComponentCheckResult_failureAtThreshold_degrades() {
         StatusComponent component = componentWith("OPERATIONAL", 2, 3);
@@ -233,6 +314,10 @@ class HealthCheckServiceTest {
         assertThat(component.getStatus()).isEqualTo("DEGRADED_PERFORMANCE");
     }
 
+    /**
+     * Verifies that a failed check reaching twice the threshold escalates the component to
+     * major outage.
+     */
     @Test
     void updateComponentCheckResult_failureAtDoubleThreshold_majorOutage() {
         StatusComponent component = componentWith("DEGRADED_PERFORMANCE", 5, 3);

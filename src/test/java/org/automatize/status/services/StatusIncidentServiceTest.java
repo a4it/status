@@ -67,17 +67,31 @@ class StatusIncidentServiceTest {
 
     private final Pageable pageable = PageRequest.of(0, 10);
 
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal {@link StatusApp} fixture for use in tests.
+     *
+     * @param id     the identifier to assign to the app
+     * @param status the status value to assign to the app
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp newApp(UUID id, String status) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -86,6 +100,15 @@ class StatusIncidentServiceTest {
         return app;
     }
 
+    /**
+     * Builds a minimal {@link StatusIncident} fixture linked to the given app.
+     *
+     * @param id       the identifier to assign to the incident
+     * @param app      the owning {@link StatusApp}
+     * @param status   the incident status
+     * @param severity the incident severity
+     * @return a populated {@link StatusIncident} instance
+     */
     private StatusIncident newIncident(UUID id, StatusApp app, String status, String severity) {
         StatusIncident incident = new StatusIncident();
         incident.setId(id);
@@ -98,6 +121,9 @@ class StatusIncidentServiceTest {
         return incident;
     }
 
+    /**
+     * Verifies that requesting an existing incident by id returns a response mapping its id and status.
+     */
     @Test
     void getIncidentById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -110,6 +136,9 @@ class StatusIncidentServiceTest {
         assertThat(response.getStatus()).isEqualTo(STATUS_INVESTIGATING);
     }
 
+    /**
+     * Verifies that requesting an incident whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void getIncidentById_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -119,6 +148,10 @@ class StatusIncidentServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that requesting all incidents without filters delegates to the repository's paged findAll
+     * and returns the resulting page.
+     */
     @Test
     void getAllIncidents_noFilters_returnsPageFromFindAll() {
         StatusIncident incident = newIncident(UUID.randomUUID(), newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_INVESTIGATING, MINOR);
@@ -129,6 +162,9 @@ class StatusIncidentServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that fetching active incidents excludes those in the RESOLVED status.
+     */
     @Test
     void getActiveIncidents_filtersOutResolved() {
         StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
@@ -142,6 +178,9 @@ class StatusIncidentServiceTest {
         assertThat(result.get(0).getStatus()).isEqualTo(STATUS_INVESTIGATING);
     }
 
+    /**
+     * Verifies that fetching an incident's updates returns them mapped into response objects.
+     */
     @Test
     void getIncidentUpdates_returnsMappedUpdates() {
         UUID incidentId = UUID.randomUUID();
@@ -157,6 +196,9 @@ class StatusIncidentServiceTest {
         assertThat(result.get(0).getMessage()).isEqualTo("m1");
     }
 
+    /**
+     * Verifies that creating an incident persists it and notifies subscribers of the new incident.
+     */
     @Test
     void createIncident_happyPath_savesAndNotifies() {
         UUID appId = UUID.randomUUID();
@@ -179,6 +221,10 @@ class StatusIncidentServiceTest {
         verify(incidentNotificationService).notifySubscribersOfNewIncident(any(StatusIncident.class));
     }
 
+    /**
+     * Verifies that creating an incident with an initial message and affected components creates an
+     * incident update, links the components and degrades the affected component's status.
+     */
     @Test
     void createIncident_withInitialMessageAndComponents_createsUpdateAndLinks() {
         UUID appId = UUID.randomUUID();
@@ -213,6 +259,9 @@ class StatusIncidentServiceTest {
         assertThat(component.getStatus()).isEqualTo("DEGRADED");
     }
 
+    /**
+     * Verifies that creating an incident for a non-existent app throws a {@link RuntimeException}.
+     */
     @Test
     void createIncident_appNotFound_throwsRuntime() {
         UUID appId = UUID.randomUUID();
@@ -224,6 +273,9 @@ class StatusIncidentServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that updating an incident applies the new status (e.g. from INVESTIGATING to IDENTIFIED).
+     */
     @Test
     void updateIncident_happyPath_updatesStatus() {
         UUID id = UUID.randomUUID();
@@ -245,6 +297,9 @@ class StatusIncidentServiceTest {
         assertThat(response.getStatus()).isEqualTo("IDENTIFIED");
     }
 
+    /**
+     * Verifies that updating an incident whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void updateIncident_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -254,6 +309,10 @@ class StatusIncidentServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that adding an update carrying a new status persists the update and propagates the new
+     * status onto the incident.
+     */
     @Test
     void addIncidentUpdate_statusChanged_updatesIncident() {
         UUID id = UUID.randomUUID();
@@ -276,6 +335,10 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository).save(incident);
     }
 
+    /**
+     * Verifies that adding an update whose status matches the current incident status persists the update
+     * but does not re-save the incident.
+     */
     @Test
     void addIncidentUpdate_statusUnchanged_doesNotUpdateIncident() {
         UUID id = UUID.randomUUID();
@@ -295,6 +358,10 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that resolving an active incident sets its status to RESOLVED, stamps the resolved time,
+     * resets affected components back to OPERATIONAL and notifies subscribers of the resolution.
+     */
     @Test
     void resolveIncident_activeIncident_resolvesAndResetsComponents() {
         UUID id = UUID.randomUUID();
@@ -325,6 +392,10 @@ class StatusIncidentServiceTest {
         verify(incidentNotificationService).notifySubscribersOfIncidentResolution(any(StatusIncident.class), any());
     }
 
+    /**
+     * Verifies that attempting to resolve an already-resolved incident throws a {@link RuntimeException}
+     * and never persists changes.
+     */
     @Test
     void resolveIncident_alreadyResolved_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -336,6 +407,9 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that a resolved incident can be deleted.
+     */
     @Test
     void deleteIncident_resolved_deletes() {
         UUID id = UUID.randomUUID();
@@ -347,6 +421,10 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository).delete(incident);
     }
 
+    /**
+     * Verifies that attempting to delete an active (unresolved) incident throws a {@link RuntimeException}
+     * and never deletes it.
+     */
     @Test
     void deleteIncident_active_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -358,6 +436,9 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that creating an automated incident with a null app returns null (no incident created).
+     */
     @Test
     void createAutomatedIncident_nullApp_returnsNull() {
         StatusIncident result = statusIncidentService.createAutomatedIncident(null, IMPACT_MAJOR, "down");
@@ -365,6 +446,10 @@ class StatusIncidentServiceTest {
         assertThat(result).isNull();
     }
 
+    /**
+     * Verifies that when no automated incident exists a new one is created in the INVESTIGATING status
+     * with the mapped impact and an "Automated" title, and subscribers are notified.
+     */
     @Test
     void createAutomatedIncident_noExisting_createsNewInvestigating() {
         UUID appId = UUID.randomUUID();
@@ -381,6 +466,10 @@ class StatusIncidentServiceTest {
         verify(incidentNotificationService).notifySubscribersOfNewIncident(any(StatusIncident.class));
     }
 
+    /**
+     * Verifies that an existing automated incident is upgraded (severity and impact raised) when the new
+     * report carries a worse severity, and the existing incident is saved.
+     */
     @Test
     void createAutomatedIncident_existingWorseSeverity_upgradesSeverity() {
         UUID appId = UUID.randomUUID();
@@ -396,6 +485,10 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository).save(existing);
     }
 
+    /**
+     * Verifies that an existing automated incident is left unchanged (not saved) when the new report's
+     * severity is not worse than the current one.
+     */
     @Test
     void createAutomatedIncident_existingNotWorse_doesNotUpgrade() {
         UUID appId = UUID.randomUUID();
@@ -409,6 +502,10 @@ class StatusIncidentServiceTest {
         verify(statusIncidentRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that resolving automated incidents for an app resolves each active automated incident
+     * and notifies subscribers of the resolution.
+     */
     @Test
     void resolveAutomatedIncidents_resolvesAllAndNotifies() {
         UUID appId = UUID.randomUUID();
@@ -425,6 +522,9 @@ class StatusIncidentServiceTest {
         verify(incidentNotificationService).notifySubscribersOfIncidentResolution(any(StatusIncident.class), any());
     }
 
+    /**
+     * Verifies that resolving automated incidents with a null app performs no repository interaction.
+     */
     @Test
     void resolveAutomatedIncidents_nullApp_noInteraction() {
         statusIncidentService.resolveAutomatedIncidents(null);

@@ -109,10 +109,12 @@ public class LogViewerService {
             String line;
             while ((line = reader.readLine()) != null) {
                 totalRead++;
+                // Skip lines that do not match the active search filter
                 if (hasSearch && !line.toLowerCase().contains(searchLower)) {
                     continue;
                 }
                 deque.addLast(line);
+                // Drop the oldest retained line once the window exceeds the requested size
                 if (deque.size() > requestedLines) {
                     deque.removeFirst();
                 }
@@ -142,6 +144,16 @@ public class LogViewerService {
         return response;
     }
 
+    /**
+     * Lists the loggers of interest together with their level information.
+     * <p>
+     * The set always includes a fixed group of well-known loggers (ROOT, Spring,
+     * Hibernate, the application package and Hikari) plus any logger that has an
+     * explicitly configured level. Results are sorted alphabetically by name.
+     * </p>
+     *
+     * @return a sorted list of logger information (name, effective and configured level)
+     */
     public List<LoggerInfoResponse> getLoggers() {
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
 
@@ -154,6 +166,7 @@ public class LogViewerService {
 
         // Also add any logger that has an explicitly configured level
         for (ch.qos.logback.classic.Logger logger : ctx.getLoggerList()) {
+            // Include any logger that has an explicitly configured (non-inherited) level
             if (logger.getLevel() != null) {
                 interestingNames.add(logger.getName());
             }
@@ -162,6 +175,7 @@ public class LogViewerService {
         List<LoggerInfoResponse> result = new ArrayList<>();
         for (String name : interestingNames) {
             ch.qos.logback.classic.Logger logger = ctx.getLogger(name);
+            // Skip names that do not resolve to a logger instance
             if (logger == null) continue;
 
             LoggerInfoResponse info = new LoggerInfoResponse();
@@ -175,36 +189,73 @@ public class LogViewerService {
         return result;
     }
 
+    /**
+     * Adjusts the level of a named logger at runtime.
+     * <p>
+     * Passing a blank, {@code "DEFAULT"} or {@code "null"} level resets the logger to
+     * inherit its parent's level; any other value sets the explicit level parsed by
+     * Logback.
+     * </p>
+     *
+     * @param loggerName the name of the logger to modify
+     * @param level      the level to apply, or a reset sentinel to inherit the parent level
+     */
     public void setLogLevel(String loggerName, String level) {
         LoggerContext ctx = (LoggerContext) LoggerFactory.getILoggerFactory();
         ch.qos.logback.classic.Logger logger = ctx.getLogger(loggerName);
+        // Unknown logger name: nothing to change
         if (logger == null) return;
 
+        // Reset sentinel provided: clear the explicit level so the parent's level is inherited
         if (level == null || level.isBlank() || "DEFAULT".equalsIgnoreCase(level) || "null".equalsIgnoreCase(level)) {
             logger.setLevel(null);
         } else {
+            // Explicit level requested: parse and apply it
             logger.setLevel(Level.toLevel(level, null));
         }
     }
 
+    /**
+     * Resolves the path of the application log file.
+     * <p>
+     * Prefers the {@code logging.file.name} configured value; otherwise falls back to
+     * the default Spring Boot location ({@code logs/spring.log}), returned as an
+     * absolute path.
+     * </p>
+     *
+     * @return the resolved application log file path
+     */
     private String resolveAppLogPath() {
+        // Use the explicitly configured log file when one is set
         if (configuredLogFile != null && !configuredLogFile.isBlank()) {
             return configuredLogFile;
         }
         // Default Spring Boot log file location
         Path defaultPath = Paths.get("logs/spring.log");
+        // Prefer the default file when it exists on disk
         if (Files.exists(defaultPath)) {
             return defaultPath.toAbsolutePath().toString();
         }
         return defaultPath.toAbsolutePath().toString();
     }
 
+    /**
+     * Resolves the path of the system log file.
+     * <p>
+     * Probes the common locations ({@code /var/log/syslog} then {@code /var/log/messages})
+     * and returns the first that exists, defaulting to {@code /var/log/syslog}.
+     * </p>
+     *
+     * @return the resolved system log file path
+     */
     private String resolveSyslogPath() {
         Path syslog = Paths.get("/var/log/syslog");
+        // Debian-style syslog present: use it
         if (Files.exists(syslog)) {
             return syslog.toString();
         }
         Path messages = Paths.get("/var/log/messages");
+        // RHEL-style messages log present: use it
         if (Files.exists(messages)) {
             return messages.toString();
         }

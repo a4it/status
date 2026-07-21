@@ -30,6 +30,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@link JobDispatcherService}, the component that loads a job,
+ * enforces enabled/status/concurrency guards, routes execution to the correct
+ * executor by {@link JobType}, and records the resulting {@link SchedulerJobRun}.
+ *
+ * <p>Collaborators (repositories and the per-type executor services) are Mockito
+ * mocks injected into the service under test.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class JobDispatcherServiceTest {
 
@@ -45,6 +53,12 @@ class JobDispatcherServiceTest {
     private final UUID jobId = UUID.randomUUID();
     private final UUID tenantId = UUID.randomUUID();
 
+    /**
+     * Builds an enabled, ACTIVE, non-concurrent job of the given type for use as test fixture.
+     *
+     * @param type the job type to assign
+     * @return a ready-to-dispatch {@link SchedulerJob}
+     */
     private SchedulerJob activeJob(JobType type) {
         SchedulerJob job = new SchedulerJob();
         job.setId(jobId);
@@ -61,6 +75,10 @@ class JobDispatcherServiceTest {
     // Routing by job type
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies a REST job is routed to the REST executor only.
+     * Expected outcome: REST executor invoked, SQL executor not invoked, job saved.
+     */
     @Test
     void dispatch_restJob_routesToRestExecutor() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -76,6 +94,10 @@ class JobDispatcherServiceTest {
         verify(schedulerJobRepository).save(job);
     }
 
+    /**
+     * Verifies a SQL job is routed to the SQL executor only.
+     * Expected outcome: SQL executor invoked, REST executor not invoked.
+     */
     @Test
     void dispatch_sqlJob_routesToSqlExecutor() {
         SchedulerJob job = activeJob(JobType.SQL);
@@ -90,6 +112,10 @@ class JobDispatcherServiceTest {
         verify(restExecutorService, never()).execute(any(), any());
     }
 
+    /**
+     * Verifies a successful scheduled run is recorded with the correct trigger type and status.
+     * Expected outcome: run is SCHEDULED/SUCCESS with a finish time, job reflects success and zero failures.
+     */
     @Test
     void dispatch_successfulRun_recordsRunningTriggerTypeScheduled() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -119,6 +145,10 @@ class JobDispatcherServiceTest {
     // Enabled / status guards
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies a disabled job is skipped without executing or recording a run.
+     * Expected outcome: no executor invocation and no run saved.
+     */
     @Test
     void dispatch_disabledJob_skipsAndReturnsNull() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -131,6 +161,10 @@ class JobDispatcherServiceTest {
         verify(schedulerJobRunRepository, never()).save(any());
     }
 
+    /**
+     * Verifies a non-ACTIVE (paused) job is skipped.
+     * Expected outcome: no executor invocation and no run saved.
+     */
     @Test
     void dispatch_notActiveJob_skips() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -143,6 +177,10 @@ class JobDispatcherServiceTest {
         verify(schedulerJobRunRepository, never()).save(any());
     }
 
+    /**
+     * Verifies dispatching an unknown job id is a no-op.
+     * Expected outcome: no run is saved.
+     */
     @Test
     void dispatch_jobNotFound_returnsNullNoExecution() {
         when(schedulerJobRepository.findById(jobId)).thenReturn(Optional.empty());
@@ -156,6 +194,10 @@ class JobDispatcherServiceTest {
     // Concurrency guard
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies that when concurrency is disallowed and a run is already RUNNING, a SKIPPED run is recorded.
+     * Expected outcome: a single run saved with status SKIPPED and no executor invocation.
+     */
     @Test
     void dispatch_concurrentDisallowedAndAlreadyRunning_recordsSkipped() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -173,6 +215,10 @@ class JobDispatcherServiceTest {
         verify(restExecutorService, never()).execute(any(), any());
     }
 
+    /**
+     * Verifies that when concurrency is allowed, execution proceeds without the running-check query.
+     * Expected outcome: no RUNNING-status query and the executor is invoked.
+     */
     @Test
     void dispatch_concurrentAllowed_executesEvenWhenRunning() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -190,6 +236,10 @@ class JobDispatcherServiceTest {
     // Failure handling
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies that an executor exception is caught, the run marked FAILURE, and the failure counter incremented.
+     * Expected outcome: job last status FAILURE and consecutive failures bumped from 2 to 3.
+     */
     @Test
     void dispatch_executorThrows_marksFailureAndIncrementsConsecutiveFailures() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -210,6 +260,10 @@ class JobDispatcherServiceTest {
     // triggerManually
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies a manual trigger for an accessible job dispatches with MANUAL trigger metadata.
+     * Expected outcome: a non-null run with trigger type MANUAL and the triggering user recorded.
+     */
     @Test
     void triggerManually_found_dispatchesWithManualTrigger() {
         SchedulerJob job = activeJob(JobType.REST);
@@ -225,6 +279,10 @@ class JobDispatcherServiceTest {
         assertThat(run.getTriggeredBy()).isEqualTo("tim");
     }
 
+    /**
+     * Verifies a manual trigger for a job not owned by the tenant is rejected.
+     * Expected outcome: a {@link RuntimeException} with an access-denied message.
+     */
     @Test
     void triggerManually_notFoundForTenant_throwsRuntimeException() {
         when(schedulerJobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.empty());

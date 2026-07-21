@@ -28,6 +28,12 @@ class JvmControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private JvmService jvmService;
 
+    /**
+     * Verifies {@code GET /api/jvm/stats} returns 200 with the {@link JvmService}
+     * stats mapped to {@code heapUsed} and {@code threadCount} JSON fields.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getStats_returnsOk() throws Exception {
         JvmStatsResponse stats = new JvmStatsResponse();
@@ -41,6 +47,12 @@ class JvmControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.threadCount").value(42));
     }
 
+    /**
+     * Verifies {@code GET /api/jvm/gc/schedule} returns 200 with the mocked
+     * schedule config's {@code enabled} and {@code cron} JSON fields.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getGcSchedule_returnsOk() throws Exception {
         GcScheduleRequest cfg = new GcScheduleRequest();
@@ -54,6 +66,12 @@ class JvmControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.cron").value("0 0 * * * *"));
     }
 
+    /**
+     * Verifies {@code PUT /api/jvm/gc/schedule} returns 200 and delegates to
+     * {@link JvmService#updateSchedule} with the request's enabled flag and cron.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void updateGcSchedule_returnsOk() throws Exception {
         String body = "{\"enabled\":true,\"cron\":\"0 0 * * * *\"}";
@@ -64,6 +82,12 @@ class JvmControllerTest extends AbstractApiControllerTest {
         verify(jvmService).updateSchedule(anyBoolean(), any());
     }
 
+    /**
+     * Verifies {@code POST /api/jvm/gc/run} returns 200 with a success message and
+     * delegates to {@link JvmService#triggerGcNow()}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void runGcNow_returnsOkMessage() throws Exception {
         mockMvc.perform(post("/api/jvm/gc/run"))

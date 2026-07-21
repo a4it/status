@@ -26,12 +26,22 @@ class LogViewerServiceTest {
 
     private final LogViewerService service = new LogViewerService();
 
+    /**
+     * Helper that injects the service's {@code configuredLogFile} field via reflection,
+     * simulating the value normally supplied by application configuration.
+     *
+     * @param value the log file path to configure on the service under test
+     */
     private void setConfiguredLogFile(String value) {
         ReflectionTestUtils.setField(service, "configuredLogFile", value);
     }
 
     // ── readLogFile ───────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that a {@code null} file path yields a single placeholder line, a total of
+     * one line, no truncation, and a zero byte size.
+     */
     @Test
     void readLogFile_nullPath_returnsPlaceholder() {
         LogViewerResponse resp = service.readLogFile(null, 100, null);
@@ -42,6 +52,10 @@ class LogViewerServiceTest {
         assertThat(resp.getFileSizeBytes()).isZero();
     }
 
+    /**
+     * Verifies that a blank (whitespace-only) file path is treated like an unconfigured
+     * path and yields the "no log file path configured" placeholder line.
+     */
     @Test
     void readLogFile_blankPath_returnsPlaceholder() {
         LogViewerResponse resp = service.readLogFile("   ", 100, null);
@@ -49,6 +63,10 @@ class LogViewerServiceTest {
         assertThat(resp.getLines()).containsExactly("[No log file path configured]");
     }
 
+    /**
+     * Verifies that a path pointing to a non-existent file yields a single line whose
+     * content indicates the log file was not found.
+     */
     @Test
     void readLogFile_missingFile_returnsNotFoundPlaceholder() {
         LogViewerResponse resp = service.readLogFile("/no/such/file/here.log", 100, null);
@@ -57,6 +75,13 @@ class LogViewerServiceTest {
         assertThat(resp.getLines().get(0)).contains("Log file not found");
     }
 
+    /**
+     * Verifies that when an existing file has fewer lines than requested, all lines are
+     * returned in order with the correct total count, no truncation, and a positive file size.
+     *
+     * @param dir JUnit-provided temporary directory used to create the real log file
+     * @throws IOException if writing the temporary log file fails
+     */
     @Test
     void readLogFile_existingFile_returnsLastNLines(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("app.log");
@@ -70,6 +95,13 @@ class LogViewerServiceTest {
         assertThat(resp.getFileSizeBytes()).isGreaterThan(0);
     }
 
+    /**
+     * Verifies that when a file has more lines than requested, only the last N lines are
+     * returned and the response's truncated flag is set to {@code true}.
+     *
+     * @param dir JUnit-provided temporary directory used to create the real log file
+     * @throws IOException if writing the temporary log file fails
+     */
     @Test
     void readLogFile_moreLinesThanRequested_truncatesToLastNAndFlagsTruncated(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("app.log");
@@ -82,6 +114,13 @@ class LogViewerServiceTest {
         assertThat(resp.isTruncated()).isTrue();
     }
 
+    /**
+     * Verifies that supplying a search term filters lines case-insensitively, returning only
+     * matching lines, and that the truncated flag stays {@code false} when a filter is applied.
+     *
+     * @param dir JUnit-provided temporary directory used to create the real log file
+     * @throws IOException if writing the temporary log file fails
+     */
     @Test
     void readLogFile_withSearch_filtersMatchingLinesCaseInsensitiveAndNotTruncated(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("app.log");
@@ -96,6 +135,13 @@ class LogViewerServiceTest {
 
     // ── readAppLog / readSyslog delegation ────────────────────────────────────
 
+    /**
+     * Verifies that {@code readAppLog} resolves and reads from the configured log file path,
+     * returning that path and its contents in the response.
+     *
+     * @param dir JUnit-provided temporary directory used to create the real log file
+     * @throws IOException if writing the temporary log file fails
+     */
     @Test
     void readAppLog_usesConfiguredLogFilePath(@TempDir Path dir) throws IOException {
         Path file = dir.resolve("configured.log");
@@ -108,6 +154,10 @@ class LogViewerServiceTest {
         assertThat(resp.getLines()).containsExactly("hello");
     }
 
+    /**
+     * Verifies that {@code readSyslog} always produces a non-null response with a resolved,
+     * non-blank file path regardless of whether the syslog file exists in the test environment.
+     */
     @Test
     void readSyslog_returnsResponseWithResolvedPath() {
         setConfiguredLogFile("");
@@ -121,6 +171,10 @@ class LogViewerServiceTest {
 
     // ── getLoggers / setLogLevel (live logback context) ───────────────────────
 
+    /**
+     * Verifies that {@code getLoggers} returns a non-empty list including the ROOT logger and
+     * the application package, sorted by name, with every entry exposing an effective level.
+     */
     @Test
     void getLoggers_includesRootAndKnownPackages_sortedByName() {
         List<LoggerInfoResponse> loggers = service.getLoggers();
@@ -132,6 +186,10 @@ class LogViewerServiceTest {
         assertThat(loggers).allSatisfy(l -> assertThat(l.getEffectiveLevel()).isNotNull());
     }
 
+    /**
+     * Verifies that setting an explicit level (DEBUG) on a named logger records that level as the
+     * logger's configured level; a finally block restores the logger to DEFAULT afterwards.
+     */
     @Test
     void setLogLevel_explicitLevel_setsConfiguredLevel() {
         String name = "org.automatize.status.services.LogViewerServiceTest.custom";
@@ -147,6 +205,10 @@ class LogViewerServiceTest {
         }
     }
 
+    /**
+     * Verifies that passing the DEFAULT keyword clears a previously configured level so the logger
+     * either drops out of the configured set or reports a null configured level.
+     */
     @Test
     void setLogLevel_defaultKeyword_clearsConfiguredLevel() {
         String name = "org.automatize.status.services.LogViewerServiceTest.reset";
@@ -157,6 +219,7 @@ class LogViewerServiceTest {
                 .filter(l -> l.getName().equals(name))
                 .findFirst().orElse(null);
         // Once cleared, either it drops out of the "configured" set or reports null configured level
+        // if the logger is still present, assert its configured level was cleared to null
         if (info != null) {
             assertThat(info.getConfiguredLevel()).isNull();
         }

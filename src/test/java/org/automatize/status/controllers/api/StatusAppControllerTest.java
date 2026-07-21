@@ -174,6 +174,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PUT /api/status-apps/{id} maps {@link ResourceNotFoundException} to 404 Not Found.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updateStatusApp_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusAppService.updateStatusApp(eq(id), any()))
@@ -184,6 +189,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies DELETE /api/status-apps/{id} returns 200 OK with a success message and delegates to the service.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void deleteStatusApp_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -195,6 +205,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PATCH /api/status-apps/{id}/status with a status param returns 200 OK with the updated app.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updateStatusAppStatus_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusAppService.updateStatus(eq(id), eq("MAJOR_OUTAGE"))).thenReturn(sampleResponse(id));
@@ -205,6 +220,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PATCH /api/status-apps/{id}/status without the required status param returns 400 Bad Request.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updateStatusAppStatus_missingStatusParam_returns400() throws Exception {
         UUID id = UUID.randomUUID();
 
@@ -213,6 +233,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps/tenant/{tenantId} returns 200 OK with the tenant's apps.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getStatusAppsByTenant_returnsOk() throws Exception {
         UUID tenantId = UUID.randomUUID();
         when(statusAppService.getStatusAppsByTenant(tenantId))
@@ -224,6 +249,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps/organization/{organizationId} returns 200 OK with the organization's apps.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getStatusAppsByOrganization_returnsOk() throws Exception {
         UUID orgId = UUID.randomUUID();
         when(statusAppService.getStatusAppsByOrganization(orgId))
@@ -235,6 +265,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps/platform/{platformId} returns 200 OK with the platform's apps.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getStatusAppsByPlatform_returnsOk() throws Exception {
         UUID platformId = UUID.randomUUID();
         when(statusAppService.getStatusAppsByPlatform(platformId))

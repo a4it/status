@@ -81,14 +81,19 @@ public class OrganizationService {
     public Page<Organization> getAllOrganizations(UUID tenantId, String status, String search, Pageable pageable) {
         List<Organization> organizations;
         
+        // Both tenant and status supplied: filter by the combination
         if (tenantId != null && status != null) {
             organizations = organizationRepository.findByTenantIdAndStatus(tenantId, status);
+        // Only tenant supplied: filter by tenant
         } else if (tenantId != null) {
             organizations = organizationRepository.findByTenantId(tenantId);
+        // Only status supplied: filter by status
         } else if (status != null) {
             organizations = organizationRepository.findByStatus(status);
+        // Only a non-empty search term supplied: run a name search
         } else if (search != null && !search.isEmpty()) {
             organizations = organizationRepository.search(search);
+        // No filters: return the natively paginated result set
         } else {
             return organizationRepository.findAll(pageable);
         }
@@ -131,6 +136,7 @@ public class OrganizationService {
         UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         UUID organizationId = principal.getOrganizationId();
         
+        // The current user must be associated with an organization
         if (organizationId == null) {
             throw new BusinessRuleException("User does not belong to any organization");
         }
@@ -151,17 +157,20 @@ public class OrganizationService {
      * @throws RuntimeException if the specified tenant is not found
      */
     public Organization createOrganization(OrganizationRequest request) {
+        // Enforce unique organization name
         if (organizationRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Organization with name already exists: " + request.getName());
         }
 
+        // Enforce unique email when one is provided
         if (request.getEmail() != null && organizationRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Organization with email already exists: " + request.getEmail());
         }
 
         Organization organization = new Organization();
         mapRequestToOrganization(request, organization);
-        
+
+        // Associate the organization with its tenant when a tenant is specified
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
                     .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
@@ -191,20 +200,23 @@ public class OrganizationService {
     public Organization updateOrganization(UUID id, OrganizationRequest request) {
         Organization organization = getOrganizationById(id);
 
-        if (!organization.getName().equals(request.getName()) && 
+        // When the name changes, ensure the new name is still unique
+        if (!organization.getName().equals(request.getName()) &&
             organizationRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Organization with name already exists: " + request.getName());
         }
 
-        if (request.getEmail() != null && 
-            !request.getEmail().equals(organization.getEmail()) && 
+        // When the email changes, ensure the new email is still unique
+        if (request.getEmail() != null &&
+            !request.getEmail().equals(organization.getEmail()) &&
             organizationRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Organization with email already exists: " + request.getEmail());
         }
 
         mapRequestToOrganization(request, organization);
-        
-        if (request.getTenantId() != null && 
+
+        // Reassign the tenant only when a different tenant is requested
+        if (request.getTenantId() != null &&
             (organization.getTenant() == null || !organization.getTenant().getId().equals(request.getTenantId()))) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
                     .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
@@ -245,6 +257,7 @@ public class OrganizationService {
         Organization organization = getOrganizationById(id);
         
         Long userCount = userRepository.countByOrganizationId(id);
+        // Prevent deletion while the organization still has associated users
         if (userCount > 0) {
             throw new BusinessRuleException("Cannot delete organization with active users");
         }
@@ -284,8 +297,10 @@ public class OrganizationService {
      */
     private String getCurrentUsername() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
+        // No authentication in context: attribute the action to the system
         if (auth == null) return "system";
         Object principal = auth.getPrincipal();
+        // Extract the username only from a UserPrincipal-typed principal
         if (principal instanceof UserPrincipal up) return up.getUsername();
         return "system";
     }

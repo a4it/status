@@ -117,6 +117,7 @@ public class HealthCheckService {
      * @return a HealthCheckResult indicating success or failure with a message
      */
     public HealthCheckResult performCheck(String checkType, String url, int timeoutSeconds, Integer expectedStatus) {
+        // Treat a missing or NONE check type as a successful no-op
         if (checkType == null || "NONE".equals(checkType)) {
             return new HealthCheckResult(true, "No check configured");
         }
@@ -132,6 +133,7 @@ public class HealthCheckService {
 
         int timeoutMs = timeoutSeconds * 1000;
 
+        // Dispatch to the appropriate check implementation based on the check type
         return switch (checkType) {
             case "PING" -> performPing(url, timeoutMs);
             case "HTTP_GET" -> performHttpGet(url, timeoutMs, expectedStatus != null ? expectedStatus : 200);
@@ -156,8 +158,10 @@ public class HealthCheckService {
             boolean reachable = address.isReachable(timeoutMs);
             long responseTime = System.currentTimeMillis() - startTime;
 
+            // Report success when the host responded to the reachability probe
             if (reachable) {
                 return new HealthCheckResult(true, "Ping successful (" + responseTime + "ms)");
+            // Otherwise report the host as unreachable
             } else {
                 return new HealthCheckResult(false, "Host unreachable");
             }
@@ -188,6 +192,7 @@ public class HealthCheckService {
             return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
         }
         String scheme = uri.getScheme();
+        // Only allow HTTP and HTTPS schemes for the GET request
         if (!"http".equals(scheme) && !"https".equals(scheme)) {
             return new HealthCheckResult(false, "Unsupported URL scheme: " + scheme);
         }
@@ -204,8 +209,10 @@ public class HealthCheckService {
             int responseCode = connection.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
 
+            // Success when the response matches the expected status (or any 2xx when 200 is expected)
             if (responseCode == expectedStatus || (expectedStatus == 200 && responseCode >= 200 && responseCode < 300)) {
                 return new HealthCheckResult(true, HTTP_PREFIX + responseCode + " (" + responseTime + "ms)");
+            // Otherwise report the unexpected status code
             } else {
                 return new HealthCheckResult(false, HTTP_PREFIX + responseCode + " (expected " + expectedStatus + ")");
             }
@@ -213,6 +220,7 @@ public class HealthCheckService {
             logger.debug("HTTP GET failed for {}: {}", urlString, e.getMessage());
             return new HealthCheckResult(false, "HTTP request failed: " + e.getMessage());
         } finally {
+            // Always release the connection if one was opened
             if (connection != null) {
                 connection.disconnect();
             }
@@ -244,6 +252,7 @@ public class HealthCheckService {
             return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
         }
         String scheme = healthUri.getScheme();
+        // Only allow HTTP and HTTPS schemes for the health endpoint request
         if (!"http".equals(scheme) && !"https".equals(scheme)) {
             return new HealthCheckResult(false, "Unsupported URL scheme: " + scheme);
         }
@@ -266,6 +275,7 @@ public class HealthCheckService {
             logger.debug("Spring Boot health check failed for {}: {}", urlString, e.getMessage());
             return new HealthCheckResult(false, "Health check failed: " + e.getMessage());
         } finally {
+            // Always release the connection if one was opened
             if (connection != null) {
                 connection.disconnect();
             }
@@ -282,16 +292,20 @@ public class HealthCheckService {
      * @throws IOException if reading or parsing the response fails
      */
     private HealthCheckResult parseSpringBootHealthResponse(HttpURLConnection connection, int responseCode, long responseTime) throws IOException {
+        // Parse the JSON body only when the endpoint returned a 2xx response
         if (responseCode >= 200 && responseCode < 300) {
             String responseBody = new String(connection.getInputStream().readAllBytes());
             JsonNode jsonNode = objectMapper.readTree(responseBody);
             String status = jsonNode.has("status") ? jsonNode.get("status").asText() : "UNKNOWN";
 
+            // Success when the reported application status is UP
             if ("UP".equalsIgnoreCase(status)) {
                 return new HealthCheckResult(true, "Health: UP (" + responseTime + "ms)");
+            // Otherwise report the non-UP status
             } else {
                 return new HealthCheckResult(false, "Health: " + status);
             }
+        // Non-2xx responses are treated as a failed health check
         } else {
             return new HealthCheckResult(false, HTTP_PREFIX + responseCode);
         }
@@ -339,13 +353,16 @@ public class HealthCheckService {
      * @return the extracted hostname, or empty string if url is null
      */
     private String extractHostname(String url) {
+        // Treat null input as an empty hostname
         if (url == null) return "";
         String hostname = url.replaceFirst("^(https?://)", "").replaceFirst("^(tcp://)", "");
         int slashIndex = hostname.indexOf('/');
+        // Strip any path component after the host
         if (slashIndex > 0) {
             hostname = hostname.substring(0, slashIndex);
         }
         int colonIndex = hostname.indexOf(':');
+        // Strip any port component after the host
         if (colonIndex > 0) {
             hostname = hostname.substring(0, colonIndex);
         }
@@ -377,6 +394,7 @@ public class HealthCheckService {
 
         String previousStatus = app.getStatus();
 
+        // On a successful check, reset failures and possibly auto-restore the app
         if (result.success()) {
             app.setConsecutiveFailures(0);
             // Auto-restore to OPERATIONAL if it was auto-degraded
@@ -387,6 +405,7 @@ public class HealthCheckService {
                 // Resolve any automated incidents and notify subscribers
                 statusIncidentService.resolveAutomatedIncidents(app);
             }
+        // On a failed check, delegate to the failure-handling logic
         } else {
             handleFailedAppCheck(app, result);
         }
@@ -407,7 +426,9 @@ public class HealthCheckService {
         app.setConsecutiveFailures(failures);
 
         Integer threshold = app.getCheckFailureThreshold() != null ? app.getCheckFailureThreshold() : 3;
+        // Escalate to MAJOR_OUTAGE once failures reach twice the threshold
         if (failures >= threshold * 2) {
+            // Only transition and raise an incident if not already in MAJOR_OUTAGE
             if (!STATUS_MAJOR_OUTAGE.equals(app.getStatus())) {
                 app.setStatus(STATUS_MAJOR_OUTAGE);
                 logger.warn("App {} changed to MAJOR_OUTAGE after {} consecutive failures", app.getName(), failures);
@@ -415,6 +436,7 @@ public class HealthCheckService {
                 // Create or upgrade automated incident with CRITICAL severity
                 statusIncidentService.createAutomatedIncident(app, "CRITICAL", result.message());
             }
+        // Otherwise degrade to DEGRADED_PERFORMANCE once failures reach the threshold and the app is still healthy
         } else if (failures >= threshold
                 && !STATUS_DEGRADED.equals(app.getStatus()) && !STATUS_MAJOR_OUTAGE.equals(app.getStatus())) {
             app.setStatus(STATUS_DEGRADED);
@@ -444,6 +466,7 @@ public class HealthCheckService {
         component.setLastCheckSuccess(result.success());
         component.setLastCheckMessage(result.message());
 
+        // On a successful check, reset failures and possibly auto-restore the component
         if (result.success()) {
             component.setConsecutiveFailures(0);
             // Auto-restore to OPERATIONAL if it was auto-degraded
@@ -452,6 +475,7 @@ public class HealthCheckService {
                 component.setStatus("OPERATIONAL");
                 logger.info("Component {} auto-restored from {} to OPERATIONAL", component.getName(), previousStatus);
             }
+        // On a failed check, delegate to the failure-handling logic
         } else {
             handleFailedComponentCheck(component);
         }
@@ -471,11 +495,14 @@ public class HealthCheckService {
         component.setConsecutiveFailures(failures);
 
         Integer threshold = component.getCheckFailureThreshold() != null ? component.getCheckFailureThreshold() : 3;
+        // Escalate to MAJOR_OUTAGE once failures reach twice the threshold
         if (failures >= threshold * 2) {
+            // Only transition if not already in MAJOR_OUTAGE
             if (!STATUS_MAJOR_OUTAGE.equals(component.getStatus())) {
                 component.setStatus(STATUS_MAJOR_OUTAGE);
                 logger.warn("Component {} changed to MAJOR_OUTAGE after {} consecutive failures", component.getName(), failures);
             }
+        // Otherwise degrade to DEGRADED_PERFORMANCE once failures reach the threshold and the component is still healthy
         } else if (failures >= threshold
                 && !STATUS_DEGRADED.equals(component.getStatus()) && !STATUS_MAJOR_OUTAGE.equals(component.getStatus())) {
             component.setStatus(STATUS_DEGRADED);

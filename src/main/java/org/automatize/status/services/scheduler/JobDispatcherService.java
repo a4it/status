@@ -89,24 +89,38 @@ public class JobDispatcherService {
     // Internal dispatch pipeline
     // -------------------------------------------------------------------------
 
+    /**
+     * Core dispatch pipeline shared by scheduled and manual triggers.
+     * Loads the job, enforces enabled/active and concurrency constraints, creates
+     * the in-progress run record, and delegates to {@link #executeJob}.
+     *
+     * @param jobId         the job UUID to dispatch
+     * @param triggerType   how the run was initiated (scheduled or manual)
+     * @param triggeredBy   the operator's username for manual runs; may be {@code null}
+     * @param attemptNumber the retry attempt number (1 for the first attempt)
+     * @return the created {@link SchedulerJobRun}, or {@code null} when the job was skipped
+     */
     @Transactional
     protected SchedulerJobRun dispatchInternal(UUID jobId, JobTriggerType triggerType,
                                                String triggeredBy, int attemptNumber) {
         Optional<SchedulerJob> jobOpt = schedulerJobRepository.findById(jobId);
+        // Job no longer exists — nothing to dispatch
         if (jobOpt.isEmpty()) {
             logger.warn("Job {} not found — skipping dispatch", jobId);
             return null;
         }
         SchedulerJob job = jobOpt.get();
 
+        // Skip when the job is disabled or not in ACTIVE status
         if (!Boolean.TRUE.equals(job.getEnabled()) || job.getStatus() != JobStatus.ACTIVE) {
             logger.debug("Job {} is not active/enabled — skipping", jobId);
             return null;
         }
 
-        // Concurrency guard
+        // Concurrency guard: when concurrent runs are disallowed, check for an in-progress run
         if (!Boolean.TRUE.equals(job.getAllowConcurrent())) {
             List<SchedulerJobRun> running = schedulerJobRunRepository.findByJobIdAndStatus(jobId, JobRunStatus.RUNNING);
+            // A run is already active — record a SKIPPED run instead of starting another
             if (!running.isEmpty()) {
                 logger.info("Job {} already running (concurrent not allowed) — recording SKIPPED run", jobId);
                 return createSkippedRun(job, triggerType, triggeredBy, attemptNumber);
@@ -129,9 +143,17 @@ public class JobDispatcherService {
         return run;
     }
 
+    /**
+     * Runs the job via the executor matching its type, then finalises the run record
+     * (duration, finished timestamp) and updates job-level statistics regardless of outcome.
+     *
+     * @param job the job being executed
+     * @param run the in-progress run record to finalise
+     */
     private void executeJob(SchedulerJob job, SchedulerJobRun run) {
         long startMs = System.currentTimeMillis();
         try {
+            // Route to the executor for the job's type
             switch (job.getJobType()) {
                 case PROGRAM -> programExecutorService.execute(job.getProgramConfig(), run);
                 case SQL     -> sqlExecutorService.execute(job.getSqlConfig(), run);
@@ -151,8 +173,10 @@ public class JobDispatcherService {
             // Update job-level stats
             job.setLastRunAt(run.getFinishedAt());
             job.setLastRunStatus(run.getStatus());
+            // Failure or timeout increments the consecutive failure counter
             if (run.getStatus() == JobRunStatus.FAILURE || run.getStatus() == JobRunStatus.TIMEOUT) {
                 job.setConsecutiveFailures(job.getConsecutiveFailures() + 1);
+            // Success resets the consecutive failure counter
             } else if (run.getStatus() == JobRunStatus.SUCCESS) {
                 job.setConsecutiveFailures(0);
             }
@@ -160,6 +184,16 @@ public class JobDispatcherService {
         }
     }
 
+    /**
+     * Creates and persists a SKIPPED run record for a dispatch that was suppressed
+     * by the concurrency guard (zero duration, started/finished set to now).
+     *
+     * @param job           the job that was skipped
+     * @param triggerType   how the run was initiated
+     * @param triggeredBy   the operator's username; may be {@code null}
+     * @param attemptNumber the retry attempt number
+     * @return the persisted SKIPPED run record
+     */
     private SchedulerJobRun createSkippedRun(SchedulerJob job, JobTriggerType triggerType,
                                               String triggeredBy, int attemptNumber) {
         SchedulerJobRun run = new SchedulerJobRun();

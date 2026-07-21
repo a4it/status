@@ -83,18 +83,32 @@ public class LogMetricService {
 
     // -------------------------------------------------------------------------
 
+    /**
+     * Inserts a new metric bucket or, if one already exists for the same
+     * tenant/service/level/bucket/type combination, increments its count.
+     *
+     * @param tenantId   the tenant the metric belongs to; may be null
+     * @param service    the service the metric is for
+     * @param level      the log level the metric is for
+     * @param bucket     the time bucket the metric covers
+     * @param bucketType the granularity of the bucket (e.g. "MINUTE")
+     * @param count      the number of log events to add to the bucket
+     */
     private void upsertMetric(UUID tenantId, String service, String level,
                                ZonedDateTime bucket, String bucketType, long count) {
         Optional<LogMetric> existing = logMetricRepository
                 .findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
                         tenantId, service, level, bucket, bucketType);
 
+        // Increment the count when a matching bucket already exists
         if (existing.isPresent()) {
             LogMetric m = existing.get();
             m.setCount(m.getCount() + count);
             logMetricRepository.save(m);
+        // Otherwise create a fresh metric bucket
         } else {
             LogMetric m = new LogMetric();
+            // Associate the metric with a tenant only when a tenant id is present
             if (tenantId != null) {
                 // Set tenant lazily via ID — avoids loading entity
                 org.automatize.status.models.Tenant t = new org.automatize.status.models.Tenant();

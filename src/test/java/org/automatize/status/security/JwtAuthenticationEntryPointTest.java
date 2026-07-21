@@ -16,17 +16,37 @@ class JwtAuthenticationEntryPointTest {
 
     private JwtAuthenticationEntryPoint entryPoint;
 
+    /**
+     * Minimal concrete {@link AuthenticationException} used to drive the entry
+     * point, since {@code AuthenticationException} is abstract.
+     */
     private static class TestAuthException extends AuthenticationException {
+        /**
+         * Creates the test exception with the given message.
+         *
+         * @param msg the authentication failure message
+         */
         TestAuthException(String msg) {
             super(msg);
         }
     }
 
+    /**
+     * Creates a fresh {@link JwtAuthenticationEntryPoint} (with a real
+     * {@link ObjectMapper}) before each test.
+     */
     @BeforeEach
     void setUp() {
         entryPoint = new JwtAuthenticationEntryPoint(new ObjectMapper());
     }
 
+    /**
+     * Verifies that for an {@code /api/**} request the entry point responds with
+     * 401, a JSON content type, and a body containing the status, error, message,
+     * and path fields.
+     *
+     * @throws Exception if writing the response fails
+     */
     @Test
     void commence_apiPath_returns401JsonBody() throws Exception {
         // Arrange
@@ -49,6 +69,12 @@ class JwtAuthenticationEntryPointTest {
                 .contains("\"path\":\"/api/secure\"");
     }
 
+    /**
+     * Verifies that for a non-API request the entry point redirects to
+     * {@code /login?session_expired=true} and writes no response body.
+     *
+     * @throws Exception if writing the response fails
+     */
     @Test
     void commence_nonApiPath_redirectsToLogin() throws Exception {
         // Arrange

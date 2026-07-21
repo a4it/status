@@ -96,6 +96,7 @@ public class HealthCheckScheduler {
      */
     @Scheduled(fixedRateString = "${health-check.scheduler-interval-ms:10000}")
     public void runHealthChecks() {
+        // Skip this scheduled run when health checking is globally disabled
         if (!isHealthCheckEnabled()) {
             return;
         }
@@ -153,20 +154,24 @@ public class HealthCheckScheduler {
         logger.info("Manual trigger: Running health check for app {}", appId);
 
         Optional<StatusApp> appOpt = statusAppRepository.findById(appId);
+        // Fail fast when the requested app does not exist
         if (appOpt.isEmpty()) {
             return new HealthCheckTriggerResponse(false, "App not found: " + appId);
         }
 
         StatusApp app = appOpt.get();
 
+        // Reject the trigger when health checking is disabled for this app
         if (!Boolean.TRUE.equals(app.getCheckEnabled())) {
             return new HealthCheckTriggerResponse(false, "Health checking is not enabled for this app");
         }
 
+        // Reject the trigger when no check type is configured
         if (app.getCheckType() == null || "NONE".equals(app.getCheckType())) {
             return new HealthCheckTriggerResponse(false, "No check type configured for this app");
         }
 
+        // Reject the trigger when no check URL is configured
         if (app.getCheckUrl() == null || app.getCheckUrl().isBlank()) {
             return new HealthCheckTriggerResponse(false, "No check URL configured for this app");
         }
@@ -202,24 +207,29 @@ public class HealthCheckScheduler {
         logger.info("Manual trigger: Running health check for component {}", componentId);
 
         Optional<StatusComponent> componentOpt = statusComponentRepository.findById(componentId);
+        // Fail fast when the requested component does not exist
         if (componentOpt.isEmpty()) {
             return new HealthCheckTriggerResponse(false, "Component not found: " + componentId);
         }
 
         StatusComponent component = componentOpt.get();
 
+        // Redirect to the app check when this component inherits its check from the app
         if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
             return new HealthCheckTriggerResponse(false, "Component inherits check from app, trigger the app check instead");
         }
 
+        // Reject the trigger when health checking is disabled for this component
         if (!Boolean.TRUE.equals(component.getCheckEnabled())) {
             return new HealthCheckTriggerResponse(false, "Health checking is not enabled for this component");
         }
 
+        // Reject the trigger when no check type is configured
         if (component.getCheckType() == null || "NONE".equals(component.getCheckType())) {
             return new HealthCheckTriggerResponse(false, "No check type configured for this component");
         }
 
+        // Reject the trigger when no check URL is configured
         if (component.getCheckUrl() == null || component.getCheckUrl().isBlank()) {
             return new HealthCheckTriggerResponse(false, "No check URL configured for this component");
         }
@@ -271,6 +281,7 @@ public class HealthCheckScheduler {
      * Determines whether an entity is due for a health check based on its last check time and interval.
      */
     private boolean isDueForCheck(ZonedDateTime lastCheckAt, Integer intervalSeconds, ZonedDateTime now) {
+        // An entity that has never been checked is always due
         if (lastCheckAt == null) {
             return true;
         }
@@ -294,8 +305,10 @@ public class HealthCheckScheduler {
 
             healthCheckService.updateAppCheckResult(app, result);
 
+            // Log at debug level when the app check passed
             if (result.success()) {
                 logger.debug("App {} check successful: {}", app.getName(), result.message());
+            // Otherwise log a warning for the failed app check
             } else {
                 logger.warn("App {} check failed: {}", app.getName(), result.message());
             }
@@ -322,8 +335,10 @@ public class HealthCheckScheduler {
 
             healthCheckService.updateComponentCheckResult(component, result);
 
+            // Log at debug level when the component check passed
             if (result.success()) {
                 logger.debug("Component {} check successful: {}", component.getName(), result.message());
+            // Otherwise log a warning for the failed component check
             } else {
                 logger.warn("Component {} check failed: {}", component.getName(), result.message());
             }

@@ -133,10 +133,23 @@ public class AlertRuleService {
         return alertRuleRepository.save(rule);
     }
 
+    /**
+     * Deletes the alert rule identified by the given id.
+     *
+     * @param id the unique identifier of the alert rule to delete
+     * @throws RuntimeException if no alert rule exists for the given id
+     */
     public void delete(UUID id) {
         alertRuleRepository.delete(findById(id));
     }
 
+    /**
+     * Toggles the active state of the alert rule identified by the given id.
+     *
+     * @param id the unique identifier of the alert rule to toggle
+     * @return the updated and persisted alert rule with its active state flipped
+     * @throws RuntimeException if no alert rule exists for the given id
+     */
     public AlertRule toggleActive(UUID id) {
         AlertRule rule = findById(id);
         rule.setIsActive(!Boolean.TRUE.equals(rule.getIsActive()));
@@ -160,7 +173,14 @@ public class AlertRuleService {
 
     // -------------------------------------------------------------------------
 
+    /**
+     * Evaluates a single alert rule: skips it if still in cooldown, otherwise counts
+     * matching events within the rule's window and fires an alert if the threshold is met.
+     *
+     * @param rule the alert rule to evaluate
+     */
     private void evaluate(AlertRule rule) {
+        // Skip evaluation while the rule is still within its cooldown period
         if (isInCooldown(rule)) {
             return;
         }
@@ -168,6 +188,7 @@ public class AlertRuleService {
         ZonedDateTime since = ZonedDateTime.now().minusMinutes(rule.getWindowMinutes());
         long count = logMetricService.sumCountSince(rule.getService(), rule.getLevel(), since);
 
+        // Fire the alert when the matching event count reaches the configured threshold
         if (count >= rule.getThresholdCount()) {
             logger.warn("Alert rule '{}' triggered: count={} >= threshold={}", rule.getName(), count, rule.getThresholdCount());
             fireAlert(rule, count);
@@ -176,7 +197,15 @@ public class AlertRuleService {
         }
     }
 
+    /**
+     * Determines whether the rule is currently within its cooldown period and should
+     * therefore not fire again yet.
+     *
+     * @param rule the alert rule to check
+     * @return {@code true} if the rule is still in cooldown, {@code false} otherwise
+     */
     private boolean isInCooldown(AlertRule rule) {
+        // Never fired or no cooldown configured means the rule is not in cooldown
         if (rule.getLastFiredAt() == null || rule.getCooldownMinutes() == null) {
             return false;
         }
@@ -184,10 +213,17 @@ public class AlertRuleService {
         return ZonedDateTime.now().isBefore(cooldownExpiry);
     }
 
+    /**
+     * Dispatches an alert notification through the channel configured on the rule.
+     *
+     * @param rule the alert rule that was triggered
+     * @param count the number of matching events that triggered the alert
+     */
     private void fireAlert(AlertRule rule, long count) {
         String subject = String.format("[Alert] %s — %d events in %d min", rule.getName(), count, rule.getWindowMinutes());
         String body = buildAlertBody(rule, count);
 
+        // Route the notification to the channel matching the rule's configured type
         switch (rule.getNotificationType().toUpperCase()) {
             case "EMAIL" -> emailService.sendSimpleEmail(rule.getNotificationTarget(), subject, body);
             case "SLACK" -> sendSlackWebhook(rule.getNotificationTarget(), subject + "\n" + body);
@@ -196,6 +232,13 @@ public class AlertRuleService {
         }
     }
 
+    /**
+     * Builds the human-readable body text describing a triggered alert.
+     *
+     * @param rule the alert rule that was triggered
+     * @param count the number of matching events that triggered the alert
+     * @return the formatted alert body text
+     */
     private String buildAlertBody(AlertRule rule, long count) {
         return String.format(
                 "Alert rule: %s\nService: %s\nLevel: %s\nCount: %d (threshold: %d)\nWindow: %d minutes\nTime: %s",
@@ -209,17 +252,37 @@ public class AlertRuleService {
         );
     }
 
+    /**
+     * Sends a Slack-formatted message to the given Slack incoming webhook URL.
+     *
+     * @param webhookUrl the Slack incoming webhook URL
+     * @param text the message text to send
+     */
     private void sendSlackWebhook(String webhookUrl, String text) {
         String payload = "{\"text\": \"" + escapeJson(text) + "\"}";
         postJson(webhookUrl, payload);
     }
 
+    /**
+     * Sends a generic JSON webhook containing the alert subject and body.
+     *
+     * @param url the webhook endpoint URL
+     * @param subject the alert subject
+     * @param body the alert body
+     */
     private void sendHttpWebhook(String url, String subject, String body) {
         String payload = String.format("{\"subject\":\"%s\",\"body\":\"%s\"}",
                 escapeJson(subject), escapeJson(body));
         postJson(url, payload);
     }
 
+    /**
+     * Performs an HTTP POST with a JSON payload to the given URL, logging the response
+     * or any failure. Restores the thread's interrupt status on interruption.
+     *
+     * @param url the target URL
+     * @param jsonBody the JSON payload to send
+     */
     private void postJson(String url, String jsonBody) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -235,7 +298,15 @@ public class AlertRuleService {
         }
     }
 
+    /**
+     * Escapes backslashes, double quotes, and newlines so the given text can be
+     * safely embedded inside a JSON string literal.
+     *
+     * @param text the raw text to escape, may be {@code null}
+     * @return the escaped text, or an empty string if the input was {@code null}
+     */
     private String escapeJson(String text) {
+        // Treat a null input as an empty escaped string
         if (text == null) return "";
         return text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
     }

@@ -24,6 +24,11 @@ class JwtUtilsTest {
 
     private JwtUtils jwtUtils;
 
+    /**
+     * Instantiates {@link JwtUtils} and injects the secret and expiration
+     * settings via reflection before each test, since they are normally
+     * property-bound.
+     */
     @BeforeEach
     void setUp() {
         jwtUtils = new JwtUtils();
@@ -32,6 +37,11 @@ class JwtUtilsTest {
         ReflectionTestUtils.setField(jwtUtils, "refreshTokenExpirationMs", REFRESH_EXPIRATION_MS);
     }
 
+    /**
+     * Verifies that a token generated from a user id is a well-formed
+     * three-segment JWT from which the username, user id, and organization id can
+     * be parsed back.
+     */
     @Test
     void generateJwtTokenFromUserId_validInput_returnsParsableToken() {
         // Arrange
@@ -49,6 +59,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.getOrganizationIdFromJwtToken(token)).isEqualTo(orgId);
     }
 
+    /**
+     * Verifies that a generated refresh token is non-blank and carries the
+     * username as its subject.
+     */
     @Test
     void generateRefreshToken_validUsername_returnsTokenWithSubject() {
         // Act
@@ -59,6 +73,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.getUserNameFromJwtToken(token)).isEqualTo("jdoe");
     }
 
+    /**
+     * Verifies that {@code validateJwtToken} returns {@code true} for a freshly
+     * generated, unexpired token.
+     */
     @Test
     void validateJwtToken_validToken_returnsTrue() {
         // Arrange
@@ -69,6 +87,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.validateJwtToken(token)).isTrue();
     }
 
+    /**
+     * Verifies that {@code validateJwtToken} returns {@code false} for a token
+     * whose expiry is already in the past.
+     */
     @Test
     void validateJwtToken_expiredToken_returnsFalse() {
         // Arrange: negative expiry so the token is already expired at creation
@@ -80,6 +102,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.validateJwtToken(expired)).isFalse();
     }
 
+    /**
+     * Verifies that {@code validateJwtToken} returns {@code false} when the
+     * token's signature segment has been altered.
+     */
     @Test
     void validateJwtToken_tamperedSignature_returnsFalse() {
         // Arrange
@@ -94,18 +120,31 @@ class JwtUtilsTest {
         assertThat(jwtUtils.validateJwtToken(tampered)).isFalse();
     }
 
+    /**
+     * Verifies that {@code validateJwtToken} returns {@code false} for a string
+     * that is not a parseable JWT.
+     */
     @Test
     void validateJwtToken_malformedToken_returnsFalse() {
         // Act & Assert
         assertThat(jwtUtils.validateJwtToken("this.is.not-a-jwt")).isFalse();
     }
 
+    /**
+     * Verifies that {@code validateJwtToken} returns {@code false} for an empty
+     * token string.
+     */
     @Test
     void validateJwtToken_emptyToken_returnsFalse() {
         // Act & Assert
         assertThat(jwtUtils.validateJwtToken("")).isFalse();
     }
 
+    /**
+     * Verifies that for a context-bearing token, {@code getAllClaimsFromToken}
+     * and the individual claim accessors return the subject, email, tenant id,
+     * organization id, and user id that were encoded.
+     */
     @Test
     void getAllClaimsFromToken_tokenWithContext_extractsAllClaims() {
         // Arrange
@@ -126,6 +165,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.getUserIdFromJwtToken(token)).isEqualTo(userId);
     }
 
+    /**
+     * Verifies that {@code requiresContextSelection} returns {@code true} for a
+     * SUPERADMIN token with no selected context.
+     */
     @Test
     void requiresContextSelection_superadminToken_returnsTrue() {
         // Arrange
@@ -136,6 +179,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.requiresContextSelection(token)).isTrue();
     }
 
+    /**
+     * Verifies that {@code requiresContextSelection} returns {@code false} for a
+     * regular USER token.
+     */
     @Test
     void requiresContextSelection_regularUserToken_returnsFalse() {
         // Arrange
@@ -146,6 +193,10 @@ class JwtUtilsTest {
         assertThat(jwtUtils.requiresContextSelection(token)).isFalse();
     }
 
+    /**
+     * Verifies that {@code getTenantIdFromJwtToken} returns {@code null} when the
+     * token carries no tenant claim.
+     */
     @Test
     void getTenantIdFromJwtToken_noTenantClaim_returnsNull() {
         // Arrange

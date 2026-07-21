@@ -50,6 +50,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PublicStatusServiceTest {
 
+    private static final String OPERATIONAL = "OPERATIONAL";
+
     @Mock
     private StatusAppRepository statusAppRepository;
     @Mock
@@ -72,17 +74,34 @@ class PublicStatusServiceTest {
     @InjectMocks
     private PublicStatusService publicStatusService;
 
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal succeed.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication
+     * state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a {@link StatusApp} fixture.
+     *
+     * @param id       the application id
+     * @param slug     the URL slug
+     * @param status   the current status (e.g. OPERATIONAL)
+     * @param isPublic whether the app is publicly visible
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp newApp(UUID id, String slug, String status, boolean isPublic) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -93,6 +112,14 @@ class PublicStatusServiceTest {
         return app;
     }
 
+    /**
+     * Builds a {@link StatusComponent} fixture attached to the given app.
+     *
+     * @param id     the component id
+     * @param app    the owning application
+     * @param status the component status
+     * @return a populated {@link StatusComponent} instance
+     */
     private StatusComponent newComponent(UUID id, StatusApp app, String status) {
         StatusComponent component = new StatusComponent();
         component.setId(id);
@@ -102,6 +129,15 @@ class PublicStatusServiceTest {
         return component;
     }
 
+    /**
+     * Builds a {@link StatusIncident} fixture attached to the given app.
+     *
+     * @param id       the incident id
+     * @param app      the affected application
+     * @param status   the incident status (e.g. INVESTIGATING, RESOLVED)
+     * @param isPublic whether the incident is publicly visible
+     * @return a populated {@link StatusIncident} instance
+     */
     private StatusIncident newIncident(UUID id, StatusApp app, String status, boolean isPublic) {
         StatusIncident incident = new StatusIncident();
         incident.setId(id);
@@ -114,6 +150,15 @@ class PublicStatusServiceTest {
         return incident;
     }
 
+    /**
+     * Builds a {@link StatusMaintenance} fixture scheduled for tomorrow.
+     *
+     * @param id       the maintenance id
+     * @param app      the affected application
+     * @param status   the maintenance status (e.g. SCHEDULED)
+     * @param isPublic whether the maintenance window is publicly visible
+     * @return a populated {@link StatusMaintenance} instance
+     */
     private StatusMaintenance newMaintenance(UUID id, StatusApp app, String status, boolean isPublic) {
         StatusMaintenance m = new StatusMaintenance();
         m.setId(id);
@@ -126,16 +171,24 @@ class PublicStatusServiceTest {
         return m;
     }
 
+    /**
+     * Verifies that with no tenant filter the service returns all publicly visible
+     * apps.
+     */
     @Test
     void getAllPublicApps_noTenant_returnsPublicApps() {
         when(statusAppRepository.findByIsPublic(true))
-                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", "OPERATIONAL", true)));
+                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", OPERATIONAL, true)));
 
         List<StatusAppResponse> result = publicStatusService.getAllPublicApps(null);
 
         assertThat(result).hasSize(1);
     }
 
+    /**
+     * Verifies that requesting apps for an unknown tenant name raises a runtime
+     * exception.
+     */
     @Test
     void getAllPublicApps_tenantNotFound_throwsRuntime() {
         when(tenantRepository.findByName("acme")).thenReturn(Optional.empty());
@@ -144,6 +197,10 @@ class PublicStatusServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that a known tenant name scopes the returned public apps to that
+     * tenant.
+     */
     @Test
     void getAllPublicApps_withTenant_returnsTenantScopedApps() {
         UUID tenantId = UUID.randomUUID();
@@ -151,16 +208,20 @@ class PublicStatusServiceTest {
         tenant.setId(tenantId);
         when(tenantRepository.findByName("acme")).thenReturn(Optional.of(tenant));
         when(statusAppRepository.findByTenantIdAndIsPublic(tenantId, true))
-                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", "OPERATIONAL", true)));
+                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", OPERATIONAL, true)));
 
         List<StatusAppResponse> result = publicStatusService.getAllPublicApps("acme");
 
         assertThat(result).hasSize(1);
     }
 
+    /**
+     * Verifies that looking up a public app by slug returns a response carrying that
+     * slug.
+     */
     @Test
     void getAppBySlug_publicApp_returnsResponse() {
-        StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL", true);
+        StatusApp app = newApp(UUID.randomUUID(), "web", OPERATIONAL, true);
         when(statusAppRepository.findBySlug("web")).thenReturn(Optional.of(app));
 
         StatusAppResponse response = publicStatusService.getAppBySlug("web", null);
@@ -168,15 +229,23 @@ class PublicStatusServiceTest {
         assertThat(response.getSlug()).isEqualTo("web");
     }
 
+    /**
+     * Verifies that a non-public app is treated as absent, raising
+     * {@link ResourceNotFoundException} when looked up by slug.
+     */
     @Test
     void getAppBySlug_notPublic_throwsResourceNotFound() {
-        StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL", false);
+        StatusApp app = newApp(UUID.randomUUID(), "web", OPERATIONAL, false);
         when(statusAppRepository.findBySlug("web")).thenReturn(Optional.of(app));
 
         assertThatThrownBy(() -> publicStatusService.getAppBySlug("web", null))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that looking up a slug with no matching app raises a runtime
+     * exception.
+     */
     @Test
     void getAppBySlug_notFound_throwsRuntime() {
         when(statusAppRepository.findBySlug("web")).thenReturn(Optional.empty());
@@ -185,13 +254,16 @@ class PublicStatusServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that components of a public app are returned ordered by position.
+     */
     @Test
     void getAppComponents_publicApp_returnsComponents() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "web", "OPERATIONAL", true);
+        StatusApp app = newApp(appId, "web", OPERATIONAL, true);
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusComponentRepository.findByAppIdOrderByPosition(appId))
-                .thenReturn(List.of(newComponent(UUID.randomUUID(), app, "OPERATIONAL"),
+                .thenReturn(List.of(newComponent(UUID.randomUUID(), app, OPERATIONAL),
                         newComponent(UUID.randomUUID(), app, "DEGRADED")));
 
         List<StatusComponentResponse> result = publicStatusService.getAppComponents(appId);
@@ -199,15 +271,23 @@ class PublicStatusServiceTest {
         assertThat(result).hasSize(2);
     }
 
+    /**
+     * Verifies that requesting components of a non-public app raises
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void getAppComponents_notPublic_throwsResourceNotFound() {
         UUID appId = UUID.randomUUID();
-        when(statusAppRepository.findById(appId)).thenReturn(Optional.of(newApp(appId, "web", "OPERATIONAL", false)));
+        when(statusAppRepository.findById(appId)).thenReturn(Optional.of(newApp(appId, "web", OPERATIONAL, false)));
 
         assertThatThrownBy(() -> publicStatusService.getAppComponents(appId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that current-incident results exclude private incidents, returning
+     * only the public, unresolved ones.
+     */
     @Test
     void getCurrentIncidents_returnsOnlyPublicUnresolved() {
         UUID appId = UUID.randomUUID();
@@ -222,10 +302,14 @@ class PublicStatusServiceTest {
         assertThat(result).hasSize(1);
     }
 
+    /**
+     * Verifies that upcoming maintenance results exclude private windows, returning
+     * only the public ones.
+     */
     @Test
     void getAppMaintenance_upcoming_returnsOnlyPublic() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "web", "OPERATIONAL", true);
+        StatusApp app = newApp(appId, "web", OPERATIONAL, true);
         StatusMaintenance publicM = newMaintenance(UUID.randomUUID(), app, "SCHEDULED", true);
         StatusMaintenance privateM = newMaintenance(UUID.randomUUID(), app, "SCHEDULED", false);
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
@@ -237,10 +321,14 @@ class PublicStatusServiceTest {
         assertThat(result).hasSize(1);
     }
 
+    /**
+     * Verifies that when every app is operational the summary reports zero apps with
+     * issues and an overall OPERATIONAL status.
+     */
     @Test
     void getStatusSummary_allOperational_overallOperational() {
-        StatusApp a1 = newApp(UUID.randomUUID(), "a1", "OPERATIONAL", true);
-        StatusApp a2 = newApp(UUID.randomUUID(), "a2", "OPERATIONAL", true);
+        StatusApp a1 = newApp(UUID.randomUUID(), "a1", OPERATIONAL, true);
+        StatusApp a2 = newApp(UUID.randomUUID(), "a2", OPERATIONAL, true);
         when(statusAppRepository.findByIsPublic(true)).thenReturn(List.of(a1, a2));
 
         StatusSummaryResponse summary = publicStatusService.getStatusSummary(null);
@@ -248,12 +336,16 @@ class PublicStatusServiceTest {
         assertThat(summary.getTotalApps()).isEqualTo(2);
         assertThat(summary.getOperationalApps()).isEqualTo(2);
         assertThat(summary.getAppsWithIssues()).isZero();
-        assertThat(summary.getOverallStatus()).isEqualTo("OPERATIONAL");
+        assertThat(summary.getOverallStatus()).isEqualTo(OPERATIONAL);
     }
 
+    /**
+     * Verifies that when a large share of apps are down the summary escalates the
+     * overall status to MAJOR_OUTAGE.
+     */
     @Test
     void getStatusSummary_majorityDown_overallMajorOutage() {
-        StatusApp a1 = newApp(UUID.randomUUID(), "a1", "OPERATIONAL", true);
+        StatusApp a1 = newApp(UUID.randomUUID(), "a1", OPERATIONAL, true);
         StatusApp a2 = newApp(UUID.randomUUID(), "a2", "MAJOR_OUTAGE", true);
         when(statusAppRepository.findByIsPublic(true)).thenReturn(List.of(a1, a2));
 
@@ -263,10 +355,14 @@ class PublicStatusServiceTest {
         assertThat(summary.getOverallStatus()).isEqualTo("MAJOR_OUTAGE");
     }
 
+    /**
+     * Verifies that when only a minority of apps are down the summary reports an
+     * overall DEGRADED status.
+     */
     @Test
     void getStatusSummary_minorityDown_overallDegraded() {
-        StatusApp a1 = newApp(UUID.randomUUID(), "a1", "OPERATIONAL", true);
-        StatusApp a2 = newApp(UUID.randomUUID(), "a2", "OPERATIONAL", true);
+        StatusApp a1 = newApp(UUID.randomUUID(), "a1", OPERATIONAL, true);
+        StatusApp a2 = newApp(UUID.randomUUID(), "a2", OPERATIONAL, true);
         StatusApp a3 = newApp(UUID.randomUUID(), "a3", "MAJOR_OUTAGE", true);
         when(statusAppRepository.findByIsPublic(true)).thenReturn(List.of(a1, a2, a3));
 
@@ -275,10 +371,14 @@ class PublicStatusServiceTest {
         assertThat(summary.getOverallStatus()).isEqualTo("DEGRADED");
     }
 
+    /**
+     * Verifies that app uptime is computed from resolved incidents, deriving total
+     * incidents, outage minutes and uptime percentage.
+     */
     @Test
     void getAppUptime_publicApp_calculatesUptimeFromIncidents() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "web", "OPERATIONAL", true);
+        StatusApp app = newApp(appId, "web", OPERATIONAL, true);
         StatusIncident incident = newIncident(UUID.randomUUID(), app, "RESOLVED", true);
         incident.setStartedAt(ZonedDateTime.now().minusHours(2));
         incident.setResolvedAt(incident.getStartedAt().plusMinutes(60));
@@ -295,20 +395,28 @@ class PublicStatusServiceTest {
         assertThat(uptime.getUptimePercentage()).isEqualTo(95.83);
     }
 
+    /**
+     * Verifies that requesting uptime for a non-public app raises
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void getAppUptime_notPublic_throwsResourceNotFound() {
         UUID appId = UUID.randomUUID();
-        when(statusAppRepository.findById(appId)).thenReturn(Optional.of(newApp(appId, "web", "OPERATIONAL", false)));
+        when(statusAppRepository.findById(appId)).thenReturn(Optional.of(newApp(appId, "web", OPERATIONAL, false)));
 
         assertThatThrownBy(() -> publicStatusService.getAppUptime(appId, 1))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that component history for a public app returns the component id, the
+     * total incident count and a daily history spanning the requested days plus today.
+     */
     @Test
     void getComponentHistory_publicApp_buildsDailyHistory() {
         UUID componentId = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL", true);
-        StatusComponent component = newComponent(componentId, app, "OPERATIONAL");
+        StatusApp app = newApp(UUID.randomUUID(), "web", OPERATIONAL, true);
+        StatusComponent component = newComponent(componentId, app, OPERATIONAL);
         when(statusComponentRepository.findById(componentId)).thenReturn(Optional.of(component));
         when(statusIncidentComponentRepository.countByComponentId(componentId)).thenReturn(5L);
 
@@ -319,20 +427,28 @@ class PublicStatusServiceTest {
         assertThat(history.getHistory()).hasSize(8);
     }
 
+    /**
+     * Verifies that component history for a component whose app is not public raises
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void getComponentHistory_appNotPublic_throwsResourceNotFound() {
         UUID componentId = UUID.randomUUID();
-        StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL", false);
-        when(statusComponentRepository.findById(componentId)).thenReturn(Optional.of(newComponent(componentId, app, "OPERATIONAL")));
+        StatusApp app = newApp(UUID.randomUUID(), "web", OPERATIONAL, false);
+        when(statusComponentRepository.findById(componentId)).thenReturn(Optional.of(newComponent(componentId, app, OPERATIONAL)));
 
         assertThatThrownBy(() -> publicStatusService.getComponentHistory(componentId, 7))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that with no persisted uptime records the history is back-filled with
+     * defaults representing 100% uptime across the requested day range.
+     */
     @Test
     void getAppUptimeHistory_noRecords_fillsDefaultsAsFullUptime() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "web", "OPERATIONAL", true);
+        StatusApp app = newApp(appId, "web", OPERATIONAL, true);
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusUptimeHistoryRepository.findAppUptimeHistory(eq(appId), any(), any())).thenReturn(List.of());
 

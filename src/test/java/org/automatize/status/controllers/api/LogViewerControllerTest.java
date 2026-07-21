@@ -29,6 +29,12 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private LogViewerService logViewerService;
 
+    /**
+     * Builds a representative {@link LogViewerResponse} used to stub the service
+     * in read-oriented tests.
+     *
+     * @return a populated {@link LogViewerResponse} with two sample lines
+     */
     private LogViewerResponse sampleViewerResponse() {
         LogViewerResponse r = new LogViewerResponse();
         r.setLines(List.of("line one", "line two"));
@@ -39,6 +45,12 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies {@code GET /api/log-viewer/app-log} returns 200 with the service's
+     * {@link LogViewerResponse} serialized ({@code totalLines} and first line).
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getAppLog_returnsOk() throws Exception {
         when(logViewerService.readAppLog(anyInt(), anyString())).thenReturn(sampleViewerResponse());
@@ -49,6 +61,12 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.lines[0]").value("line one"));
     }
 
+    /**
+     * Verifies {@code GET /api/log-viewer/syslog} with {@code lines} and
+     * {@code search} params returns 200 and the serialized {@code filePath}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getSyslog_returnsOk() throws Exception {
         when(logViewerService.readSyslog(anyInt(), anyString())).thenReturn(sampleViewerResponse());
@@ -58,6 +76,12 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.filePath").value("/var/log/app.log"));
     }
 
+    /**
+     * Verifies {@code GET /api/log-viewer/loggers} returns 200 with the logger
+     * list serialized (name and effective level of the first entry).
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void getLoggers_returnsOk() throws Exception {
         LoggerInfoResponse info = new LoggerInfoResponse();
@@ -72,6 +96,13 @@ class LogViewerControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].effectiveLevel").value("INFO"));
     }
 
+    /**
+     * Verifies {@code PUT /api/log-viewer/loggers/{name}} returns 200 and
+     * delegates to {@link LogViewerService#setLogLevel} with the path name and
+     * requested level.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void setLogLevel_returnsOk() throws Exception {
         String body = "{\"level\":\"DEBUG\"}";

@@ -140,6 +140,16 @@ public class SchedulerJobApiController {
     // Update job
     // -------------------------------------------------------------------------
 
+    /**
+     * Updates an existing scheduler job.
+     * <p>
+     * HTTP PUT {@code /api/scheduler/jobs/{id}}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the job to update
+     * @param request the validated job update request
+     * @return ResponseEntity containing the updated job response
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerJobResponse> updateJob(@PathVariable UUID id,
@@ -155,6 +165,15 @@ public class SchedulerJobApiController {
     // Delete job
     // -------------------------------------------------------------------------
 
+    /**
+     * Deletes a scheduler job, scoped to the current tenant.
+     * <p>
+     * HTTP DELETE {@code /api/scheduler/jobs/{id}}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the job to delete
+     * @return ResponseEntity with HTTP 204 No Content status
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteJob(@PathVariable UUID id) {
@@ -167,6 +186,15 @@ public class SchedulerJobApiController {
     // Pause job
     // -------------------------------------------------------------------------
 
+    /**
+     * Pauses an active scheduler job so it will not be triggered on schedule.
+     * <p>
+     * HTTP POST {@code /api/scheduler/jobs/{id}/pause}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the job to pause
+     * @return ResponseEntity containing the updated job response
+     */
     @PostMapping("/{id}/pause")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerJobResponse> pauseJob(@PathVariable UUID id) {
@@ -179,6 +207,15 @@ public class SchedulerJobApiController {
     // Resume job
     // -------------------------------------------------------------------------
 
+    /**
+     * Resumes a paused scheduler job so it will again be triggered on schedule.
+     * <p>
+     * HTTP POST {@code /api/scheduler/jobs/{id}/resume}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the job to resume
+     * @return ResponseEntity containing the updated job response
+     */
     @PostMapping("/{id}/resume")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerJobResponse> resumeJob(@PathVariable UUID id) {
@@ -191,11 +228,21 @@ public class SchedulerJobApiController {
     // Manually trigger job
     // -------------------------------------------------------------------------
 
+    /**
+     * Manually triggers immediate execution of a scheduler job.
+     * <p>
+     * HTTP POST {@code /api/scheduler/jobs/{id}/trigger}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the job to trigger
+     * @return ResponseEntity containing the started job run, or an empty body if no run was started
+     */
     @PostMapping("/{id}/trigger")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerJobRunResponse> triggerJob(@PathVariable UUID id) {
         UserPrincipal principal = currentPrincipal();
         var run = jobDispatcherService.triggerManually(id, principal.getTenantId(), principal.getUsername());
+        // No run was created (e.g. concurrent execution disallowed); return an empty OK response
         if (run == null) {
             return ResponseEntity.ok().build();
         }
@@ -206,6 +253,16 @@ public class SchedulerJobApiController {
     // Next runs preview
     // -------------------------------------------------------------------------
 
+    /**
+     * Previews the next scheduled execution times for a job based on its cron expression.
+     * <p>
+     * HTTP GET {@code /api/scheduler/jobs/{id}/next-runs}
+     * </p>
+     *
+     * @param id the UUID of the job
+     * @param count the number of upcoming executions to return (default 5)
+     * @return ResponseEntity containing a list of formatted next-execution timestamps
+     */
     @GetMapping("/{id}/next-runs")
     public ResponseEntity<List<String>> nextRuns(@PathVariable UUID id,
                                                  @RequestParam(defaultValue = "5") int count) {
@@ -223,6 +280,15 @@ public class SchedulerJobApiController {
     // Dashboard stats
     // -------------------------------------------------------------------------
 
+    /**
+     * Returns aggregate dashboard statistics for the current tenant's jobs.
+     * <p>
+     * HTTP GET {@code /api/scheduler/jobs/stats}. Includes total job count, jobs
+     * currently running, and counts of runs succeeded and failed today.
+     * </p>
+     *
+     * @return ResponseEntity containing a map of statistic keys to their values
+     */
     @GetMapping("/stats")
     public ResponseEntity<Map<String, Object>> stats() {
         UserPrincipal principal = currentPrincipal();
@@ -251,10 +317,18 @@ public class SchedulerJobApiController {
     // Helper: build SchedulerJob from request
     // -------------------------------------------------------------------------
 
+    /**
+     * Populates a {@link SchedulerJob} entity from a request, applying common fields,
+     * the owning organization, and the type-specific configuration.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void buildJobFromRequest(SchedulerJobRequest req, SchedulerJob job) {
         applyCommonFields(req, job);
         applyOrganization(req, job);
 
+        // Dispatch to the configuration builder matching the job's type
         switch (job.getJobType()) {
             case PROGRAM -> applyProgramConfig(req, job);
             case SQL -> applySqlConfig(req, job);
@@ -267,6 +341,12 @@ public class SchedulerJobApiController {
     // Helper: base fields shared by every job type
     // -------------------------------------------------------------------------
 
+    /**
+     * Applies the base fields shared by every job type, defaulting optional values.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applyCommonFields(SchedulerJobRequest req, SchedulerJob job) {
         job.setName(req.getName());
         job.setDescription(req.getDescription());
@@ -280,6 +360,7 @@ public class SchedulerJobApiController {
         job.setMaxOutputBytes(req.getMaxOutputBytes() != null ? req.getMaxOutputBytes() : 102400);
         job.setTags(req.getTags());
 
+        // Only set the job type when a value was supplied
         if (req.getJobType() != null) {
             job.setJobType(JobType.valueOf(req.getJobType().toUpperCase()));
         }
@@ -289,7 +370,14 @@ public class SchedulerJobApiController {
     // Helper: resolve and attach the owning organization
     // -------------------------------------------------------------------------
 
+    /**
+     * Resolves and attaches the owning organization to the job when provided.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applyOrganization(SchedulerJobRequest req, SchedulerJob job) {
+        // Attach the owning organization when an organization id was provided
         if (req.getOrganizationId() != null) {
             organizationRepository.findById(req.getOrganizationId())
                     .ifPresent(job::setOrganization);
@@ -300,7 +388,14 @@ public class SchedulerJobApiController {
     // Helper: PROGRAM job configuration
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds and attaches the PROGRAM-type execution configuration to the job.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applyProgramConfig(SchedulerJobRequest req, SchedulerJob job) {
+        // Nothing to do when no program configuration was supplied
         if (req.getProgramConfig() == null) {
             return;
         }
@@ -322,17 +417,26 @@ public class SchedulerJobApiController {
     // Helper: SQL job configuration
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds and attaches the SQL-type execution configuration to the job.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applySqlConfig(SchedulerJobRequest req, SchedulerJob job) {
+        // Nothing to do when no SQL configuration was supplied
         if (req.getSqlConfig() == null) {
             return;
         }
         SchedulerSqlConfig cfg = new SchedulerSqlConfig();
         cfg.setJob(job);
         SchedulerJobRequest.SqlConfigRequest sc = req.getSqlConfig();
+        // Link a managed datasource when a datasource id was provided
         if (sc.getDatasourceId() != null) {
             datasourceRepository.findById(sc.getDatasourceId())
                     .ifPresent(cfg::setDatasource);
         }
+        // Set the inline database type when provided (for ad-hoc connections)
         if (sc.getInlineDbType() != null) {
             cfg.setInlineDbType(DbType.valueOf(sc.getInlineDbType().toUpperCase()));
         }
@@ -341,6 +445,7 @@ public class SchedulerJobApiController {
         // Stored as plaintext; service layer will encrypt
         cfg.setInlinePasswordEnc(sc.getInlinePassword());
         cfg.setSqlStatement(sc.getSqlStatement());
+        // Set the SQL statement type when provided
         if (sc.getSqlType() != null) {
             cfg.setSqlType(SqlType.valueOf(sc.getSqlType().toUpperCase()));
         }
@@ -354,13 +459,21 @@ public class SchedulerJobApiController {
     // Helper: REST job configuration
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds and attaches the REST-type execution configuration to the job.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applyRestConfig(SchedulerJobRequest req, SchedulerJob job) {
+        // Nothing to do when no REST configuration was supplied
         if (req.getRestConfig() == null) {
             return;
         }
         SchedulerRestConfig cfg = new SchedulerRestConfig();
         cfg.setJob(job);
         SchedulerJobRequest.RestConfigRequest rc = req.getRestConfig();
+        // Set the HTTP method when provided
         if (rc.getHttpMethod() != null) {
             cfg.setHttpMethod(HttpMethod.valueOf(rc.getHttpMethod().toUpperCase()));
         }
@@ -369,6 +482,7 @@ public class SchedulerJobApiController {
         cfg.setContentType(rc.getContentType() != null ? rc.getContentType() : "application/json");
         cfg.setHeaders(rc.getHeaders());
         cfg.setQueryParams(rc.getQueryParams());
+        // Set the authentication type when provided
         if (rc.getAuthType() != null) {
             cfg.setAuthType(AuthType.valueOf(rc.getAuthType().toUpperCase()));
         }
@@ -378,6 +492,7 @@ public class SchedulerJobApiController {
         cfg.setAuthTokenEnc(rc.getAuthToken());
         cfg.setAuthApiKeyName(rc.getAuthApiKeyName());
         cfg.setAuthApiKeyValueEnc(rc.getAuthApiKeyValue());
+        // Set where the API key is placed (header or query) when provided
         if (rc.getAuthApiKeyLocation() != null) {
             cfg.setAuthApiKeyLocation(ApiKeyLocation.valueOf(rc.getAuthApiKeyLocation().toUpperCase()));
         }
@@ -401,7 +516,14 @@ public class SchedulerJobApiController {
     // Helper: SOAP job configuration
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds and attaches the SOAP-type execution configuration to the job.
+     *
+     * @param req the incoming job request
+     * @param job the job entity to populate
+     */
     private void applySoapConfig(SchedulerJobRequest req, SchedulerJob job) {
+        // Nothing to do when no SOAP configuration was supplied
         if (req.getSoapConfig() == null) {
             return;
         }
@@ -414,11 +536,13 @@ public class SchedulerJobApiController {
         cfg.setPortName(sc.getPortName());
         cfg.setOperationName(sc.getOperationName());
         cfg.setSoapAction(sc.getSoapAction());
+        // Set the SOAP protocol version when provided
         if (sc.getSoapVersion() != null) {
             cfg.setSoapVersion(SoapVersion.valueOf(sc.getSoapVersion().toUpperCase()));
         }
         cfg.setSoapEnvelope(sc.getSoapEnvelope());
         cfg.setExtraHeaders(sc.getExtraHeaders());
+        // Set the authentication type when provided
         if (sc.getAuthType() != null) {
             cfg.setAuthType(AuthType.valueOf(sc.getAuthType().toUpperCase()));
         }
@@ -437,6 +561,11 @@ public class SchedulerJobApiController {
     // Utility
     // -------------------------------------------------------------------------
 
+    /**
+     * Resolves the currently authenticated user from the security context.
+     *
+     * @return the {@link UserPrincipal} for the current request
+     */
     private UserPrincipal currentPrincipal() {
         return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }

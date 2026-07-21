@@ -26,6 +26,12 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private ProcessMiningService processMiningService;
 
+    /**
+     * Verifies that {@code GET /api/logs/process-mining} with valid {@code scope} and
+     * {@code scopeId} params returns {@code 200 OK} with the built case dataset in the body.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getProcessMiningData_valid_returnsOk() throws Exception {
         ProcessMiningResponse.ProcessCase c = new ProcessMiningResponse.ProcessCase("trace-1", List.of());
@@ -40,6 +46,11 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.cases[0].caseId").value("trace-1"));
     }
 
+    /**
+     * Verifies that omitting the required {@code scope} param returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getProcessMiningData_missingScope_returns400() throws Exception {
         mockMvc.perform(get("/api/logs/process-mining")
@@ -47,6 +58,11 @@ class LogProcessMiningControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that omitting the required {@code scopeId} param returns {@code 400 Bad Request}.
+     *
+     * @throws Exception if the {@link org.springframework.test.web.servlet.MockMvc} request fails
+     */
     @Test
     void getProcessMiningData_missingScopeId_returns400() throws Exception {
         mockMvc.perform(get("/api/logs/process-mining")
