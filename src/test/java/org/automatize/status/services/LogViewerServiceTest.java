@@ -24,6 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 class LogViewerServiceTest {
 
+    private static final String APP_LOG_FILE_NAME = "app.log";
+
     private final LogViewerService service = new LogViewerService();
 
     /**
@@ -84,7 +86,7 @@ class LogViewerServiceTest {
      */
     @Test
     void readLogFile_existingFile_returnsLastNLines(@TempDir Path dir) throws IOException {
-        Path file = dir.resolve("app.log");
+        Path file = dir.resolve(APP_LOG_FILE_NAME);
         Files.write(file, List.of("line1", "line2", "line3"));
 
         LogViewerResponse resp = service.readLogFile(file.toString(), 100, null);
@@ -104,7 +106,7 @@ class LogViewerServiceTest {
      */
     @Test
     void readLogFile_moreLinesThanRequested_truncatesToLastNAndFlagsTruncated(@TempDir Path dir) throws IOException {
-        Path file = dir.resolve("app.log");
+        Path file = dir.resolve(APP_LOG_FILE_NAME);
         List<String> content = IntStream.rangeClosed(1, 10).mapToObj(i -> "line" + i).toList();
         Files.write(file, content);
 
@@ -123,7 +125,7 @@ class LogViewerServiceTest {
      */
     @Test
     void readLogFile_withSearch_filtersMatchingLinesCaseInsensitiveAndNotTruncated(@TempDir Path dir) throws IOException {
-        Path file = dir.resolve("app.log");
+        Path file = dir.resolve(APP_LOG_FILE_NAME);
         Files.write(file, List.of("INFO started", "ERROR boom", "info again", "DEBUG noise"));
 
         LogViewerResponse resp = service.readLogFile(file.toString(), 100, "info");

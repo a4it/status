@@ -33,6 +33,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LogMetricServiceTest {
 
+    private static final String LEVEL_ERROR = "ERROR";
+    private static final String SERVICE_BILLING = "billing";
+
     @Mock
     private LogMetricRepository logMetricRepository;
 
@@ -78,9 +81,9 @@ class LogMetricServiceTest {
     @Test
     void sumCountSince_nonNullResult_returnsValue() {
         ZonedDateTime since = ZonedDateTime.now().minusMinutes(5);
-        when(logMetricRepository.sumCountSince("svc", "ERROR", since)).thenReturn(17L);
+        when(logMetricRepository.sumCountSince("svc", LEVEL_ERROR, since)).thenReturn(17L);
 
-        assertThat(service.sumCountSince("svc", "ERROR", since)).isEqualTo(17L);
+        assertThat(service.sumCountSince("svc", LEVEL_ERROR, since)).isEqualTo(17L);
     }
 
     /**
@@ -90,9 +93,9 @@ class LogMetricServiceTest {
     @Test
     void sumCountSince_nullResult_returnsZero() {
         ZonedDateTime since = ZonedDateTime.now().minusMinutes(5);
-        when(logMetricRepository.sumCountSince("svc", "ERROR", since)).thenReturn(null);
+        when(logMetricRepository.sumCountSince("svc", LEVEL_ERROR, since)).thenReturn(null);
 
-        assertThat(service.sumCountSince("svc", "ERROR", since)).isZero();
+        assertThat(service.sumCountSince("svc", LEVEL_ERROR, since)).isZero();
     }
 
     // ── aggregateRecentLogs (upsert branches) ─────────────────────────────────
@@ -105,10 +108,10 @@ class LogMetricServiceTest {
     @Test
     void aggregateRecentLogs_newBucket_createsMetricWithTenant() {
         UUID tenantId = UUID.randomUUID();
-        Object[] row = new Object[]{tenantId, "billing", "ERROR", 5L};
+        Object[] row = new Object[]{tenantId, SERVICE_BILLING, LEVEL_ERROR, 5L};
         when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
         when(logMetricRepository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
-                eq(tenantId), eq("billing"), eq("ERROR"), any(), eq("MINUTE")))
+                eq(tenantId), eq(SERVICE_BILLING), eq(LEVEL_ERROR), any(), eq("MINUTE")))
                 .thenReturn(Optional.empty());
 
         service.aggregateRecentLogs();
@@ -116,8 +119,8 @@ class LogMetricServiceTest {
         ArgumentCaptor<LogMetric> captor = ArgumentCaptor.forClass(LogMetric.class);
         verify(logMetricRepository).save(captor.capture());
         LogMetric saved = captor.getValue();
-        assertThat(saved.getService()).isEqualTo("billing");
-        assertThat(saved.getLevel()).isEqualTo("ERROR");
+        assertThat(saved.getService()).isEqualTo(SERVICE_BILLING);
+        assertThat(saved.getLevel()).isEqualTo(LEVEL_ERROR);
         assertThat(saved.getBucketType()).isEqualTo("MINUTE");
         assertThat(saved.getCount()).isEqualTo(5L);
         assertThat(saved.getTenant()).isNotNull();
@@ -130,7 +133,7 @@ class LogMetricServiceTest {
      */
     @Test
     void aggregateRecentLogs_nullTenant_createsMetricWithoutTenant() {
-        Object[] row = new Object[]{null, "billing", "INFO", 3L};
+        Object[] row = new Object[]{null, SERVICE_BILLING, "INFO", 3L};
         when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
         when(logMetricRepository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
                 any(), any(), any(), any(), any()))
@@ -151,11 +154,11 @@ class LogMetricServiceTest {
      */
     @Test
     void aggregateRecentLogs_existingBucket_incrementsCount() {
-        Object[] row = new Object[]{null, "billing", "INFO", 4L};
+        Object[] row = new Object[]{null, SERVICE_BILLING, "INFO", 4L};
         when(logRepository.aggregateByServiceLevel(any(), any())).thenReturn(List.<Object[]>of(row));
 
         LogMetric existing = new LogMetric();
-        existing.setService("billing");
+        existing.setService(SERVICE_BILLING);
         existing.setLevel("INFO");
         existing.setCount(10L);
         when(logMetricRepository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(

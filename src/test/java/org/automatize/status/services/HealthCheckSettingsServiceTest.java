@@ -37,6 +37,11 @@ class HealthCheckSettingsServiceTest {
     @InjectMocks
     private HealthCheckSettingsService service;
 
+    private static final String ENABLED = "enabled";
+    private static final String THREAD_POOL_SIZE = "thread_pool_size";
+    private static final String FALSE = "false";
+    private static final String SCHEDULER_INTERVAL_MS = "scheduler_interval_ms";
+
     /**
      * Builds a {@link HealthCheckSettings} row with the given key and value for stubbing
      * repository responses.
@@ -59,14 +64,14 @@ class HealthCheckSettingsServiceTest {
     @Test
     void getAllSettings_mapsEntitiesToKeyValueMap() {
         when(repository.findAll()).thenReturn(List.of(
-                setting("enabled", "true"),
-                setting("thread_pool_size", "5")));
+                setting(ENABLED, "true"),
+                setting(THREAD_POOL_SIZE, "5")));
 
         Map<String, String> result = service.getAllSettings();
 
         assertThat(result)
-                .containsEntry("enabled", "true")
-                .containsEntry("thread_pool_size", "5")
+                .containsEntry(ENABLED, "true")
+                .containsEntry(THREAD_POOL_SIZE, "5")
                 .hasSize(2);
     }
 
@@ -76,9 +81,9 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void getSetting_whenFound_returnsValue() {
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "false")));
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.of(setting(ENABLED, FALSE)));
 
-        assertThat(service.getSetting("enabled", "true")).isEqualTo("false");
+        assertThat(service.getSetting(ENABLED, "true")).isEqualTo(FALSE);
     }
 
     /**
@@ -97,12 +102,12 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void updateSetting_whenExisting_updatesValueAndSaves() {
-        HealthCheckSettings existing = setting("enabled", "true");
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(existing));
+        HealthCheckSettings existing = setting(ENABLED, "true");
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.of(existing));
 
-        service.updateSetting("enabled", "false");
+        service.updateSetting(ENABLED, FALSE);
 
-        assertThat(existing.getSettingValue()).isEqualTo("false");
+        assertThat(existing.getSettingValue()).isEqualTo(FALSE);
         verify(repository).save(existing);
     }
 
@@ -112,13 +117,13 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void updateSetting_whenMissing_createsNewAndSaves() {
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.empty());
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.empty());
 
-        service.updateSetting("enabled", "true");
+        service.updateSetting(ENABLED, "true");
 
         ArgumentCaptor<HealthCheckSettings> captor = ArgumentCaptor.forClass(HealthCheckSettings.class);
         verify(repository).save(captor.capture());
-        assertThat(captor.getValue().getSettingKey()).isEqualTo("enabled");
+        assertThat(captor.getValue().getSettingKey()).isEqualTo(ENABLED);
         assertThat(captor.getValue().getSettingValue()).isEqualTo("true");
     }
 
@@ -129,7 +134,7 @@ class HealthCheckSettingsServiceTest {
     void updateSettings_updatesEachEntry() {
         when(repository.findBySettingKey(any())).thenReturn(Optional.empty());
 
-        service.updateSettings(Map.of("enabled", "true", "thread_pool_size", "8"));
+        service.updateSettings(Map.of(ENABLED, "true", THREAD_POOL_SIZE, "8"));
 
         verify(repository, times(2)).save(any(HealthCheckSettings.class));
     }
@@ -140,7 +145,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void isEnabled_whenValueTrue_returnsTrue() {
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "true")));
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.of(setting(ENABLED, "true")));
 
         assertThat(service.isEnabled()).isTrue();
     }
@@ -151,7 +156,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void isEnabled_whenValueFalse_returnsFalse() {
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "false")));
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.of(setting(ENABLED, FALSE)));
 
         assertThat(service.isEnabled()).isFalse();
     }
@@ -161,7 +166,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void isEnabled_whenMissing_defaultsToTrue() {
-        when(repository.findBySettingKey("enabled")).thenReturn(Optional.empty());
+        when(repository.findBySettingKey(ENABLED)).thenReturn(Optional.empty());
 
         assertThat(service.isEnabled()).isTrue();
     }
@@ -172,7 +177,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void getSchedulerIntervalMs_validValue_isParsed() {
-        when(repository.findBySettingKey("scheduler_interval_ms")).thenReturn(Optional.of(setting("scheduler_interval_ms", "25000")));
+        when(repository.findBySettingKey(SCHEDULER_INTERVAL_MS)).thenReturn(Optional.of(setting(SCHEDULER_INTERVAL_MS, "25000")));
 
         assertThat(service.getSchedulerIntervalMs()).isEqualTo(25000L);
     }
@@ -183,7 +188,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void getSchedulerIntervalMs_invalidValue_returnsDefault() {
-        when(repository.findBySettingKey("scheduler_interval_ms")).thenReturn(Optional.of(setting("scheduler_interval_ms", "notanumber")));
+        when(repository.findBySettingKey(SCHEDULER_INTERVAL_MS)).thenReturn(Optional.of(setting(SCHEDULER_INTERVAL_MS, "notanumber")));
 
         assertThat(service.getSchedulerIntervalMs()).isEqualTo(10000L);
     }
@@ -193,7 +198,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void getThreadPoolSize_validValue_isParsed() {
-        when(repository.findBySettingKey("thread_pool_size")).thenReturn(Optional.of(setting("thread_pool_size", "20")));
+        when(repository.findBySettingKey(THREAD_POOL_SIZE)).thenReturn(Optional.of(setting(THREAD_POOL_SIZE, "20")));
 
         assertThat(service.getThreadPoolSize()).isEqualTo(20);
     }
@@ -203,7 +208,7 @@ class HealthCheckSettingsServiceTest {
      */
     @Test
     void getThreadPoolSize_invalidValue_returnsDefault() {
-        when(repository.findBySettingKey("thread_pool_size")).thenReturn(Optional.of(setting("thread_pool_size", "x")));
+        when(repository.findBySettingKey(THREAD_POOL_SIZE)).thenReturn(Optional.of(setting(THREAD_POOL_SIZE, "x")));
 
         assertThat(service.getThreadPoolSize()).isEqualTo(10);
     }

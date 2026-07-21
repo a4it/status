@@ -35,6 +35,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class IncidentNotificationServiceTest {
 
+    private static final String SUBSCRIBER_A_EMAIL = "a@x.com";
+    private static final String SUBSCRIBER_B_EMAIL = "b@x.com";
+
     @Mock
     private NotificationSubscriberService subscriberService;
 
@@ -136,13 +139,13 @@ class IncidentNotificationServiceTest {
         UUID appId = UUID.randomUUID();
         StatusIncident incident = incident(app(appId));
         when(subscriberService.getActiveVerifiedSubscribers(appId))
-                .thenReturn(List.of(subscriber("a@x.com"), subscriber("b@x.com")));
+                .thenReturn(List.of(subscriber(SUBSCRIBER_A_EMAIL), subscriber(SUBSCRIBER_B_EMAIL)));
 
         service.notifySubscribersOfNewIncident(incident);
 
-        verify(emailService).sendIncidentNotification(eq("a@x.com"), eq("Platform"),
+        verify(emailService).sendIncidentNotification(eq(SUBSCRIBER_A_EMAIL), eq("Platform"),
                 eq("Outage"), eq("Something broke"), eq("CRITICAL"), eq("INVESTIGATING"));
-        verify(emailService).sendIncidentNotification(eq("b@x.com"), anyString(),
+        verify(emailService).sendIncidentNotification(eq(SUBSCRIBER_B_EMAIL), anyString(),
                 anyString(), any(), anyString(), anyString());
     }
 
@@ -155,9 +158,9 @@ class IncidentNotificationServiceTest {
         UUID appId = UUID.randomUUID();
         StatusIncident incident = incident(app(appId));
         when(subscriberService.getActiveVerifiedSubscribers(appId))
-                .thenReturn(List.of(subscriber("a@x.com"), subscriber("b@x.com")));
+                .thenReturn(List.of(subscriber(SUBSCRIBER_A_EMAIL), subscriber(SUBSCRIBER_B_EMAIL)));
         doThrow(new RuntimeException("smtp"))
-                .when(emailService).sendIncidentNotification(eq("a@x.com"), any(), any(), any(), any(), any());
+                .when(emailService).sendIncidentNotification(eq(SUBSCRIBER_A_EMAIL), any(), any(), any(), any(), any());
 
         service.notifySubscribersOfNewIncident(incident);
 
@@ -200,11 +203,11 @@ class IncidentNotificationServiceTest {
         UUID appId = UUID.randomUUID();
         StatusIncident incident = incident(app(appId));
         when(subscriberService.getActiveVerifiedSubscribers(appId))
-                .thenReturn(List.of(subscriber("a@x.com")));
+                .thenReturn(List.of(subscriber(SUBSCRIBER_A_EMAIL)));
 
         service.notifySubscribersOfIncidentUpdate(incident, "update msg");
 
-        verify(emailService).sendHtmlEmail(eq("a@x.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq(SUBSCRIBER_A_EMAIL), anyString(), anyString());
     }
 
     // -------------------------------------------------- incident resolution
@@ -243,10 +246,10 @@ class IncidentNotificationServiceTest {
         UUID appId = UUID.randomUUID();
         StatusIncident incident = incident(app(appId));
         when(subscriberService.getActiveVerifiedSubscribers(appId))
-                .thenReturn(List.of(subscriber("a@x.com")));
+                .thenReturn(List.of(subscriber(SUBSCRIBER_A_EMAIL)));
 
         service.notifySubscribersOfIncidentResolution(incident, "resolved");
 
-        verify(emailService).sendHtmlEmail(eq("a@x.com"), anyString(), anyString());
+        verify(emailService).sendHtmlEmail(eq(SUBSCRIBER_A_EMAIL), anyString(), anyString());
     }
 }

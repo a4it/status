@@ -48,6 +48,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class OrganizationServiceTest {
 
+    private static final String STATUS_ACTIVE = "ACTIVE";
+
     @Mock
     private OrganizationRepository organizationRepository;
 
@@ -103,7 +105,7 @@ class OrganizationServiceTest {
         org.setId(id);
         org.setName(name);
         org.setEmail(name + "@example.com");
-        org.setStatus("ACTIVE");
+        org.setStatus(STATUS_ACTIVE);
         return org;
     }
 
@@ -128,9 +130,9 @@ class OrganizationServiceTest {
         UUID tenantId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 10);
         List<Organization> orgs = List.of(buildOrg(UUID.randomUUID(), "Org1"));
-        when(organizationRepository.findByTenantIdAndStatus(tenantId, "ACTIVE")).thenReturn(orgs);
+        when(organizationRepository.findByTenantIdAndStatus(tenantId, STATUS_ACTIVE)).thenReturn(orgs);
 
-        Page<Organization> result = organizationService.getAllOrganizations(tenantId, "ACTIVE", null, pageable);
+        Page<Organization> result = organizationService.getAllOrganizations(tenantId, STATUS_ACTIVE, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
     }
@@ -156,10 +158,10 @@ class OrganizationServiceTest {
     @Test
     void getAllOrganizations_statusOnly_filtersByStatus() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(organizationRepository.findByStatus("ACTIVE"))
+        when(organizationRepository.findByStatus(STATUS_ACTIVE))
                 .thenReturn(List.of(buildOrg(UUID.randomUUID(), "Org1")));
 
-        Page<Organization> result = organizationService.getAllOrganizations(null, "ACTIVE", null, pageable);
+        Page<Organization> result = organizationService.getAllOrganizations(null, STATUS_ACTIVE, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
     }
@@ -273,7 +275,7 @@ class OrganizationServiceTest {
         Organization result = organizationService.createOrganization(request);
 
         assertThat(result.getName()).isEqualTo("Org1");
-        assertThat(result.getStatus()).isEqualTo("ACTIVE");
+        assertThat(result.getStatus()).isEqualTo(STATUS_ACTIVE);
         verify(organizationRepository).save(any(Organization.class));
     }
 

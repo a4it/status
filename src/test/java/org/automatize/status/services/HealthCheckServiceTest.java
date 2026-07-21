@@ -30,6 +30,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 @ExtendWith(MockitoExtension.class)
 class HealthCheckServiceTest {
 
+    private static final String URL_PUBLIC_IP = "http://8.8.8.8";
+    private static final String STATUS_OPERATIONAL = "OPERATIONAL";
+    private static final String STATUS_DEGRADED_PERFORMANCE = "DEGRADED_PERFORMANCE";
+    private static final String STATUS_MAJOR_OUTAGE = "MAJOR_OUTAGE";
+    private static final String MESSAGE_RECOVERED = "recovered";
+
     @Mock
     private StatusAppRepository statusAppRepository;
 
@@ -53,7 +59,7 @@ class HealthCheckServiceTest {
      */
     @Test
     void performCheck_nullCheckType_returnsSuccessNoCheck() {
-        HealthCheckResult result = healthCheckService.performCheck(null, "http://8.8.8.8", 5, 200);
+        HealthCheckResult result = healthCheckService.performCheck(null, URL_PUBLIC_IP, 5, 200);
 
         assertThat(result.success()).isTrue();
         assertThat(result.message()).isEqualTo("No check configured");
@@ -65,7 +71,7 @@ class HealthCheckServiceTest {
      */
     @Test
     void performCheck_noneCheckType_returnsSuccessNoCheck() {
-        HealthCheckResult result = healthCheckService.performCheck("NONE", "http://8.8.8.8", 5, 200);
+        HealthCheckResult result = healthCheckService.performCheck("NONE", URL_PUBLIC_IP, 5, 200);
 
         assertThat(result.success()).isTrue();
         assertThat(result.message()).isEqualTo("No check configured");
@@ -78,7 +84,7 @@ class HealthCheckServiceTest {
     @Test
     void performCheck_unknownCheckType_returnsFailure() {
         // 8.8.8.8 is a literal, publicly routable IP so SSRF validation passes without DNS.
-        HealthCheckResult result = healthCheckService.performCheck("BOGUS", "http://8.8.8.8", 5, 200);
+        HealthCheckResult result = healthCheckService.performCheck("BOGUS", URL_PUBLIC_IP, 5, 200);
 
         assertThat(result.success()).isFalse();
         assertThat(result.message()).isEqualTo("Unknown check type: BOGUS");
@@ -146,7 +152,7 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_success_resetsFailuresAndSaves() {
-        StatusApp app = appWith("OPERATIONAL", 2, 3);
+        StatusApp app = appWith(STATUS_OPERATIONAL, 2, 3);
 
         healthCheckService.updateAppCheckResult(app, new HealthCheckResult(true, "ok"));
 
@@ -154,7 +160,7 @@ class HealthCheckServiceTest {
         assertThat(app.getLastCheckSuccess()).isTrue();
         assertThat(app.getLastCheckMessage()).isEqualTo("ok");
         assertThat(app.getLastCheckAt()).isNotNull();
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusAppRepository).save(app);
         verifyNoInteractions(statusIncidentService);
     }
@@ -165,11 +171,11 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_successWhenDegraded_restoresAndResolvesIncidents() {
-        StatusApp app = appWith("DEGRADED_PERFORMANCE", 5, 3);
+        StatusApp app = appWith(STATUS_DEGRADED_PERFORMANCE, 5, 3);
 
-        healthCheckService.updateAppCheckResult(app, new HealthCheckResult(true, "recovered"));
+        healthCheckService.updateAppCheckResult(app, new HealthCheckResult(true, MESSAGE_RECOVERED));
 
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusIncidentService).resolveAutomatedIncidents(app);
         verify(statusAppRepository).save(app);
     }
@@ -180,11 +186,11 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_successWhenMajorOutage_restoresAndResolvesIncidents() {
-        StatusApp app = appWith("MAJOR_OUTAGE", 8, 3);
+        StatusApp app = appWith(STATUS_MAJOR_OUTAGE, 8, 3);
 
-        healthCheckService.updateAppCheckResult(app, new HealthCheckResult(true, "recovered"));
+        healthCheckService.updateAppCheckResult(app, new HealthCheckResult(true, MESSAGE_RECOVERED));
 
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusIncidentService).resolveAutomatedIncidents(app);
     }
 
@@ -194,12 +200,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_failureBelowThreshold_noStatusChange() {
-        StatusApp app = appWith("OPERATIONAL", 0, 3);
+        StatusApp app = appWith(STATUS_OPERATIONAL, 0, 3);
 
         healthCheckService.updateAppCheckResult(app, new HealthCheckResult(false, "down"));
 
         assertThat(app.getConsecutiveFailures()).isEqualTo(1);
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusIncidentService, never()).createAutomatedIncident(any(), any(), any());
         verify(statusAppRepository).save(app);
     }
@@ -210,12 +216,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_failureAtThreshold_degradesAndCreatesMajorIncident() {
-        StatusApp app = appWith("OPERATIONAL", 2, 3);
+        StatusApp app = appWith(STATUS_OPERATIONAL, 2, 3);
 
         healthCheckService.updateAppCheckResult(app, new HealthCheckResult(false, "down"));
 
         assertThat(app.getConsecutiveFailures()).isEqualTo(3);
-        assertThat(app.getStatus()).isEqualTo("DEGRADED_PERFORMANCE");
+        assertThat(app.getStatus()).isEqualTo(STATUS_DEGRADED_PERFORMANCE);
         verify(statusIncidentService).createAutomatedIncident(app, "MAJOR", "down");
     }
 
@@ -225,12 +231,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateAppCheckResult_failureAtDoubleThreshold_majorOutageAndCreatesCriticalIncident() {
-        StatusApp app = appWith("DEGRADED_PERFORMANCE", 5, 3);
+        StatusApp app = appWith(STATUS_DEGRADED_PERFORMANCE, 5, 3);
 
         healthCheckService.updateAppCheckResult(app, new HealthCheckResult(false, "down"));
 
         assertThat(app.getConsecutiveFailures()).isEqualTo(6);
-        assertThat(app.getStatus()).isEqualTo("MAJOR_OUTAGE");
+        assertThat(app.getStatus()).isEqualTo(STATUS_MAJOR_OUTAGE);
         verify(statusIncidentService).createAutomatedIncident(app, "CRITICAL", "down");
     }
 
@@ -242,13 +248,13 @@ class HealthCheckServiceTest {
     void updateAppCheckResult_nullConsecutiveAndThreshold_usesDefaults() {
         StatusApp app = new StatusApp();
         app.setName("app");
-        app.setStatus("OPERATIONAL");
+        app.setStatus(STATUS_OPERATIONAL);
         // consecutiveFailures and checkFailureThreshold left null -> defaults 0 and 3
 
         healthCheckService.updateAppCheckResult(app, new HealthCheckResult(false, "down"));
 
         assertThat(app.getConsecutiveFailures()).isEqualTo(1);
-        assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(app.getStatus()).isEqualTo(STATUS_OPERATIONAL);
     }
 
     // ------------------------------------------- updateComponentCheckResult
@@ -277,7 +283,7 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateComponentCheckResult_success_resetsFailuresAndSaves() {
-        StatusComponent component = componentWith("OPERATIONAL", 2, 3);
+        StatusComponent component = componentWith(STATUS_OPERATIONAL, 2, 3);
 
         healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(true, "ok"));
 
@@ -292,11 +298,11 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateComponentCheckResult_successWhenDegraded_restoresToOperational() {
-        StatusComponent component = componentWith("DEGRADED_PERFORMANCE", 5, 3);
+        StatusComponent component = componentWith(STATUS_DEGRADED_PERFORMANCE, 5, 3);
 
-        healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(true, "recovered"));
+        healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(true, MESSAGE_RECOVERED));
 
-        assertThat(component.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(component.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusComponentRepository).save(component);
     }
 
@@ -306,12 +312,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateComponentCheckResult_failureAtThreshold_degrades() {
-        StatusComponent component = componentWith("OPERATIONAL", 2, 3);
+        StatusComponent component = componentWith(STATUS_OPERATIONAL, 2, 3);
 
         healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(false, "down"));
 
         assertThat(component.getConsecutiveFailures()).isEqualTo(3);
-        assertThat(component.getStatus()).isEqualTo("DEGRADED_PERFORMANCE");
+        assertThat(component.getStatus()).isEqualTo(STATUS_DEGRADED_PERFORMANCE);
     }
 
     /**
@@ -320,12 +326,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateComponentCheckResult_failureAtDoubleThreshold_majorOutage() {
-        StatusComponent component = componentWith("DEGRADED_PERFORMANCE", 5, 3);
+        StatusComponent component = componentWith(STATUS_DEGRADED_PERFORMANCE, 5, 3);
 
         healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(false, "down"));
 
         assertThat(component.getConsecutiveFailures()).isEqualTo(6);
-        assertThat(component.getStatus()).isEqualTo("MAJOR_OUTAGE");
+        assertThat(component.getStatus()).isEqualTo(STATUS_MAJOR_OUTAGE);
     }
 
     /**
@@ -334,12 +340,12 @@ class HealthCheckServiceTest {
      */
     @Test
     void updateComponentCheckResult_failureBelowThreshold_noStatusChange() {
-        StatusComponent component = componentWith("OPERATIONAL", 0, 3);
+        StatusComponent component = componentWith(STATUS_OPERATIONAL, 0, 3);
 
         healthCheckService.updateComponentCheckResult(component, new HealthCheckResult(false, "down"));
 
         assertThat(component.getConsecutiveFailures()).isEqualTo(1);
-        assertThat(component.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(component.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         verify(statusComponentRepository).save(component);
     }
 }

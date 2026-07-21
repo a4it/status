@@ -49,6 +49,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LogIngestionServiceTest {
 
+    private static final String LEVEL_ERROR = "ERROR";
+
     @Mock
     private LogRepository logRepository;
 
@@ -172,9 +174,9 @@ class LogIngestionServiceTest {
     @Test
     void ingest_matchingRule_dropsLogAndReturnsNull() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
-                .thenReturn(List.of(rule("ERROR", null, null)));
+                .thenReturn(List.of(rule(LEVEL_ERROR, null, null)));
 
-        Log result = service.ingest(null, null, "ERROR", "svc", "boom", null, null, null);
+        Log result = service.ingest(null, null, LEVEL_ERROR, "svc", "boom", null, null, null);
 
         assertThat(result).isNull();
         verify(logRepository, never()).save(any());
@@ -187,7 +189,7 @@ class LogIngestionServiceTest {
     @Test
     void ingest_ruleLevelDiffersFromEntry_notDropped() {
         when(dropRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc())
-                .thenReturn(List.of(rule("ERROR", null, null)));
+                .thenReturn(List.of(rule(LEVEL_ERROR, null, null)));
         when(logRepository.save(any(Log.class))).thenAnswer(inv -> inv.getArgument(0));
 
         Log result = service.ingest(null, null, "INFO", "svc", "msg", null, null, null);
@@ -274,7 +276,7 @@ class LogIngestionServiceTest {
         List<LogIngestionService.LogEntry> entries = List.of(
                 new LogIngestionService.LogEntry(null, null, "DEBUG", "svc", "drop me", null, null, null),
                 new LogIngestionService.LogEntry(null, null, "INFO", "svc", "keep me", null, null, null),
-                new LogIngestionService.LogEntry(null, null, "ERROR", "svc", "keep me too", null, null, null)
+                new LogIngestionService.LogEntry(null, null, LEVEL_ERROR, "svc", "keep me too", null, null, null)
         );
 
         int stored = service.ingestBatch(entries);

@@ -327,13 +327,13 @@ class HealthCheckSchedulerTest {
         UUID id = UUID.randomUUID();
         StatusComponent component = checkableComponent();
         when(statusComponentRepository.findById(id)).thenReturn(java.util.Optional.of(component));
-        when(healthCheckService.performCheck(eq("HTTP_GET"), eq("http://8.8.8.8"), eq(5), eq(200)))
-                .thenReturn(new HealthCheckResult(true, "HTTP 200"));
+        when(healthCheckService.performCheck(eq(CHECK_TYPE_HTTP_GET), eq(CHECK_URL), eq(5), eq(200)))
+                .thenReturn(new HealthCheckResult(true, HTTP_200_MESSAGE));
 
         HealthCheckTriggerResponse response = scheduler.triggerComponentCheck(id);
 
         assertThat(response.getSuccess()).isTrue();
-        assertThat(response.getMessage()).isEqualTo("HTTP 200");
+        assertThat(response.getMessage()).isEqualTo(HTTP_200_MESSAGE);
         verify(healthCheckService).updateComponentCheckResult(eq(component), any());
     }
 }

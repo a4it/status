@@ -41,6 +41,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NotificationSubscriberServiceTest {
 
+    private static final String USERNAME = "tester";
+    private static final String EMAIL = "a@x.com";
+    private static final String NEW_EMAIL = "new@x.com";
+
     @Mock
     private NotificationSubscriberRepository subscriberRepository;
 
@@ -57,7 +61,7 @@ class NotificationSubscriberServiceTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("tester", null, java.util.List.of()));
+                new UsernamePasswordAuthenticationToken(USERNAME, null, java.util.List.of()));
     }
 
     /**
@@ -111,12 +115,12 @@ class NotificationSubscriberServiceTest {
         UUID appId = UUID.randomUUID();
         StatusApp app = app(appId);
         when(subscriberRepository.findByAppId(appId))
-                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, "a@x.com")));
+                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, EMAIL)));
 
         List<NotificationSubscriberResponse> result = service.getSubscribersByAppId(appId);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getEmail()).isEqualTo("a@x.com");
+        assertThat(result.get(0).getEmail()).isEqualTo(EMAIL);
         assertThat(result.get(0).getAppId()).isEqualTo(appId);
         assertThat(result.get(0).getAppName()).isEqualTo("Platform");
     }
@@ -129,7 +133,7 @@ class NotificationSubscriberServiceTest {
     void getAllSubscribers_mapsToResponses() {
         StatusApp app = app(UUID.randomUUID());
         when(subscriberRepository.findAll())
-                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, "a@x.com"),
+                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, EMAIL),
                         subscriber(UUID.randomUUID(), app, "b@x.com")));
 
         assertThat(service.getAllSubscribers()).hasSize(2);
@@ -143,12 +147,12 @@ class NotificationSubscriberServiceTest {
     void getSubscriberById_whenFound_returnsResponse() {
         UUID id = UUID.randomUUID();
         StatusApp app = app(UUID.randomUUID());
-        when(subscriberRepository.findById(id)).thenReturn(Optional.of(subscriber(id, app, "a@x.com")));
+        when(subscriberRepository.findById(id)).thenReturn(Optional.of(subscriber(id, app, EMAIL)));
 
         NotificationSubscriberResponse response = service.getSubscriberById(id);
 
         assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getEmail()).isEqualTo("a@x.com");
+        assertThat(response.getEmail()).isEqualTo(EMAIL);
     }
 
     /**
@@ -176,7 +180,7 @@ class NotificationSubscriberServiceTest {
         UUID appId = UUID.randomUUID();
         when(statusAppRepository.findById(appId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.createSubscriber(appId, "a@x.com", "Sub"))
+        assertThatThrownBy(() -> service.createSubscriber(appId, EMAIL, "Sub"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Status app not found");
     }
@@ -189,9 +193,9 @@ class NotificationSubscriberServiceTest {
     void createSubscriber_whenEmailAlreadySubscribed_throwsDuplicate() {
         UUID appId = UUID.randomUUID();
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app(appId)));
-        when(subscriberRepository.existsByAppIdAndEmail(appId, "a@x.com")).thenReturn(true);
+        when(subscriberRepository.existsByAppIdAndEmail(appId, EMAIL)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.createSubscriber(appId, "a@x.com", "Sub"))
+        assertThatThrownBy(() -> service.createSubscriber(appId, EMAIL, "Sub"))
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessageContaining("already subscribed");
     }
@@ -205,21 +209,21 @@ class NotificationSubscriberServiceTest {
         UUID appId = UUID.randomUUID();
         StatusApp app = app(appId);
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
-        when(subscriberRepository.existsByAppIdAndEmail(appId, "a@x.com")).thenReturn(false);
+        when(subscriberRepository.existsByAppIdAndEmail(appId, EMAIL)).thenReturn(false);
         when(subscriberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        NotificationSubscriberResponse response = service.createSubscriber(appId, "a@x.com", "Sub");
+        NotificationSubscriberResponse response = service.createSubscriber(appId, EMAIL, "Sub");
 
         ArgumentCaptor<NotificationSubscriber> captor = ArgumentCaptor.forClass(NotificationSubscriber.class);
         verify(subscriberRepository).save(captor.capture());
         NotificationSubscriber saved = captor.getValue();
-        assertThat(saved.getEmail()).isEqualTo("a@x.com");
+        assertThat(saved.getEmail()).isEqualTo(EMAIL);
         assertThat(saved.getApp()).isSameAs(app);
         assertThat(saved.getIsActive()).isTrue();
         assertThat(saved.getIsVerified()).isTrue();
-        assertThat(saved.getCreatedBy()).isEqualTo("tester");
-        assertThat(saved.getLastModifiedBy()).isEqualTo("tester");
-        assertThat(response.getEmail()).isEqualTo("a@x.com");
+        assertThat(saved.getCreatedBy()).isEqualTo(USERNAME);
+        assertThat(saved.getLastModifiedBy()).isEqualTo(USERNAME);
+        assertThat(response.getEmail()).isEqualTo(EMAIL);
     }
 
     // ------------------------------------------------------------ updateSubscriber
@@ -247,9 +251,9 @@ class NotificationSubscriberServiceTest {
         StatusApp app = app(appId);
         NotificationSubscriber existing = subscriber(id, app, "old@x.com");
         when(subscriberRepository.findById(id)).thenReturn(Optional.of(existing));
-        when(subscriberRepository.existsByAppIdAndEmail(appId, "new@x.com")).thenReturn(true);
+        when(subscriberRepository.existsByAppIdAndEmail(appId, NEW_EMAIL)).thenReturn(true);
 
-        assertThatThrownBy(() -> service.updateSubscriber(id, "new@x.com", null, null))
+        assertThatThrownBy(() -> service.updateSubscriber(id, NEW_EMAIL, null, null))
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
@@ -264,16 +268,16 @@ class NotificationSubscriberServiceTest {
         StatusApp app = app(appId);
         NotificationSubscriber existing = subscriber(id, app, "old@x.com");
         when(subscriberRepository.findById(id)).thenReturn(Optional.of(existing));
-        when(subscriberRepository.existsByAppIdAndEmail(appId, "new@x.com")).thenReturn(false);
+        when(subscriberRepository.existsByAppIdAndEmail(appId, NEW_EMAIL)).thenReturn(false);
         when(subscriberRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        NotificationSubscriberResponse response = service.updateSubscriber(id, "new@x.com", "NewName", false);
+        NotificationSubscriberResponse response = service.updateSubscriber(id, NEW_EMAIL, "NewName", false);
 
-        assertThat(existing.getEmail()).isEqualTo("new@x.com");
+        assertThat(existing.getEmail()).isEqualTo(NEW_EMAIL);
         assertThat(existing.getName()).isEqualTo("NewName");
         assertThat(existing.getIsActive()).isFalse();
-        assertThat(existing.getLastModifiedBy()).isEqualTo("tester");
-        assertThat(response.getEmail()).isEqualTo("new@x.com");
+        assertThat(existing.getLastModifiedBy()).isEqualTo(USERNAME);
+        assertThat(response.getEmail()).isEqualTo(NEW_EMAIL);
     }
 
     /**
@@ -332,7 +336,7 @@ class NotificationSubscriberServiceTest {
     void getActiveVerifiedSubscribers_returnsRepositoryResult() {
         UUID appId = UUID.randomUUID();
         StatusApp app = app(appId);
-        List<NotificationSubscriber> subs = List.of(subscriber(UUID.randomUUID(), app, "a@x.com"));
+        List<NotificationSubscriber> subs = List.of(subscriber(UUID.randomUUID(), app, EMAIL));
         when(subscriberRepository.findActiveVerifiedByAppId(appId)).thenReturn(subs);
 
         assertThat(service.getActiveVerifiedSubscribers(appId)).isEqualTo(subs);

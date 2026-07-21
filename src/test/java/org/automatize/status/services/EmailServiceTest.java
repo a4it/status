@@ -34,8 +34,8 @@ import static org.mockito.Mockito.when;
 class EmailServiceTest {
 
     private static final String FIELD_EMAIL_ENABLED = "emailEnabled";
-    private static final String TO_ADDRESS = TO_ADDRESS;
-    private static final String SUBJECT = SUBJECT;
+    private static final String TO_ADDRESS = "to@x.com";
+    private static final String SUBJECT = "subject";
 
     @Mock
     private JavaMailSender mailSender;
