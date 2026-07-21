@@ -126,20 +126,20 @@ class AuthServiceTest {
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
         when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("refresh-plain");
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn(REFRESH_PLAIN);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AuthResponse response = authService.authenticateUser(request);
 
         assertThat(response.getAccessToken()).isEqualTo(ACCESS_JWT);
-        assertThat(response.getRefreshToken()).isEqualTo("refresh-plain");
+        assertThat(response.getRefreshToken()).isEqualTo(REFRESH_PLAIN);
         assertThat(response.getTokenType()).isEqualTo("Bearer");
         assertThat(response.getUserId()).isEqualTo(userId);
         assertThat(response.getUsername()).isEqualTo(USERNAME);
         assertThat(response.isRequiresContextSelection()).isFalse();
         // plaintext must never be persisted
-        assertThat(user.getRefreshToken()).isNotEqualTo("refresh-plain");
+        assertThat(user.getRefreshToken()).isNotEqualTo(REFRESH_PLAIN);
         verify(userRepository).save(user);
     }
 
@@ -160,7 +160,7 @@ class AuthServiceTest {
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
         when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken("root")).thenReturn("refresh-plain");
+        when(jwtUtils.generateRefreshToken("root")).thenReturn(REFRESH_PLAIN);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -186,7 +186,7 @@ class AuthServiceTest {
 
         when(authenticationManager.authenticate(any())).thenReturn(auth);
         when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("refresh-plain");
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn(REFRESH_PLAIN);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.authenticateUser(request))
@@ -221,11 +221,11 @@ class AuthServiceTest {
     @Test
     void registerUser_emailInUse_returnsUnsuccessfulResponse() {
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("newuser");
+        request.setUsername(NEW_USERNAME);
         request.setEmail("dup@b.com");
         request.setPassword("pw");
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
         when(userRepository.existsByEmail("dup@b.com")).thenReturn(true);
 
         MessageResponse response = authService.registerUser(request);
@@ -242,12 +242,12 @@ class AuthServiceTest {
     @Test
     void registerUser_validRequest_savesUserWithForcedUserRole() {
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("newuser");
+        request.setUsername(NEW_USERNAME);
         request.setEmail("new@b.com");
         request.setPassword("pw");
         request.setFullName("New User");
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
         when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
         when(passwordEncoder.encode("pw")).thenReturn("hashed");
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -274,12 +274,12 @@ class AuthServiceTest {
         org.setId(orgId);
 
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("newuser");
+        request.setUsername(NEW_USERNAME);
         request.setEmail("new@b.com");
         request.setPassword("pw");
         request.setOrganizationId(orgId);
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
         when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
         when(passwordEncoder.encode("pw")).thenReturn("hashed");
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
@@ -302,12 +302,12 @@ class AuthServiceTest {
         UUID orgId = UUID.randomUUID();
 
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("newuser");
+        request.setUsername(NEW_USERNAME);
         request.setEmail("new@b.com");
         request.setPassword("pw");
         request.setOrganizationId(orgId);
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
         when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
         when(passwordEncoder.encode("pw")).thenReturn("hashed");
         when(organizationRepository.findById(orgId)).thenReturn(Optional.empty());

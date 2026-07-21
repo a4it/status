@@ -293,7 +293,7 @@ class StatusComponentServiceTest {
 
         statusComponentService.updateStatus(id, "PARTIAL_OUTAGE");
 
-        assertThat(app.getStatus()).isEqualTo("DEGRADED");
+        assertThat(app.getStatus()).isEqualTo(DEGRADED);
         verify(statusAppRepository).save(app);
     }
 
@@ -304,8 +304,8 @@ class StatusComponentServiceTest {
     void updateStatus_allOperational_setsAppOperational() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "DEGRADED");
-        StatusComponent component = newComponent(id, app, "API", "DEGRADED");
+        StatusApp app = newApp(appId, DEGRADED);
+        StatusComponent component = newComponent(id, app, "API", DEGRADED);
 
         when(statusComponentRepository.findById(id)).thenReturn(Optional.of(component));
         when(statusComponentRepository.save(any(StatusComponent.class))).thenAnswer(inv -> inv.getArgument(0));

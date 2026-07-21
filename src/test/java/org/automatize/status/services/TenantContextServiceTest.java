@@ -118,8 +118,8 @@ class TenantContextServiceTest {
     @Test
     void getOrganizationsForTenant_returnsActiveOrganizations() {
         UUID tenantId = UUID.randomUUID();
-        List<Organization> orgs = List.of(buildOrg(UUID.randomUUID(), "ACTIVE", null));
-        when(organizationRepository.findByTenantIdAndStatus(tenantId, "ACTIVE")).thenReturn(orgs);
+        List<Organization> orgs = List.of(buildOrg(UUID.randomUUID(), STATUS_ACTIVE, null));
+        when(organizationRepository.findByTenantIdAndStatus(tenantId, STATUS_ACTIVE)).thenReturn(orgs);
 
         assertThat(tenantContextService.getOrganizationsForTenant(tenantId)).isEqualTo(orgs);
     }
@@ -158,7 +158,7 @@ class TenantContextServiceTest {
     void switchContext_tenantNotFound_throwsResourceNotFoundException() {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, "SUPERADMIN")));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, ROLE_SUPERADMIN)));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> tenantContextService.switchContext(userId, tenantId, UUID.randomUUID()))

@@ -59,10 +59,10 @@ class SetupServiceTest {
 
     private static final String SETUP_COMPLETED_FIELD = "setupCompleted";
     private static final String FLYWAY_FIELD = "flyway";
-    private static final String ADMIN_USERNAME = "admin";
-    private static final String ADMIN_EMAIL = "admin@acme.test";
-    private static final String ENCODED_PASSWORD = "ENC(supersecret)";
-    private static final String RAW_PASSWORD = "supersecret";
+    private static final String ADMIN_USERNAME = ADMIN_USERNAME;
+    private static final String ADMIN_EMAIL = ADMIN_EMAIL;
+    private static final String ENCODED_PASSWORD = ENCODED_PASSWORD;
+    private static final String RAW_PASSWORD = RAW_PASSWORD;
 
     @Mock
     private TenantService tenantService;
@@ -367,7 +367,7 @@ class SetupServiceTest {
     @Test
     void createAdmin_whenUsernameTaken_returnsFailureAndDoesNotSave() {
         SetupAdminRequest request = adminRequest(UUID.randomUUID());
-        when(userRepository.existsByUsername("admin")).thenReturn(true);
+        when(userRepository.existsByUsername(ADMIN_USERNAME)).thenReturn(true);
 
         MessageResponse response = setupService.createAdmin(request);
 
@@ -383,8 +383,8 @@ class SetupServiceTest {
     @Test
     void createAdmin_whenEmailInUse_returnsFailureAndDoesNotSave() {
         SetupAdminRequest request = adminRequest(UUID.randomUUID());
-        when(userRepository.existsByUsername("admin")).thenReturn(false);
-        when(userRepository.existsByEmail("admin@acme.test")).thenReturn(true);
+        when(userRepository.existsByUsername(ADMIN_USERNAME)).thenReturn(false);
+        when(userRepository.existsByEmail(ADMIN_EMAIL)).thenReturn(true);
 
         MessageResponse response = setupService.createAdmin(request);
 
@@ -402,9 +402,9 @@ class SetupServiceTest {
     void createAdmin_whenValidWithOrganization_savesSuperadminWithEncodedPassword() {
         UUID orgId = UUID.randomUUID();
         SetupAdminRequest request = adminRequest(orgId);
-        when(userRepository.existsByUsername("admin")).thenReturn(false);
-        when(userRepository.existsByEmail("admin@acme.test")).thenReturn(false);
-        when(passwordEncoder.encode("supersecret")).thenReturn("ENC(supersecret)");
+        when(userRepository.existsByUsername(ADMIN_USERNAME)).thenReturn(false);
+        when(userRepository.existsByEmail(ADMIN_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
         Organization org = new Organization();
         org.setId(orgId);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
@@ -418,15 +418,15 @@ class SetupServiceTest {
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
         User saved = captor.getValue();
-        assertThat(saved.getUsername()).isEqualTo("admin");
-        assertThat(saved.getPassword()).isEqualTo("ENC(supersecret)");
-        assertThat(saved.getEmail()).isEqualTo("admin@acme.test");
+        assertThat(saved.getUsername()).isEqualTo(ADMIN_USERNAME);
+        assertThat(saved.getPassword()).isEqualTo(ENCODED_PASSWORD);
+        assertThat(saved.getEmail()).isEqualTo(ADMIN_EMAIL);
         assertThat(saved.getFullName()).isEqualTo("Site Admin");
         assertThat(saved.getRole()).isEqualTo("SUPERADMIN");
         assertThat(saved.getEnabled()).isTrue();
         assertThat(saved.getStatus()).isEqualTo("ACTIVE");
-        assertThat(saved.getCreatedBy()).isEqualTo("admin");
-        assertThat(saved.getLastModifiedBy()).isEqualTo("admin");
+        assertThat(saved.getCreatedBy()).isEqualTo(ADMIN_USERNAME);
+        assertThat(saved.getLastModifiedBy()).isEqualTo(ADMIN_USERNAME);
         assertThat(saved.getOrganization()).isSameAs(org);
     }
 
@@ -437,9 +437,9 @@ class SetupServiceTest {
     @Test
     void createAdmin_whenOrganizationIdNull_savesAdminWithoutOrganizationLookup() {
         SetupAdminRequest request = adminRequest(null);
-        when(userRepository.existsByUsername("admin")).thenReturn(false);
-        when(userRepository.existsByEmail("admin@acme.test")).thenReturn(false);
-        when(passwordEncoder.encode("supersecret")).thenReturn("ENC(supersecret)");
+        when(userRepository.existsByUsername(ADMIN_USERNAME)).thenReturn(false);
+        when(userRepository.existsByEmail(ADMIN_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         MessageResponse response = setupService.createAdmin(request);
@@ -460,9 +460,9 @@ class SetupServiceTest {
     void createAdmin_whenOrganizationNotFound_savesAdminWithNullOrganization() {
         UUID orgId = UUID.randomUUID();
         SetupAdminRequest request = adminRequest(orgId);
-        when(userRepository.existsByUsername("admin")).thenReturn(false);
-        when(userRepository.existsByEmail("admin@acme.test")).thenReturn(false);
-        when(passwordEncoder.encode("supersecret")).thenReturn("ENC(supersecret)");
+        when(userRepository.existsByUsername(ADMIN_USERNAME)).thenReturn(false);
+        when(userRepository.existsByEmail(ADMIN_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -484,9 +484,9 @@ class SetupServiceTest {
      */
     private SetupAdminRequest adminRequest(UUID organizationId) {
         SetupAdminRequest request = new SetupAdminRequest();
-        request.setUsername("admin");
-        request.setPassword("supersecret");
-        request.setEmail("admin@acme.test");
+        request.setUsername(ADMIN_USERNAME);
+        request.setPassword(RAW_PASSWORD);
+        request.setEmail(ADMIN_EMAIL);
         request.setFullName("Site Admin");
         request.setOrganizationId(organizationId);
         return request;

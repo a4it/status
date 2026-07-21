@@ -348,8 +348,8 @@ class StatusMaintenanceServiceTest {
         StatusMaintenanceResponse response = statusMaintenanceService.startMaintenance(id);
 
         assertThat(response.getStatus()).isEqualTo(STATUS_IN_PROGRESS);
-        assertThat(component.getStatus()).isEqualTo("UNDER_MAINTENANCE");
-        assertThat(app.getStatus()).isEqualTo("UNDER_MAINTENANCE");
+        assertThat(component.getStatus()).isEqualTo(STATUS_UNDER_MAINTENANCE);
+        assertThat(app.getStatus()).isEqualTo(STATUS_UNDER_MAINTENANCE);
     }
 
     /**
@@ -373,13 +373,13 @@ class StatusMaintenanceServiceTest {
     void completeMaintenance_inProgress_setsCompletedAndResetsComponents() {
         UUID id = UUID.randomUUID();
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "UNDER_MAINTENANCE");
+        StatusApp app = newApp(appId, STATUS_UNDER_MAINTENANCE);
         StatusMaintenance maintenance = newMaintenance(id, app, STATUS_IN_PROGRESS);
 
         StatusComponent component = new StatusComponent();
         component.setId(UUID.randomUUID());
         component.setApp(app);
-        component.setStatus("UNDER_MAINTENANCE");
+        component.setStatus(STATUS_UNDER_MAINTENANCE);
         StatusMaintenanceComponent mc = new StatusMaintenanceComponent();
         mc.setMaintenance(maintenance);
         mc.setComponent(component);
