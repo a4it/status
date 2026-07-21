@@ -86,18 +86,25 @@ public class UserService {
     public Page<User> getAllUsers(UUID organizationId, String role, Boolean enabled, String search, Pageable pageable) {
         List<User> users;
         
+        // Filter by both organization and role when both are provided
         if (organizationId != null && role != null) {
             users = userRepository.findByOrganizationIdAndRole(organizationId, role);
+        // Filter by organization and enabled status when both are provided
         } else if (organizationId != null && enabled != null) {
             users = userRepository.findByOrganizationIdAndEnabled(organizationId, enabled);
+        // Filter by organization only
         } else if (organizationId != null) {
             users = userRepository.findByOrganizationId(organizationId);
+        // Filter by role only
         } else if (role != null) {
             users = userRepository.findByRole(role);
+        // Filter by enabled status only
         } else if (enabled != null) {
             users = userRepository.findByEnabled(enabled);
+        // Filter by a non-empty search term
         } else if (search != null && !search.isEmpty()) {
             users = userRepository.search(search);
+        // No filters provided, return all users paginated
         } else {
             return userRepository.findAll(pageable);
         }
@@ -154,10 +161,12 @@ public class UserService {
      * @throws RuntimeException if the organization is not found
      */
     public User createUser(UserRequest request) {
+        // Reject creation if the username is already taken
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
+        // Reject creation if the email is already registered
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
@@ -165,10 +174,12 @@ public class UserService {
         User user = new User();
         mapRequestToUser(request, user);
         
+        // Encode and set the password when one is supplied
         if (request.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
         
+        // Associate the user with an organization when an ID is supplied
         if (request.getOrganizationId() != null) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
@@ -205,11 +216,13 @@ public class UserService {
             throw new AccessDeniedException("Insufficient permissions to update this user");
         }
 
+        // Reject update if the username is being changed to one already in use
         if (!user.getUsername().equals(request.getUsername()) &&
             userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
+        // Reject update if the email is being changed to one already in use
         if (!user.getEmail().equals(request.getEmail()) &&
             userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
@@ -249,11 +262,13 @@ public class UserService {
         UserPrincipal principal = getCurrentUserPrincipal();
         User user = getUserById(principal.getId());
 
+        // Reject update if the username is being changed to one already in use
         if (!user.getUsername().equals(request.getUsername()) &&
             userRepository.existsByUsername(request.getUsername())) {
             throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
+        // Reject update if the email is being changed to one already in use
         if (!user.getEmail().equals(request.getEmail()) &&
             userRepository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already exists: " + request.getEmail());
@@ -380,6 +395,7 @@ public class UserService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Return the authenticated user's username when the principal is a UserPrincipal
         if (principal instanceof UserPrincipal) {
             return ((UserPrincipal) principal).getUsername();
         }
@@ -394,6 +410,7 @@ public class UserService {
      */
     private UserPrincipal getCurrentUserPrincipal() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Return the principal as a UserPrincipal when the user is authenticated
         if (principal instanceof UserPrincipal) {
             return (UserPrincipal) principal;
         }

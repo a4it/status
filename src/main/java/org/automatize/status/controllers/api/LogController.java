@@ -52,6 +52,7 @@ public class LogController {
             @RequestHeader(value = "X-Log-Api-Key", required = false) String apiKey,
             @Valid @RequestBody LogRequest request) {
 
+        // Reject the request when no API key header was provided
         if (apiKey == null || apiKey.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("X-Log-Api-Key header is required", false));
@@ -71,6 +72,7 @@ public class LogController {
                     request.getRequestId()
             );
 
+            // A null result means the entry was discarded by a drop rule rather than stored
             if (log == null) {
                 return ResponseEntity.ok(new MessageResponse("Log dropped by drop rule", true));
             }
@@ -91,6 +93,7 @@ public class LogController {
             @RequestHeader(value = "X-Log-Api-Key", required = false) String apiKey,
             @Valid @RequestBody LogBatchRequest request) {
 
+        // Reject the request when no API key header was provided
         if (apiKey == null || apiKey.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("X-Log-Api-Key header is required", false));
@@ -158,6 +161,12 @@ public class LogController {
 
     // -------------------------------------------------------------------------
 
+    /**
+     * Maps a {@link Log} entity to its API response representation.
+     *
+     * @param log the log entity to map
+     * @return the mapped log response
+     */
     private LogResponse mapToResponse(Log log) {
         LogResponse r = new LogResponse();
         r.setId(log.getId());

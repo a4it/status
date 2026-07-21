@@ -59,6 +59,7 @@ public class PlatformEventController {
     public ResponseEntity<?> logEventWithApiKey(
             @RequestHeader(value = "X-API-Key", required = false) String apiKey,
             @Valid @RequestBody ApiKeyEventRequest request) {
+        // Reject the request when no API key header was provided
         if (apiKey == null || apiKey.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse("X-API-Key header is required", false));

@@ -55,6 +55,7 @@ public class TenantService {
      */
     @Transactional(readOnly = true)
     public Page<Tenant> getAllTenants(String search, Pageable pageable) {
+        // If a non-empty search term is provided, return filtered results
         if (search != null && !search.isEmpty()) {
             return tenantRepository.findAll(pageable); // Should implement search in repository
         }
@@ -98,6 +99,7 @@ public class TenantService {
      * @throws RuntimeException if a tenant with the same name already exists
      */
     public Tenant createTenant(TenantRequest request) {
+        // Reject creation if a tenant with the same name already exists
         if (tenantRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Tenant with name already exists: " + request.getName());
         }
@@ -128,6 +130,7 @@ public class TenantService {
     public Tenant updateTenant(UUID id, TenantRequest request) {
         Tenant tenant = getTenantById(id);
 
+        // Reject update if the name is being changed to one already in use
         if (!tenant.getName().equals(request.getName()) &&
             tenantRepository.existsByName(request.getName())) {
             throw new DuplicateResourceException("Tenant with name already exists: " + request.getName());
@@ -158,8 +161,10 @@ public class TenantService {
      */
     private String getCurrentUsername() {
         var auth = SecurityContextHolder.getContext().getAuthentication();
+        // No authentication present, fall back to the system user
         if (auth == null) return "system";
         Object principal = auth.getPrincipal();
+        // Principal is an authenticated user, return its username
         if (principal instanceof UserPrincipal up) return up.getUsername();
         return "system";
     }

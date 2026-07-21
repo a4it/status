@@ -291,6 +291,10 @@ class OrganizationServiceTest {
         verify(organizationRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that creating an organization with an already-used email throws
+     * {@link DuplicateResourceException} and never saves.
+     */
     @Test
     void createOrganization_duplicateEmail_throwsDuplicateResourceException() {
         OrganizationRequest request = buildRequest("Org1");
@@ -304,6 +308,10 @@ class OrganizationServiceTest {
         verify(organizationRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that creating an organization with a tenant id looks up and associates that tenant on
+     * the saved organization.
+     */
     @Test
     void createOrganization_withTenant_associatesTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -322,6 +330,10 @@ class OrganizationServiceTest {
         assertThat(result.getTenant()).isSameAs(tenant);
     }
 
+    /**
+     * Verifies that creating an organization referencing an unknown tenant id throws
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void createOrganization_tenantNotFound_throwsResourceNotFoundException() {
         UUID tenantId = UUID.randomUUID();
@@ -335,6 +347,10 @@ class OrganizationServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that updating an organization while keeping the same name and email applies the other
+     * changes (e.g. description) and returns the updated organization.
+     */
     @Test
     void updateOrganization_sameNameAndEmail_updates() {
         UUID id = UUID.randomUUID();
@@ -352,6 +368,10 @@ class OrganizationServiceTest {
         assertThat(result.getDescription()).isEqualTo("updated");
     }
 
+    /**
+     * Verifies that updating an organization to a name already used by another throws
+     * {@link DuplicateResourceException} and never saves.
+     */
     @Test
     void updateOrganization_newDuplicateName_throwsDuplicateResourceException() {
         UUID id = UUID.randomUUID();
@@ -367,6 +387,10 @@ class OrganizationServiceTest {
         verify(organizationRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that updating an organization to an email already used by another throws
+     * {@link DuplicateResourceException} and never saves.
+     */
     @Test
     void updateOrganization_newDuplicateEmail_throwsDuplicateResourceException() {
         UUID id = UUID.randomUUID();
@@ -383,6 +407,10 @@ class OrganizationServiceTest {
         verify(organizationRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that updating an organization with a new tenant id looks up and reassigns that tenant
+     * on the organization.
+     */
     @Test
     void updateOrganization_changeTenant_reassignsTenant() {
         UUID id = UUID.randomUUID();
@@ -404,6 +432,10 @@ class OrganizationServiceTest {
         assertThat(result.getTenant()).isSameAs(tenant);
     }
 
+    /**
+     * Verifies that {@code updateStatus} sets the organization's status to the supplied value and
+     * saves, returning the updated organization.
+     */
     @Test
     void updateStatus_setsStatusAndSaves() {
         UUID id = UUID.randomUUID();
@@ -417,6 +449,10 @@ class OrganizationServiceTest {
         assertThat(result.getStatus()).isEqualTo("SUSPENDED");
     }
 
+    /**
+     * Verifies that deleting an organization with no associated users delegates to the repository's
+     * delete.
+     */
     @Test
     void deleteOrganization_noUsers_deletes() {
         UUID id = UUID.randomUUID();
@@ -430,6 +466,10 @@ class OrganizationServiceTest {
         verify(organizationRepository).delete(org);
     }
 
+    /**
+     * Verifies that deleting an organization that still has associated users throws
+     * {@link BusinessRuleException} and never deletes.
+     */
     @Test
     void deleteOrganization_withUsers_throwsBusinessRuleException() {
         UUID id = UUID.randomUUID();

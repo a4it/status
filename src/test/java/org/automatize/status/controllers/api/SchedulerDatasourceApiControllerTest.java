@@ -47,6 +47,10 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private OrganizationRepository organizationRepository;
 
+    /**
+     * Installs an authenticated ADMIN {@link UserPrincipal} into the {@link SecurityContextHolder}
+     * before each test, since the controller reads the current principal from the security context.
+     */
     @BeforeEach
     void setUpPrincipal() {
         UserPrincipal principal = new UserPrincipal(
@@ -56,11 +60,20 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test to avoid principal leakage between tests.
+     */
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a sample {@link SchedulerJdbcDatasource} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return a PostgreSQL datasource named "Primary DB" on host "localhost"
+     */
     private SchedulerJdbcDatasource sampleDatasource(UUID id) {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
         ds.setId(id);
@@ -70,6 +83,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
         return ds;
     }
 
+    /**
+     * Provides a minimal valid JSON request body satisfying the create/update bean-validation constraints.
+     *
+     * @return a JSON string with name, dbType and host populated
+     */
     private String validRequestBody() {
         return "{\"name\":\"Primary DB\",\"dbType\":\"POSTGRESQL\",\"host\":\"localhost\"}";
     }
@@ -78,6 +96,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/datasources
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/datasources returns 200 with the tenant's list of datasources.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void listDatasources_returnsOkList() throws Exception {
         when(datasourceService.list(any())).thenReturn(List.of(sampleDatasource(UUID.randomUUID())));
@@ -92,6 +115,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/datasources/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/datasources/{id} returns 200 with the datasource when found.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getDatasource_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -102,6 +130,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.host").value("localhost"));
     }
 
+    /**
+     * Verifies GET /api/scheduler/datasources/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -116,6 +150,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/datasources
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies POST /api/scheduler/datasources with a valid body returns 201 with the created datasource.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createDatasource_valid_returns201() throws Exception {
         UUID id = UUID.randomUUID();
@@ -128,6 +167,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Primary DB"));
     }
 
+    /**
+     * Verifies POST /api/scheduler/datasources returns 400 when the required name is missing
+     * (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createDatasource_missingName_returns400() throws Exception {
         mockMvc.perform(post("/api/scheduler/datasources")
@@ -136,6 +181,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies POST /api/scheduler/datasources returns 400 when the required dbType is missing
+     * (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createDatasource_missingDbType_returns400() throws Exception {
         mockMvc.perform(post("/api/scheduler/datasources")
@@ -148,6 +199,11 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // PUT /api/scheduler/datasources/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies PUT /api/scheduler/datasources/{id} with a valid body returns 200 with the updated datasource.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void updateDatasource_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -160,6 +216,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Primary DB"));
     }
 
+    /**
+     * Verifies PUT /api/scheduler/datasources/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void updateDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -176,6 +238,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // DELETE /api/scheduler/datasources/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies DELETE /api/scheduler/datasources/{id} returns 200 with a success message and delegates
+     * to the service.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void deleteDatasource_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
@@ -187,6 +255,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
         verify(datasourceService).delete(eq(id), any());
     }
 
+    /**
+     * Verifies DELETE /api/scheduler/datasources/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void deleteDatasource_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -201,6 +275,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/datasources/{id}/test
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies POST /api/scheduler/datasources/{id}/test returns 200 with the connection-test result map
+     * (success flag and latency).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_returnsOkResultMap() throws Exception {
         UUID id = UUID.randomUUID();
@@ -213,6 +293,12 @@ class SchedulerDatasourceApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.latencyMs").value(42));
     }
 
+    /**
+     * Verifies POST /api/scheduler/datasources/{id}/test returns 404 when the service throws
+     * {@code ResourceNotFoundException} for an unknown datasource.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();

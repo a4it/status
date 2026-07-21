@@ -26,6 +26,11 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link DropRuleService} (CRUD + activation toggling).
  * Note: the actual drop-rule *matching* logic lives in {@link LogIngestionService}
  * and is covered thoroughly in {@code LogIngestionServiceTest}.
+ *
+ * <p>Testing approach: pure Mockito unit tests. The {@link DropRuleRepository} and
+ * {@link TenantRepository} are mocked so each service operation is verified in
+ * isolation, asserting the persisted field values (often via {@link ArgumentCaptor})
+ * and the not-found error paths without touching a database.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class DropRuleServiceTest {
@@ -39,6 +44,10 @@ class DropRuleServiceTest {
     @InjectMocks
     private DropRuleService service;
 
+    /**
+     * Verifies {@code findAll()} returns the repository's ordered result set unchanged.
+     * Expects the single stubbed rule to be passed straight through.
+     */
     @Test
     void findAll_returnsOrderedRepositoryList() {
         DropRule r = new DropRule();
@@ -47,6 +56,10 @@ class DropRuleServiceTest {
         assertThat(service.findAll()).containsExactly(r);
     }
 
+    /**
+     * Verifies {@code findById} returns the rule when the repository finds it.
+     * Expects the exact stubbed instance to be returned.
+     */
     @Test
     void findById_present_returnsRule() {
         UUID id = UUID.randomUUID();
@@ -56,6 +69,10 @@ class DropRuleServiceTest {
         assertThat(service.findById(id)).isSameAs(r);
     }
 
+    /**
+     * Verifies {@code findById} throws when the repository has no match.
+     * Expects a {@link RuntimeException} whose message contains "Drop rule not found".
+     */
     @Test
     void findById_missing_throwsRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -66,6 +83,10 @@ class DropRuleServiceTest {
                 .hasMessageContaining("Drop rule not found");
     }
 
+    /**
+     * Verifies {@code create} with a null tenant id populates all fields, leaves the
+     * tenant null, saves the rule, and never performs a tenant lookup.
+     */
     @Test
     void create_noTenant_setsAllFieldsAndSaves() {
         when(dropRuleRepository.save(any(DropRule.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -85,6 +106,10 @@ class DropRuleServiceTest {
         verify(tenantRepository, never()).findById(any());
     }
 
+    /**
+     * Verifies {@code create} with a tenant id resolves and attaches that tenant to
+     * the new rule. Expects the resolved tenant to be set and the inactive flag honoured.
+     */
     @Test
     void create_withTenant_attachesResolvedTenant() {
         UUID tenantId = UUID.randomUUID();
@@ -99,6 +124,10 @@ class DropRuleServiceTest {
         assertThat(result.getIsActive()).isFalse();
     }
 
+    /**
+     * Verifies {@code update} on an existing rule overwrites every mutable field.
+     * Expects name, level, service, message pattern and active flag to reflect the new values.
+     */
     @Test
     void update_existing_overwritesFields() {
         UUID id = UUID.randomUUID();
@@ -117,6 +146,10 @@ class DropRuleServiceTest {
         assertThat(result.getIsActive()).isTrue();
     }
 
+    /**
+     * Verifies {@code update} on a missing rule throws and never persists.
+     * Expects a {@link RuntimeException} and no repository save.
+     */
     @Test
     void update_missing_throwsRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -127,6 +160,10 @@ class DropRuleServiceTest {
         verify(dropRuleRepository, never()).save(any());
     }
 
+    /**
+     * Verifies {@code delete} on an existing rule delegates removal to the repository.
+     * Expects {@code repository.delete(rule)} to be invoked with the resolved entity.
+     */
     @Test
     void delete_existing_delegatesToRepository() {
         UUID id = UUID.randomUUID();
@@ -138,6 +175,10 @@ class DropRuleServiceTest {
         verify(dropRuleRepository).delete(r);
     }
 
+    /**
+     * Verifies {@code delete} on a missing rule throws and never deletes.
+     * Expects a {@link RuntimeException} and no repository delete call.
+     */
     @Test
     void delete_missing_throwsRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -147,6 +188,10 @@ class DropRuleServiceTest {
         verify(dropRuleRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies {@code toggleActive} flips an active rule to inactive.
+     * Expects the returned rule's active flag to be false.
+     */
     @Test
     void toggleActive_activeRule_becomesInactive() {
         UUID id = UUID.randomUUID();
@@ -158,6 +203,10 @@ class DropRuleServiceTest {
         assertThat(service.toggleActive(id).getIsActive()).isFalse();
     }
 
+    /**
+     * Verifies {@code toggleActive} treats a null active flag as inactive and turns it on.
+     * Expects the returned rule's active flag to be true.
+     */
     @Test
     void toggleActive_nullActive_becomesTrue() {
         UUID id = UUID.randomUUID();

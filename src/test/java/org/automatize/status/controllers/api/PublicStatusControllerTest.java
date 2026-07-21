@@ -136,6 +136,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/components returns 200 with the app's components.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppComponents_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -147,6 +152,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("API"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/incidents returns 200 with recent incidents
+     * (default 30-day window).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppIncidents_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -158,6 +169,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].title").value("Outage"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/incidents/current returns 200 with active incidents.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getCurrentIncidents_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -169,6 +185,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].title").value("Outage"));
     }
 
+    /**
+     * Verifies GET /api/public/status/incidents/{incidentId} returns 200 with the incident when public.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getIncidentDetails_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -179,6 +200,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    /**
+     * Verifies GET /api/public/status/incidents/{incidentId} returns 404 when the incident is not public.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getIncidentDetails_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -189,6 +215,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies GET /api/public/status/incidents/{incidentId}/updates returns 200 with the incident's
+     * update timeline.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getIncidentUpdates_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -202,6 +234,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].status").value("MONITORING"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/maintenance returns 200 with maintenance windows
+     * (default "upcoming" filter).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppMaintenance_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -213,6 +251,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].title").value("Upgrade"));
     }
 
+    /**
+     * Verifies GET /api/public/status/maintenance/{maintenanceId} returns 404 when the window is not public.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getMaintenanceDetails_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -223,6 +266,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    /**
+     * Verifies GET /api/public/status/summary returns 200 with the overall status summary.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getStatusSummary_returnsOk() throws Exception {
         StatusSummaryResponse summary = new StatusSummaryResponse();
@@ -235,6 +283,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.overallStatus").value("OPERATIONAL"));
     }
 
+    /**
+     * Verifies GET /api/public/status/components/{componentId}/history returns 200 with the component's
+     * history (default 7-day window).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getComponentHistory_returnsOk() throws Exception {
         UUID componentId = UUID.randomUUID();
@@ -248,6 +302,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.componentName").value("API"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/uptime returns 200 with the uptime percentage
+     * (default 90-day window).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppUptime_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -261,6 +321,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.uptimePercentage").value(99.9));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/uptime-history returns 200 with the app-level
+     * uptime history (type "APP").
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppUptimeHistory_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -275,6 +341,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.type").value("APP"));
     }
 
+    /**
+     * Verifies GET /api/public/status/components/{componentId}/uptime-history returns 200 with the
+     * component-level uptime history (type "COMPONENT").
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getComponentUptimeHistory_returnsOk() throws Exception {
         UUID componentId = UUID.randomUUID();
@@ -288,6 +360,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.type").value("COMPONENT"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{appId}/components/uptime-history returns 200 with the
+     * uptime history for all of the app's components.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAllComponentsUptimeHistory_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();

@@ -128,16 +128,22 @@ public class StatusIncidentService {
                                                        ZonedDateTime endDate, String search, Pageable pageable) {
         List<StatusIncident> incidents;
         
+        // Both app and status filters supplied: query by both
         if (appId != null && status != null) {
             incidents = statusIncidentRepository.findByAppIdAndStatus(appId, status);
+        // Only app filter supplied: query by app
         } else if (appId != null) {
             incidents = statusIncidentRepository.findByAppId(appId);
+        // Only status filter supplied: query by status
         } else if (status != null) {
             incidents = statusIncidentRepository.findByStatus(status);
+        // Date range supplied: query by start date between bounds
         } else if (startDate != null && endDate != null) {
             incidents = statusIncidentRepository.findByStartedAtBetween(startDate, endDate);
+        // Search term supplied: run full-text search
         } else if (search != null && !search.isEmpty()) {
             incidents = statusIncidentRepository.search(search);
+        // No filters: return the full paginated result directly
         } else {
             return statusIncidentRepository.findAll(pageable).map(this::mapToResponse);
         }
@@ -174,10 +180,13 @@ public class StatusIncidentService {
     public List<StatusIncidentResponse> getActiveIncidents(UUID appId, UUID tenantId) {
         List<StatusIncident> incidents;
         
+        // App filter supplied: fetch incidents for that app
         if (appId != null) {
             incidents = statusIncidentRepository.findByAppId(appId);
+        // Tenant filter supplied: fetch incidents for that tenant
         } else if (tenantId != null) {
             incidents = statusIncidentRepository.findByTenantId(tenantId);
+        // No filter: fetch all unresolved incidents
         } else {
             incidents = statusIncidentRepository.findByResolvedAtIsNull();
         }
@@ -235,11 +244,13 @@ public class StatusIncidentService {
         StatusIncident savedIncident = statusIncidentRepository.save(incident);
         
         // Create initial incident update if message provided
+        // An initial message was supplied: record it as the first update
         if (request.getInitialMessage() != null && !request.getInitialMessage().isEmpty()) {
             createIncidentUpdate(savedIncident, request.getStatus(), request.getInitialMessage());
         }
         
         // Link affected components
+        // Affected component IDs were supplied: link them to the incident
         if (request.getAffectedComponentIds() != null && !request.getAffectedComponentIds().isEmpty()) {
             linkAffectedComponents(savedIncident, request.getAffectedComponentIds());
         }
@@ -269,6 +280,7 @@ public class StatusIncidentService {
                 .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
         mapRequestToIncident(request, incident);
         
+        // App changed on the request: reassign the incident to the new app
         if (request.getAppId() != null && !incident.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
                     .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
@@ -280,6 +292,7 @@ public class StatusIncidentService {
         StatusIncident savedIncident = statusIncidentRepository.save(incident);
         
         // Update affected components if changed
+        // Component list provided: replace existing links with the new set
         if (request.getAffectedComponentIds() != null) {
             statusIncidentComponentRepository.deleteByIncidentId(id);
             linkAffectedComponents(savedIncident, request.getAffectedComponentIds());
@@ -309,6 +322,7 @@ public class StatusIncidentService {
         StatusIncidentUpdate update = createIncidentUpdate(incident, request.getStatus(), request.getMessage());
         
         // Update incident status if changed
+        // Update carries a new status: apply it and propagate to the app
         if (!incident.getStatus().equals(request.getStatus())) {
             incident.setStatus(request.getStatus());
             incident.setLastModifiedBy(getCurrentUsername());
@@ -344,6 +358,7 @@ public class StatusIncidentService {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
 
+        // Guard: cannot resolve an incident that is already resolved
         if (STATUS_RESOLVED.equals(incident.getStatus())) {
             throw new BusinessRuleException("Incident is already resolved");
         }
@@ -390,6 +405,7 @@ public class StatusIncidentService {
         StatusIncident incident = statusIncidentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
 
+        // Guard: only resolved incidents may be deleted
         if (!STATUS_RESOLVED.equals(incident.getStatus())) {
             throw new BusinessRuleException("Cannot delete active incident. Resolve it first.");
         }
@@ -411,6 +427,7 @@ public class StatusIncidentService {
      * @return the created or existing incident, or null if creation failed
      */
     public StatusIncident createAutomatedIncident(StatusApp app, String severity, String checkMessage) {
+        // Guard: no app supplied, nothing to create
         if (app == null) {
             return null;
         }
@@ -419,9 +436,11 @@ public class StatusIncidentService {
         List<StatusIncident> existingIncidents =
                 statusIncidentRepository.findActiveAutomatedIncidents(app.getId(), SYSTEM_USER);
 
+        // An active automated incident already exists: reuse it instead of creating a new one
         if (!existingIncidents.isEmpty()) {
             // Update severity if the new severity is worse
             StatusIncident existingIncident = existingIncidents.get(0);
+            // New severity outranks the current one: upgrade the incident
             if (shouldUpgradeSeverity(existingIncident.getSeverity(), severity)) {
                 existingIncident.setSeverity(severity);
                 existingIncident.setImpact(severityToImpact(severity));
@@ -467,6 +486,7 @@ public class StatusIncidentService {
      * @param app the recovered status app
      */
     public void resolveAutomatedIncidents(StatusApp app) {
+        // Guard: no app supplied, nothing to resolve
         if (app == null) {
             return;
         }
@@ -514,6 +534,7 @@ public class StatusIncidentService {
      * @return the priority number
      */
     private int getSeverityPriority(String severity) {
+        // Map each severity level to a numeric priority (higher is worse)
         return switch (severity) {
             case SEVERITY_MINOR -> 1;
             case SEVERITY_MAJOR -> 2;
@@ -529,6 +550,7 @@ public class StatusIncidentService {
      * @return the corresponding impact level
      */
     private String severityToImpact(String severity) {
+        // Map each severity level to its corresponding component impact level
         return switch (severity) {
             case SEVERITY_CRITICAL -> SEVERITY_MAJOR;
             case SEVERITY_MAJOR -> IMPACT_PARTIAL_OUTAGE;
@@ -590,8 +612,10 @@ public class StatusIncidentService {
     private void updateComponentStatusForIncident(StatusComponent component, StatusIncident incident) {
         String newStatus = "DEGRADED";
         
+        // Critical severity or major-outage impact: mark component as major outage
         if (SEVERITY_CRITICAL.equals(incident.getSeverity()) || IMPACT_MAJOR_OUTAGE.equals(incident.getImpact())) {
             newStatus = IMPACT_MAJOR_OUTAGE;
+        // Major severity or partial-outage impact: mark component as partial outage
         } else if (SEVERITY_MAJOR.equals(incident.getSeverity()) || IMPACT_PARTIAL_OUTAGE.equals(incident.getImpact())) {
             newStatus = IMPACT_PARTIAL_OUTAGE;
         }
@@ -614,6 +638,7 @@ public class StatusIncidentService {
         Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(app.getId());
         
         String newStatus = "OPERATIONAL";
+        // There are active incidents: derive a degraded/outage status from them
         if (activeIncidents > 0) {
             List<StatusIncident> incidents = statusIncidentRepository.findByAppId(app.getId());
             incidents = incidents.stream()
@@ -623,13 +648,16 @@ public class StatusIncidentService {
             boolean hasCritical = incidents.stream()
                     .anyMatch(i -> SEVERITY_CRITICAL.equals(i.getSeverity()) || IMPACT_MAJOR_OUTAGE.equals(i.getImpact()));
             
+            // At least one critical incident: escalate app to major outage
             if (hasCritical) {
                 newStatus = IMPACT_MAJOR_OUTAGE;
+            // Otherwise only non-critical incidents: mark app as degraded
             } else {
                 newStatus = "DEGRADED";
             }
         }
         
+        // App status actually changed: persist the new status
         if (!app.getStatus().equals(newStatus)) {
             app.setStatus(newStatus);
             app.setLastModifiedBy(getCurrentUsername());
@@ -731,6 +759,7 @@ public class StatusIncidentService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Principal is a username string: return it
         if (principal instanceof String) {
             return (String) principal;
         }

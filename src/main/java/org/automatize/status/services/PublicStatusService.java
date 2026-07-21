@@ -114,10 +114,12 @@ public class PublicStatusService {
      */
     public List<StatusAppResponse> getAllPublicApps(String tenantName) {
         List<StatusApp> apps;
+        // Filter apps by tenant when a tenant name is provided
         if (tenantName != null) {
             Tenant tenant = tenantRepository.findByName(tenantName)
                     .orElseThrow(() -> new RuntimeException(TENANT_NOT_FOUND));
             apps = statusAppRepository.findByTenantIdAndIsPublic(tenant.getId(), true);
+        // Otherwise return all public apps regardless of tenant
         } else {
             apps = statusAppRepository.findByIsPublic(true);
         }
@@ -135,16 +137,19 @@ public class PublicStatusService {
      */
     public StatusAppResponse getAppBySlug(String slug, String tenantName) {
         StatusApp app;
+        // Look up the app scoped to the tenant when a tenant name is provided
         if (tenantName != null) {
             Tenant tenant = tenantRepository.findByName(tenantName)
                     .orElseThrow(() -> new RuntimeException(TENANT_NOT_FOUND));
             app = statusAppRepository.findByTenantIdAndSlug(tenant.getId(), slug)
                     .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
+        // Otherwise look up the app by slug alone
         } else {
             app = statusAppRepository.findBySlug(slug)
                     .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
         }
 
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
@@ -163,6 +168,7 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
         
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
@@ -185,6 +191,7 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
         
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
@@ -222,6 +229,7 @@ public class PublicStatusService {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new RuntimeException("Incident not found"));
         
+        // Reject access when the incident is not public
         if (!incident.getIsPublic()) {
             throw new ResourceNotFoundException("Incident is not public");
         }
@@ -240,6 +248,7 @@ public class PublicStatusService {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
                 .orElseThrow(() -> new RuntimeException("Incident not found"));
         
+        // Reject access when the incident is not public
         if (!incident.getIsPublic()) {
             throw new ResourceNotFoundException("Incident is not public");
         }
@@ -262,15 +271,19 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
         
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
 
         List<StatusMaintenance> maintenances;
+        // Fetch upcoming maintenance windows when requested
         if ("upcoming".equals(type)) {
             maintenances = statusMaintenanceRepository.findUpcomingMaintenanceByAppId(appId, ZonedDateTime.now());
+        // Fetch completed maintenance windows when requesting past ones
         } else if ("past".equals(type)) {
             maintenances = statusMaintenanceRepository.findByAppIdAndStatus(appId, "COMPLETED");
+        // Otherwise fetch all maintenance windows for the app
         } else {
             maintenances = statusMaintenanceRepository.findByAppId(appId);
         }
@@ -292,6 +305,7 @@ public class PublicStatusService {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(maintenanceId)
                 .orElseThrow(() -> new RuntimeException("Maintenance not found"));
         
+        // Reject access when the maintenance is not public
         if (!maintenance.getIsPublic()) {
             throw new ResourceNotFoundException("Maintenance is not public");
         }
@@ -312,10 +326,12 @@ public class PublicStatusService {
      */
     public StatusSummaryResponse getStatusSummary(String tenantName) {
         List<StatusApp> apps;
+        // Filter apps by tenant when a tenant name is provided
         if (tenantName != null) {
             Tenant tenant = tenantRepository.findByName(tenantName)
                     .orElseThrow(() -> new RuntimeException(TENANT_NOT_FOUND));
             apps = statusAppRepository.findByTenantIdAndIsPublic(tenant.getId(), true);
+        // Otherwise return all public apps regardless of tenant
         } else {
             apps = statusAppRepository.findByIsPublic(true);
         }
@@ -341,10 +357,13 @@ public class PublicStatusService {
         summary.setActiveIncidents(activeIncidents);
         summary.setUpcomingMaintenances(upcomingMaintenances);
 
+        // Overall status is operational when there are no apps or all are operational
         if (apps.isEmpty() || operationalCount == apps.size()) {
             summary.setOverallStatus(OPERATIONAL);
+        // Degraded when more than half of the apps are still operational
         } else if (operationalCount > apps.size() / 2) {
             summary.setOverallStatus("DEGRADED");
+        // Otherwise treat the system as a major outage
         } else {
             summary.setOverallStatus("MAJOR_OUTAGE");
         }
@@ -366,6 +385,7 @@ public class PublicStatusService {
         StatusComponent component = statusComponentRepository.findById(componentId)
                 .orElseThrow(() -> new RuntimeException("Component not found"));
         
+        // Reject access when the component's app is not public
         if (!component.getApp().getIsPublic()) {
             throw new ResourceNotFoundException("Component's app is not public");
         }
@@ -406,6 +426,7 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
         
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
@@ -439,6 +460,7 @@ public class PublicStatusService {
      * instead of 3*N queries.
      */
     private List<StatusAppResponse> mapAppsToResponses(List<StatusApp> apps) {
+        // Return an empty list when there are no apps to map
         if (apps.isEmpty()) {
             return List.of();
         }
@@ -490,6 +512,7 @@ public class PublicStatusService {
                 .map(this::mapToStatusComponentResponse)
                 .toList());
 
+        // Attach the current incident when one is active
         if (activeIncident != null) {
             response.setCurrentIncident(mapToStatusIncidentResponse(activeIncident));
         }
@@ -620,6 +643,7 @@ public class PublicStatusService {
     private int calculateOutageMinutes(List<StatusIncident> incidents) {
         int totalMinutes = 0;
         for (StatusIncident incident : incidents) {
+            // Only count incidents that have been resolved
             if (incident.getResolvedAt() != null) {
                 long minutes = ChronoUnit.MINUTES.between(incident.getStartedAt(), incident.getResolvedAt());
                 totalMinutes += minutes;
@@ -639,6 +663,7 @@ public class PublicStatusService {
         List<StatusMaintenance> maintenances = statusMaintenanceRepository.findByAppIdAndStatus(appId, "COMPLETED");
         int totalMinutes = 0;
         for (StatusMaintenance maintenance : maintenances) {
+            // Only count maintenance windows starting after the period start
             if (maintenance.getStartsAt().isAfter(startDate)) {
                 long minutes = ChronoUnit.MINUTES.between(maintenance.getStartsAt(), maintenance.getEndsAt());
                 totalMinutes += minutes;
@@ -659,6 +684,7 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
 
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }
@@ -684,6 +710,7 @@ public class PublicStatusService {
         StatusComponent component = statusComponentRepository.findById(componentId)
                 .orElseThrow(() -> new RuntimeException("Component not found"));
 
+        // Reject access when the component's app is not public
         if (!component.getApp().getIsPublic()) {
             throw new ResourceNotFoundException("Component's app is not public");
         }
@@ -733,6 +760,7 @@ public class PublicStatusService {
             daily.setDate(date);
 
             StatusUptimeHistory record = historyMap.get(date);
+            // Use the recorded uptime data when a record exists for the day
             if (record != null) {
                 daily.setStatus(record.getStatus());
                 daily.setUptimePercentage(record.getUptimePercentage());
@@ -741,6 +769,7 @@ public class PublicStatusService {
                 totalUptime = totalUptime.add(record.getUptimePercentage());
                 totalIncidents += record.getIncidentCount();
                 daysWithData++;
+            // Default to full operational uptime when no record exists for the day
             } else {
                 daily.setStatus(OPERATIONAL);
                 daily.setUptimePercentage(new BigDecimal(UPTIME_FULL));
@@ -756,8 +785,10 @@ public class PublicStatusService {
         response.setDailyHistory(dailyHistory);
         response.setTotalIncidents(totalIncidents);
 
+        // Average the uptime across days that had data
         if (daysWithData > 0) {
             response.setOverallUptimePercentage(totalUptime.divide(new BigDecimal(daysWithData), 3, RoundingMode.HALF_UP));
+        // Default to full uptime when no days had data
         } else {
             response.setOverallUptimePercentage(new BigDecimal(UPTIME_FULL));
         }
@@ -777,6 +808,7 @@ public class PublicStatusService {
         StatusApp app = statusAppRepository.findById(appId)
                 .orElseThrow(() -> new RuntimeException(STATUS_APP_NOT_FOUND));
 
+        // Reject access when the app is not public
         if (!app.getIsPublic()) {
             throw new ResourceNotFoundException("Status app is not public");
         }

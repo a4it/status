@@ -38,6 +38,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@link SchedulerJobService}, the tenant-scoped job CRUD/lifecycle
+ * service covering listing/filtering, cron validation, secret encryption,
+ * create/update/delete, pause/resume, and statistics delegation, wiring in the
+ * scheduler engine for (un)registration.
+ *
+ * <p>All repositories and collaborator services are Mockito mocks injected into
+ * the service under test.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class SchedulerJobServiceTest {
 
@@ -55,6 +64,11 @@ class SchedulerJobServiceTest {
     private final UUID tenantId = UUID.randomUUID();
     private final UUID jobId = UUID.randomUUID();
 
+    /**
+     * Builds a valid enabled, ACTIVE REST job fixture with a sound cron and UTC zone.
+     *
+     * @return a new {@link SchedulerJob}
+     */
     private SchedulerJob newJob() {
         SchedulerJob job = new SchedulerJob();
         job.setId(jobId);
@@ -71,6 +85,10 @@ class SchedulerJobServiceTest {
     // listJobs
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies a non-blank search term routes to the repository's full-text search.
+     * Expected outcome: {@code searchByTenant} is used and its page returned.
+     */
     @Test
     void listJobs_withSearchTerm_usesSearchByTenant() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -83,6 +101,10 @@ class SchedulerJobServiceTest {
         verify(jobRepository).searchByTenant(tenantId, "abc", pageable);
     }
 
+    /**
+     * Verifies an explicit status filters by that single status.
+     * Expected outcome: {@code findByTenantIdAndStatusIn} is called with a one-element list.
+     */
     @Test
     void listJobs_withStatus_filtersBySingleStatus() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -96,6 +118,10 @@ class SchedulerJobServiceTest {
         verify(jobRepository).findByTenantIdAndStatusIn(tenantId, List.of(JobStatus.PAUSED), pageable);
     }
 
+    /**
+     * Verifies that with no filters (and a blank search) the default status set is applied.
+     * Expected outcome: the status list is ACTIVE, PAUSED and DISABLED.
+     */
     @Test
     void listJobs_noFilters_defaultsToActivePausedDisabled() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -115,6 +141,10 @@ class SchedulerJobServiceTest {
     // getJob
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies {@code getJob} returns the job when found for the tenant.
+     * Expected outcome: the found job is returned.
+     */
     @Test
     void getJob_found_returnsJob() {
         SchedulerJob job = newJob();
@@ -123,6 +153,10 @@ class SchedulerJobServiceTest {
         assertThat(service.getJob(jobId, tenantId)).isSameAs(job);
     }
 
+    /**
+     * Verifies {@code getJob} throws when the job is not found.
+     * Expected outcome: {@link ResourceNotFoundException} with "Job not found".
+     */
     @Test
     void getJob_notFound_throwsResourceNotFound() {
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.empty());
@@ -136,6 +170,10 @@ class SchedulerJobServiceTest {
     // createJob
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies a valid, enabled, ACTIVE job is saved, audit-stamped and registered with the engine.
+     * Expected outcome: tenant/audit/nextRun set on the saved job and {@code registerJob} invoked.
+     */
     @Test
     void createJob_validEnabledActive_savesAndRegisters() {
         SchedulerJob job = newJob();
@@ -154,6 +192,10 @@ class SchedulerJobServiceTest {
         verify(engineService).registerJob(saved);
     }
 
+    /**
+     * Verifies a disabled job is saved but not registered with the engine.
+     * Expected outcome: {@code registerJob} is never invoked.
+     */
     @Test
     void createJob_disabled_doesNotRegister() {
         SchedulerJob job = newJob();
@@ -168,6 +210,10 @@ class SchedulerJobServiceTest {
         verify(engineService, never()).registerJob(any());
     }
 
+    /**
+     * Verifies an invalid cron expression aborts creation before any save.
+     * Expected outcome: {@link IllegalArgumentException} and no repository save.
+     */
     @Test
     void createJob_invalidCron_throwsIllegalArgument() {
         SchedulerJob job = newJob();
@@ -180,6 +226,10 @@ class SchedulerJobServiceTest {
         verify(jobRepository, never()).save(any());
     }
 
+    /**
+     * Verifies creation fails when the owning tenant does not exist.
+     * Expected outcome: {@link ResourceNotFoundException} with "Tenant not found".
+     */
     @Test
     void createJob_tenantNotFound_throwsResourceNotFound() {
         SchedulerJob job = newJob();
@@ -191,6 +241,10 @@ class SchedulerJobServiceTest {
                 .hasMessage("Tenant not found");
     }
 
+    /**
+     * Verifies a plaintext REST secret (not already ciphertext) is encrypted on create.
+     * Expected outcome: the stored REST auth password is the encrypted value.
+     */
     @Test
     void createJob_plaintextRestSecret_getsEncrypted() {
         SchedulerJob job = newJob();
@@ -214,6 +268,10 @@ class SchedulerJobServiceTest {
     // updateJob
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies {@code updateJob} fails when the target job is not found.
+     * Expected outcome: {@link ResourceNotFoundException} with "Job not found".
+     */
     @Test
     void updateJob_notFound_throwsResourceNotFound() {
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.empty());
@@ -223,6 +281,10 @@ class SchedulerJobServiceTest {
                 .hasMessage("Job not found");
     }
 
+    /**
+     * Verifies an update leaving the cron unchanged skips revalidation and reschedules.
+     * Expected outcome: fields copied, {@code rescheduleJob} invoked, cron never re-validated.
+     */
     @Test
     void updateJob_sameCron_savesAndReschedules() {
         SchedulerJob existing = newJob();
@@ -239,6 +301,10 @@ class SchedulerJobServiceTest {
         verify(cronValidationService, never()).isValid(any());
     }
 
+    /**
+     * Verifies an update changing the cron to an invalid value aborts before saving.
+     * Expected outcome: {@link IllegalArgumentException} and no repository save.
+     */
     @Test
     void updateJob_changedCronInvalid_throwsIllegalArgument() {
         SchedulerJob existing = newJob();
@@ -258,6 +324,10 @@ class SchedulerJobServiceTest {
     // deleteJob / pauseJob / resumeJob
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies deleting an existing job unregisters it from the engine and deletes it.
+     * Expected outcome: {@code unregisterJob} and repository delete are both invoked.
+     */
     @Test
     void deleteJob_found_unregistersAndDeletes() {
         SchedulerJob job = newJob();
@@ -269,6 +339,10 @@ class SchedulerJobServiceTest {
         verify(jobRepository).delete(job);
     }
 
+    /**
+     * Verifies deleting a missing job fails without touching the engine.
+     * Expected outcome: {@link ResourceNotFoundException} and {@code unregisterJob} never invoked.
+     */
     @Test
     void deleteJob_notFound_throwsResourceNotFound() {
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.empty());
@@ -278,6 +352,10 @@ class SchedulerJobServiceTest {
         verify(engineService, never()).unregisterJob(any());
     }
 
+    /**
+     * Verifies pausing an existing job sets PAUSED status and unregisters it.
+     * Expected outcome: status PAUSED, lastModifiedBy stamped, {@code unregisterJob} invoked.
+     */
     @Test
     void pauseJob_found_setsPausedAndUnregisters() {
         SchedulerJob job = newJob();
@@ -291,6 +369,10 @@ class SchedulerJobServiceTest {
         verify(engineService).unregisterJob(jobId);
     }
 
+    /**
+     * Verifies resuming a paused job restores ACTIVE status, recomputes next run, and re-registers.
+     * Expected outcome: status ACTIVE, nextRunAt updated, {@code registerJob} invoked.
+     */
     @Test
     void resumeJob_found_setsActiveRecalculatesAndRegisters() {
         SchedulerJob job = newJob();
@@ -307,6 +389,10 @@ class SchedulerJobServiceTest {
         verify(engineService).registerJob(result);
     }
 
+    /**
+     * Verifies resuming a missing job fails.
+     * Expected outcome: {@link ResourceNotFoundException} is thrown.
+     */
     @Test
     void resumeJob_notFound_throwsResourceNotFound() {
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.empty());
@@ -319,18 +405,30 @@ class SchedulerJobServiceTest {
     // statistics helpers
     // ---------------------------------------------------------------------
 
+    /**
+     * Verifies {@code countByType} delegates to the repository.
+     * Expected outcome: the repository count is returned unchanged.
+     */
     @Test
     void countByType_delegatesToRepository() {
         when(jobRepository.countByTenantIdAndJobType(tenantId, JobType.SQL)).thenReturn(4L);
         assertThat(service.countByType(tenantId, JobType.SQL)).isEqualTo(4L);
     }
 
+    /**
+     * Verifies {@code countByLastRunStatus} delegates to the repository.
+     * Expected outcome: the repository count is returned unchanged.
+     */
     @Test
     void countByLastRunStatus_delegatesToRepository() {
         when(jobRepository.countByTenantIdAndLastRunStatus(tenantId, JobRunStatus.FAILURE)).thenReturn(2L);
         assertThat(service.countByLastRunStatus(tenantId, JobRunStatus.FAILURE)).isEqualTo(2L);
     }
 
+    /**
+     * Verifies {@code countRunsSince} delegates to the run repository exactly once.
+     * Expected outcome: the run-repository count is returned and the query issued once.
+     */
     @Test
     void countRunsSince_delegatesToRunRepository() {
         ZonedDateTime since = ZonedDateTime.now().minusDays(1);

@@ -31,6 +31,11 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link PlatformEventService}.
+ *
+ * <p>Testing approach: pure Mockito unit tests. The platform-event, status-app and status-component
+ * repositories are mocked and injected into the service, so API-key validation, event creation (via
+ * API key or explicit ids), component-to-app ownership rules, lookups, search/filter delegation,
+ * deletion, counting and API-key regeneration are verified without a database.
  */
 @ExtendWith(MockitoExtension.class)
 class PlatformEventServiceTest {
@@ -45,6 +50,12 @@ class PlatformEventServiceTest {
     @InjectMocks
     private PlatformEventService platformEventService;
 
+    /**
+     * Builds a minimal {@link StatusApp} fixture with the given id and a fixed name.
+     *
+     * @param id the identifier to assign to the app
+     * @return a populated {@link StatusApp}
+     */
     private StatusApp newApp(UUID id) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -52,6 +63,13 @@ class PlatformEventServiceTest {
         return app;
     }
 
+    /**
+     * Builds a minimal {@link StatusComponent} fixture with the given id, owning app and a fixed name.
+     *
+     * @param id  the identifier to assign to the component
+     * @param app the status app the component belongs to
+     * @return a populated {@link StatusComponent}
+     */
     private StatusComponent newComponent(UUID id, StatusApp app) {
         StatusComponent component = new StatusComponent();
         component.setId(id);
@@ -60,6 +78,9 @@ class PlatformEventServiceTest {
         return component;
     }
 
+    /**
+     * Verifies that validating a known app API key returns the matching {@link StatusApp}.
+     */
     @Test
     void validateAppApiKey_validKey_returnsApp() {
         StatusApp app = newApp(UUID.randomUUID());
@@ -70,12 +91,18 @@ class PlatformEventServiceTest {
         assertThat(result).isEqualTo(app);
     }
 
+    /**
+     * Verifies that validating a {@code null} app API key throws {@link BusinessRuleException}.
+     */
     @Test
     void validateAppApiKey_nullKey_throwsBusinessRule() {
         assertThatThrownBy(() -> platformEventService.validateAppApiKey(null))
                 .isInstanceOf(BusinessRuleException.class);
     }
 
+    /**
+     * Verifies that validating an unknown app API key throws {@link UnauthorizedException}.
+     */
     @Test
     void validateAppApiKey_notFound_throwsUnauthorized() {
         when(statusAppRepository.findByApiKey("key")).thenReturn(Optional.empty());
@@ -84,6 +111,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    /**
+     * Verifies that validating a known component API key returns the matching
+     * {@link StatusComponent}.
+     */
     @Test
     void validateComponentApiKey_validKey_returnsComponent() {
         StatusComponent component = newComponent(UUID.randomUUID(), newApp(UUID.randomUUID()));
@@ -94,12 +125,18 @@ class PlatformEventServiceTest {
         assertThat(result).isEqualTo(component);
     }
 
+    /**
+     * Verifies that validating an empty component API key throws {@link BusinessRuleException}.
+     */
     @Test
     void validateComponentApiKey_emptyKey_throwsBusinessRule() {
         assertThatThrownBy(() -> platformEventService.validateComponentApiKey(""))
                 .isInstanceOf(BusinessRuleException.class);
     }
 
+    /**
+     * Verifies that validating an unknown component API key throws {@link UnauthorizedException}.
+     */
     @Test
     void validateComponentApiKey_notFound_throwsUnauthorized() {
         when(statusComponentRepository.findByApiKey("key")).thenReturn(Optional.empty());
@@ -108,6 +145,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    /**
+     * Verifies that creating an event with an app API key saves an event bound to that app, with no
+     * component, the given severity and a populated event time.
+     */
     @Test
     void createEventWithApiKey_appKey_savesEventForApp() {
         StatusApp app = newApp(UUID.randomUUID());
@@ -122,6 +163,10 @@ class PlatformEventServiceTest {
         assertThat(event.getEventTime()).isNotNull();
     }
 
+    /**
+     * Verifies that when the key does not match an app but matches a component, the event is saved
+     * bound to that component and its owning app.
+     */
     @Test
     void createEventWithApiKey_componentKey_savesEventForComponentApp() {
         StatusApp app = newApp(UUID.randomUUID());
@@ -136,6 +181,10 @@ class PlatformEventServiceTest {
         assertThat(event.getApp()).isEqualTo(app);
     }
 
+    /**
+     * Verifies that creating an event with a key matching neither an app nor a component throws
+     * {@link UnauthorizedException}.
+     */
     @Test
     void createEventWithApiKey_invalidKey_throwsUnauthorized() {
         when(statusAppRepository.findByApiKey("key")).thenReturn(Optional.empty());
@@ -145,6 +194,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(UnauthorizedException.class);
     }
 
+    /**
+     * Verifies that creating an event by app id with no component saves an event bound to the app and
+     * with a null component.
+     */
     @Test
     void createEvent_noComponent_savesEvent() {
         UUID appId = UUID.randomUUID();
@@ -158,6 +211,10 @@ class PlatformEventServiceTest {
         assertThat(event.getComponent()).isNull();
     }
 
+    /**
+     * Verifies that creating an event with a component that belongs to the given app saves an event
+     * bound to that component.
+     */
     @Test
     void createEvent_componentBelongsToApp_savesEvent() {
         UUID appId = UUID.randomUUID();
@@ -173,6 +230,10 @@ class PlatformEventServiceTest {
         assertThat(event.getComponent()).isEqualTo(component);
     }
 
+    /**
+     * Verifies that creating an event whose component belongs to a different app throws
+     * {@link BusinessRuleException}.
+     */
     @Test
     void createEvent_componentBelongsToDifferentApp_throwsBusinessRule() {
         UUID appId = UUID.randomUUID();
@@ -186,6 +247,9 @@ class PlatformEventServiceTest {
                 .isInstanceOf(BusinessRuleException.class);
     }
 
+    /**
+     * Verifies that creating an event for an unknown app id throws a {@link RuntimeException}.
+     */
     @Test
     void createEvent_appNotFound_throwsRuntime() {
         UUID appId = UUID.randomUUID();
@@ -195,6 +259,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that creating an event with an unknown component id (for a known app) throws a
+     * {@link RuntimeException}.
+     */
     @Test
     void createEvent_componentNotFound_throwsRuntime() {
         UUID appId = UUID.randomUUID();
@@ -206,6 +274,9 @@ class PlatformEventServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that fetching an existing event by id returns that event.
+     */
     @Test
     void getEventById_found_returnsEvent() {
         UUID id = UUID.randomUUID();
@@ -216,6 +287,9 @@ class PlatformEventServiceTest {
         assertThat(platformEventService.getEventById(id)).isEqualTo(event);
     }
 
+    /**
+     * Verifies that fetching a non-existent event by id throws a {@link RuntimeException}.
+     */
     @Test
     void getEventById_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -225,6 +299,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that {@code getEvents} delegates to the repository's filtered query and returns its
+     * page of results.
+     */
     @Test
     void getEvents_delegatesToRepositoryWithFilters() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("eventTime"));
@@ -236,6 +314,10 @@ class PlatformEventServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that searching with non-blank text routes to the repository's search-with-filters
+     * query and does not call the plain filtered query.
+     */
     @Test
     void searchEvents_withText_usesSearchWithFilters() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -248,6 +330,10 @@ class PlatformEventServiceTest {
         verify(platformEventRepository, never()).findWithFilters(any(), any(), any(), any(), any(), any());
     }
 
+    /**
+     * Verifies that searching with blank text falls back to the plain filtered query and never calls
+     * the search-with-filters query.
+     */
     @Test
     void searchEvents_blankText_delegatesToGetEvents() {
         Pageable pageable = PageRequest.of(0, 10);
@@ -260,6 +346,9 @@ class PlatformEventServiceTest {
         verify(platformEventRepository, never()).searchWithFilters(any(), any(), any(), any(), any(), any(), any());
     }
 
+    /**
+     * Verifies that deleting an existing event delegates to the repository's delete for that event.
+     */
     @Test
     void deleteEvent_found_deletes() {
         UUID id = UUID.randomUUID();
@@ -271,6 +360,9 @@ class PlatformEventServiceTest {
         verify(platformEventRepository).delete(event);
     }
 
+    /**
+     * Verifies that deleting a non-existent event throws a {@link RuntimeException}.
+     */
     @Test
     void deleteEvent_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -280,6 +372,9 @@ class PlatformEventServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that {@code deleteEventsByAppId} delegates to the repository's bulk delete-by-app-id.
+     */
     @Test
     void deleteEventsByAppId_delegatesToRepository() {
         UUID appId = UUID.randomUUID();
@@ -289,6 +384,9 @@ class PlatformEventServiceTest {
         verify(platformEventRepository).deleteByAppId(appId);
     }
 
+    /**
+     * Verifies that {@code countEventsByAppId} returns the count reported by the repository.
+     */
     @Test
     void countEventsByAppId_returnsCount() {
         UUID appId = UUID.randomUUID();
@@ -297,6 +395,10 @@ class PlatformEventServiceTest {
         assertThat(platformEventService.countEventsByAppId(appId)).isEqualTo(7L);
     }
 
+    /**
+     * Verifies that regenerating a component's API key produces a new non-blank key that differs from
+     * the old one and is persisted on the component.
+     */
     @Test
     void regenerateComponentApiKey_updatesAndReturnsNewKey() {
         UUID componentId = UUID.randomUUID();
@@ -311,6 +413,10 @@ class PlatformEventServiceTest {
         assertThat(component.getApiKey()).isEqualTo(newKey);
     }
 
+    /**
+     * Verifies that regenerating the API key for an unknown component id throws a
+     * {@link RuntimeException}.
+     */
     @Test
     void regenerateComponentApiKey_notFound_throwsRuntime() {
         UUID componentId = UUID.randomUUID();
@@ -320,6 +426,10 @@ class PlatformEventServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that regenerating an app's API key produces a new non-blank key that differs from the
+     * old one and is persisted on the app.
+     */
     @Test
     void regenerateAppApiKey_updatesAndReturnsNewKey() {
         UUID appId = UUID.randomUUID();
@@ -334,6 +444,9 @@ class PlatformEventServiceTest {
         assertThat(app.getApiKey()).isEqualTo(newKey);
     }
 
+    /**
+     * Verifies that regenerating the API key for an unknown app id throws a {@link RuntimeException}.
+     */
     @Test
     void regenerateAppApiKey_notFound_throwsRuntime() {
         UUID appId = UUID.randomUUID();

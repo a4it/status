@@ -42,6 +42,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- status ----------------------------------------------------------
 
+    /**
+     * Verifies GET /api/setup/status returns 200 with the current setup status (completion + DB connectivity).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getStatus_returnsOk() throws Exception {
         SetupStatusResponse resp = new SetupStatusResponse();
@@ -57,6 +62,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- test-connection -------------------------------------------------
 
+    /**
+     * Verifies POST /api/setup/test-connection returns 200 with success=true when setup is incomplete
+     * and the service reports a successful connection.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_valid_returnsOk() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -69,6 +80,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    /**
+     * Verifies POST /api/setup/test-connection returns 400 with success=false when the service reports
+     * a failed connection.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_failed_returns400() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -81,6 +98,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies POST /api/setup/test-connection returns 403 when setup is already complete (guard).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
@@ -90,6 +112,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    /**
+     * Verifies POST /api/setup/test-connection returns 400 when required {@code @NotBlank} fields
+     * (url + username) are missing (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void testConnection_missingFields_returns400() throws Exception {
         String body = "{\"password\":\"p\"}"; // url + username are @NotBlank
@@ -99,6 +127,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- tenant ----------------------------------------------------------
 
+    /**
+     * Verifies POST /api/setup/tenant returns 200 with the created tenant when setup is incomplete.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createTenant_valid_returnsOk() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -113,6 +146,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme"));
     }
 
+    /**
+     * Verifies POST /api/setup/tenant returns 403 when setup is already complete (guard).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createTenant_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
@@ -121,12 +159,23 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    /**
+     * Verifies POST /api/setup/tenant returns 400 when the required name is missing (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createTenant_missingName_returns400() throws Exception {
         mockMvc.perform(post("/api/setup/tenant").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies POST /api/setup/tenant returns 400 with success=false when the service throws during
+     * tenant creation.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createTenant_serviceThrows_returns400() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -140,6 +189,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- organization ----------------------------------------------------
 
+    /**
+     * Verifies POST /api/setup/organization returns 200 with the created organization when setup is incomplete.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createOrganization_valid_returnsOk() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -155,6 +209,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Acme Org"));
     }
 
+    /**
+     * Verifies POST /api/setup/organization returns 403 when setup is already complete (guard).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createOrganization_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
@@ -165,6 +224,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    /**
+     * Verifies POST /api/setup/organization returns 400 when required fields (organizationType + tenantId)
+     * are missing (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createOrganization_missingFields_returns400() throws Exception {
         String body = "{\"name\":\"Acme Org\"}"; // organizationType + tenantId missing
@@ -174,11 +239,22 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- admin -----------------------------------------------------------
 
+    /**
+     * Provides a valid JSON admin-creation request body satisfying all bean-validation constraints.
+     *
+     * @return a JSON string with username, password, email, fullName and organizationId populated
+     */
     private String adminBody() {
         return "{\"username\":\"admin\",\"password\":\"password123\",\"email\":\"admin@example.com\","
                 + "\"fullName\":\"Admin User\",\"organizationId\":\"" + UUID.randomUUID() + "\"}";
     }
 
+    /**
+     * Verifies POST /api/setup/admin returns 200 with success=true and marks setup complete when the
+     * admin is registered successfully.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createAdmin_valid_returnsOk() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -192,6 +268,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         verify(setupService).markSetupComplete();
     }
 
+    /**
+     * Verifies POST /api/setup/admin returns 400 with success=false when the service reports a failure
+     * (e.g. username already taken).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createAdmin_serviceFailure_returns400() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(false);
@@ -203,6 +285,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies POST /api/setup/admin returns 403 when setup is already complete (guard).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createAdmin_alreadyComplete_returns403() throws Exception {
         when(setupService.isSetupAlreadyComplete()).thenReturn(true);
@@ -211,6 +298,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isForbidden());
     }
 
+    /**
+     * Verifies POST /api/setup/admin returns 400 when the username is too short and required fields are
+     * missing (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createAdmin_missingFields_returns400() throws Exception {
         String body = "{\"username\":\"ad\"}"; // too short + missing required fields
@@ -220,6 +313,11 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
 
     // ---- properties ------------------------------------------------------
 
+    /**
+     * Verifies GET /api/setup/properties returns 200 with the grouped application properties.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getProperties_returnsOk() throws Exception {
         Map<String, List<SetupService.PropertyEntry>> groups = Map.of(
@@ -232,6 +330,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.Critical[0].key").value("server.port"));
     }
 
+    /**
+     * Verifies GET /api/setup/properties returns 400 with success=false when reading the properties
+     * throws an {@code IOException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getProperties_serviceThrows_returns400() throws Exception {
         when(setupService.getGroupedProperties()).thenThrow(new java.io.IOException("no file"));
@@ -241,6 +345,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies POST /api/setup/properties returns 200 with success=true and delegates persistence to
+     * the service.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void saveProperties_returnsOk() throws Exception {
         String body = "{\"properties\":{\"server.port\":\"9090\"}}";
@@ -251,6 +361,12 @@ class SetupApiControllerTest extends AbstractApiControllerTest {
         verify(setupService).saveProperties(any());
     }
 
+    /**
+     * Verifies POST /api/setup/properties returns 400 with success=false when saving throws an
+     * {@code IOException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void saveProperties_serviceThrows_returns400() throws Exception {
         doThrow(new java.io.IOException("write failed")).when(setupService).saveProperties(any());

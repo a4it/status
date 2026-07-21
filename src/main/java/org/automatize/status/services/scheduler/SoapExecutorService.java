@@ -50,6 +50,7 @@ public class SoapExecutorService {
      * @param run    the run record to populate with outcome details
      */
     public void execute(SchedulerSoapConfig config, SchedulerJobRun run) {
+        // Missing configuration cannot be executed
         if (config == null) {
             run.setStatus(JobRunStatus.FAILURE);
             run.setErrorMessage("SOAP configuration is missing");
@@ -72,10 +73,18 @@ public class SoapExecutorService {
     // Private helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds the {@link HttpClient} with configured connect timeout, installing a trust-all
+     * SSL context when certificate verification is disabled.
+     *
+     * @param config the SOAP configuration
+     * @return a configured HTTP client
+     */
     private HttpClient buildHttpClient(SchedulerSoapConfig config) {
         HttpClient.Builder clientBuilder = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
                 .followRedirects(HttpClient.Redirect.NORMAL);
+        // SSL verification disabled — install a trust-all context
         if (!Boolean.TRUE.equals(config.getSslVerify())) {
             clientBuilder.sslContext(buildTrustAllSslContext());
         }
@@ -84,16 +93,25 @@ public class SoapExecutorService {
 
     /** Resolves the SOAP {@code Content-Type} header, which differs between SOAP 1.1 and 1.2. */
     private String resolveContentType(SchedulerSoapConfig config) {
+        // SOAP 1.1 uses text/xml
         if (config.getSoapVersion() != SoapVersion.V1_2) {
             return "text/xml; charset=utf-8";
         }
         String contentType = "application/soap+xml; charset=utf-8";
+        // SOAP 1.2 folds the action into the content type
         if (config.getSoapAction() != null) {
             contentType += "; action=\"" + config.getSoapAction() + "\"";
         }
         return contentType;
     }
 
+    /**
+     * Builds the SOAP HTTP POST request: content type, read timeout, the SOAPAction header
+     * (SOAP 1.1 only), any extra headers, authentication, and the SOAP envelope body.
+     *
+     * @param config the SOAP configuration
+     * @return the assembled HTTP request
+     */
     private HttpRequest buildRequest(SchedulerSoapConfig config) {
         HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(config.getEndpointUrl()))
                 .header("Content-Type", resolveContentType(config))
@@ -103,6 +121,7 @@ public class SoapExecutorService {
         if (config.getSoapVersion() != SoapVersion.V1_2 && config.getSoapAction() != null) {
             reqBuilder.header("SOAPAction", "\"" + config.getSoapAction() + "\"");
         }
+        // Apply any extra headers when configured
         if (config.getExtraHeaders() != null) {
             config.getExtraHeaders().forEach(reqBuilder::header);
         }
@@ -120,8 +139,10 @@ public class SoapExecutorService {
         run.setResponseBody(responseBody);
 
         boolean hasFault = containsSoapFault(responseBody);
+        // Success requires a 2xx status and no SOAP fault in the body
         if (httpStatus >= 200 && httpStatus < 300 && !hasFault) {
             run.setStatus(JobRunStatus.SUCCESS);
+        // Non-2xx status or a detected SOAP fault marks the run as failed
         } else {
             run.setStatus(JobRunStatus.FAILURE);
             run.setErrorMessage("SOAP call failed with HTTP " + httpStatus
@@ -129,14 +150,28 @@ public class SoapExecutorService {
         }
     }
 
+    /**
+     * Truncates the response body to the configured maximum length, appending a marker.
+     *
+     * @param responseBody the raw response body
+     * @param config       the SOAP configuration supplying the byte cap
+     * @return the (possibly truncated) body
+     */
     private String truncateBody(String responseBody, SchedulerSoapConfig config) {
         int maxBytes = config.getMaxResponseBytes() != null ? config.getMaxResponseBytes() : 524288;
+        // Truncate only when the body exceeds the configured maximum
         if (responseBody != null && responseBody.length() > maxBytes) {
             return responseBody.substring(0, maxBytes) + "\n... [TRUNCATED]";
         }
         return responseBody;
     }
 
+    /**
+     * Detects whether the response body contains a SOAP fault element (1.1 or 1.2 style).
+     *
+     * @param responseBody the response body to inspect
+     * @return {@code true} when a SOAP fault marker is present
+     */
     private boolean containsSoapFault(String responseBody) {
         return responseBody != null
                 && (responseBody.contains("<soap:Fault")
@@ -144,8 +179,17 @@ public class SoapExecutorService {
                     || responseBody.contains("<faultcode>"));
     }
 
+    /**
+     * Applies Basic or Bearer authentication to the request; other auth types are ignored
+     * for SOAP.
+     *
+     * @param config     the SOAP configuration
+     * @param reqBuilder the request builder to mutate
+     */
     private void applyAuth(SchedulerSoapConfig config, HttpRequest.Builder reqBuilder) {
+        // No authentication configured — nothing to apply
         if (config.getAuthType() == null || config.getAuthType() == AuthType.NONE) return;
+        // Dispatch to the handler for the configured auth type
         switch (config.getAuthType()) {
             case BASIC -> {
                 String user = config.getAuthUsername() != null ? config.getAuthUsername() : "";
@@ -166,6 +210,13 @@ public class SoapExecutorService {
         }
     }
 
+    /**
+     * Builds an {@link SSLContext} whose trust manager accepts all certificates.
+     * Intended only for development/self-signed environments.
+     *
+     * @return a trust-all SSL context
+     * @throws IllegalStateException when the context cannot be constructed
+     */
     private SSLContext buildTrustAllSslContext() {
         try {
             SSLContext ctx = SSLContext.getInstance("TLS");

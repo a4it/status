@@ -588,6 +588,10 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code changePassword} throws {@link AccessDeniedException} and saves
+     * nothing when a non-admin attempts to change another user's password.
+     */
     @Test
     void changePassword_otherUserAsNonAdmin_throwsAccessDeniedException() {
         UUID targetId = UUID.randomUUID();
@@ -604,6 +608,10 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code changePassword} lets an admin set another user's password
+     * without validating the current password.
+     */
     @Test
     void changePassword_adminForOtherUser_skipsCurrentPasswordCheck() {
         UUID targetId = UUID.randomUUID();
@@ -624,6 +632,9 @@ class UserServiceTest {
 
     // ---------- enable / disable / role / delete ----------
 
+    /**
+     * Verifies that {@code enableUser} marks the user enabled and sets the status to ACTIVE.
+     */
     @Test
     void enableUser_setsEnabledAndActive() {
         UUID id = UUID.randomUUID();
@@ -639,6 +650,9 @@ class UserServiceTest {
         assertThat(result.getStatus()).isEqualTo("ACTIVE");
     }
 
+    /**
+     * Verifies that {@code disableUser} marks the user disabled and sets the status to INACTIVE.
+     */
     @Test
     void disableUser_setsDisabledAndInactive() {
         UUID id = UUID.randomUUID();
@@ -653,6 +667,9 @@ class UserServiceTest {
         assertThat(result.getStatus()).isEqualTo("INACTIVE");
     }
 
+    /**
+     * Verifies that {@code updateRole} sets the user's role to the requested value.
+     */
     @Test
     void updateRole_setsRole() {
         UUID id = UUID.randomUUID();
@@ -666,6 +683,9 @@ class UserServiceTest {
         assertThat(result.getRole()).isEqualTo("ADMIN");
     }
 
+    /**
+     * Verifies that {@code deleteUser} deletes the user when one exists for the id.
+     */
     @Test
     void deleteUser_existing_deletesUser() {
         UUID id = UUID.randomUUID();
@@ -677,6 +697,10 @@ class UserServiceTest {
         verify(userRepository).delete(user);
     }
 
+    /**
+     * Verifies that {@code deleteUser} throws {@link ResourceNotFoundException} and deletes
+     * nothing when no user exists for the id.
+     */
     @Test
     void deleteUser_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();

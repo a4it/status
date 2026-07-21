@@ -69,6 +69,10 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private SchedulerJdbcDatasourceRepository datasourceRepository;
 
+    /**
+     * Installs an authenticated ADMIN {@link UserPrincipal} into the {@link SecurityContextHolder}
+     * before each test, since the controller reads the current principal from the security context.
+     */
     @BeforeEach
     void setUpPrincipal() {
         UserPrincipal principal = new UserPrincipal(
@@ -78,11 +82,20 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test to avoid principal leakage between tests.
+     */
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a sample {@link SchedulerJob} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return an ACTIVE nightly-backup PROGRAM job with a midnight cron expression
+     */
     private SchedulerJob sampleJob(UUID id) {
         SchedulerJob job = new SchedulerJob();
         job.setId(id);
@@ -93,6 +106,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         return job;
     }
 
+    /**
+     * Builds a sample {@link SchedulerJobRun} fixture for stubbing manual-trigger results.
+     *
+     * @param id the identifier to assign
+     * @return a SUCCESS run with a MANUAL trigger type
+     */
     private SchedulerJobRun sampleRun(UUID id) {
         SchedulerJobRun run = new SchedulerJobRun();
         run.setId(id);
@@ -101,6 +120,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         return run;
     }
 
+    /**
+     * Provides a minimal valid JSON request body satisfying the create/update bean-validation constraints.
+     *
+     * @return a JSON string with name, jobType and cronExpression populated
+     */
     private String validRequestBody() {
         return "{\"name\":\"Nightly Backup\",\"jobType\":\"PROGRAM\",\"cronExpression\":\"0 0 0 * * *\"}";
     }
@@ -109,6 +133,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/jobs
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/jobs returns 200 with a paged list of jobs.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void listJobs_returnsOkPage() throws Exception {
         when(schedulerJobService.listJobs(any(), any(), any(), any(), any()))
@@ -124,6 +153,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/jobs/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/jobs/{id} returns 200 with the job when found.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getJob_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -134,6 +168,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
+    /**
+     * Verifies GET /api/scheduler/jobs/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -148,6 +188,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/jobs
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies POST /api/scheduler/jobs with a valid body returns 201 with the created job.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createJob_valid_returns201() throws Exception {
         UUID id = UUID.randomUUID();
@@ -160,6 +205,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Nightly Backup"));
     }
 
+    /**
+     * Verifies POST /api/scheduler/jobs returns 400 when the required name is missing
+     * (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createJob_missingName_returns400() throws Exception {
         mockMvc.perform(post("/api/scheduler/jobs")
@@ -168,6 +219,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies POST /api/scheduler/jobs returns 400 when the required cronExpression is missing
+     * (bean validation failure).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void createJob_missingCronExpression_returns400() throws Exception {
         mockMvc.perform(post("/api/scheduler/jobs")
@@ -176,6 +233,10 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
+    /**
+     * Verifies that when the service rejects the cron with {@code IllegalArgumentException} (no
+     * {@code @ResponseStatus}), the exception propagates out of {@code mockMvc.perform}.
+     */
     @Test
     void createJob_serviceRejectsCron_propagatesIllegalArgument() {
         when(schedulerJobService.createJob(any(), any(), any()))
@@ -191,6 +252,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // PUT /api/scheduler/jobs/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies PUT /api/scheduler/jobs/{id} with a valid body returns 200 with the updated job.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void updateJob_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -203,6 +269,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.name").value("Nightly Backup"));
     }
 
+    /**
+     * Verifies PUT /api/scheduler/jobs/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void updateJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -219,6 +291,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // DELETE /api/scheduler/jobs/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies DELETE /api/scheduler/jobs/{id} returns 204 and delegates deletion to the service.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void deleteJob_returns204() throws Exception {
         UUID id = UUID.randomUUID();
@@ -229,6 +306,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
         verify(schedulerJobService).deleteJob(eq(id), any());
     }
 
+    /**
+     * Verifies DELETE /api/scheduler/jobs/{id} returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void deleteJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -243,6 +326,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/jobs/{id}/pause  and  /resume
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies POST /api/scheduler/jobs/{id}/pause returns 200 with the job now in PAUSED status.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void pauseJob_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -255,6 +343,11 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.status").value("PAUSED"));
     }
 
+    /**
+     * Verifies POST /api/scheduler/jobs/{id}/resume returns 200 with the job back in ACTIVE status.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void resumeJob_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -265,6 +358,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.status").value("ACTIVE"));
     }
 
+    /**
+     * Verifies POST /api/scheduler/jobs/{id}/resume returns 404 when the service throws
+     * {@code ResourceNotFoundException}.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void resumeJob_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
@@ -279,6 +378,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // POST /api/scheduler/jobs/{id}/trigger
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies POST /api/scheduler/jobs/{id}/trigger returns 200 with the resulting run when a manual
+     * dispatch is executed.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void triggerJob_returnsOkRun() throws Exception {
         UUID id = UUID.randomUUID();
@@ -290,6 +395,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
     }
 
+    /**
+     * Verifies POST /api/scheduler/jobs/{id}/trigger returns 200 with an empty body when the dispatcher
+     * skips the run (returns {@code null}).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void triggerJob_skipped_returnsOkEmptyBody() throws Exception {
         UUID id = UUID.randomUUID();
@@ -299,6 +410,10 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isOk());
     }
 
+    /**
+     * Verifies that when the dispatcher throws a plain {@code RuntimeException} (no
+     * {@code @ResponseStatus}), the exception propagates out of {@code mockMvc.perform}.
+     */
     @Test
     void triggerJob_notFound_propagatesRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -313,6 +428,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/jobs/{id}/next-runs
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/jobs/{id}/next-runs returns 200 with the array of upcoming execution
+     * times computed from the job's cron expression.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void nextRuns_returnsOkList() throws Exception {
         UUID id = UUID.randomUUID();
@@ -330,6 +451,12 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/jobs/stats
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/jobs/stats returns 200 with aggregate counters: total jobs,
+     * running now, succeeded today and failed today.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void stats_returnsOkAggregates() throws Exception {
         when(schedulerJobService.listJobs(any(), any(), any(), any(), any()))

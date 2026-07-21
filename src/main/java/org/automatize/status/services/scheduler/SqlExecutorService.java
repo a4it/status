@@ -46,6 +46,7 @@ public class SqlExecutorService {
      * @param run    the run record to populate with outcome details
      */
     public void execute(SchedulerSqlConfig config, SchedulerJobRun run) {
+        // Missing configuration cannot be executed
         if (config == null) {
             run.setStatus(JobRunStatus.FAILURE);
             run.setErrorMessage("SQL configuration is missing");
@@ -67,6 +68,7 @@ public class SqlExecutorService {
                 stmt.setQueryTimeout(queryTimeout);
                 SqlType sqlType = config.getSqlType() != null ? config.getSqlType() : SqlType.DML;
 
+                // QUERY: run a SELECT and capture the result set as JSON
                 if (sqlType == SqlType.QUERY) {
                     stmt.setMaxRows(maxRows);
                     ResultSet rs = stmt.executeQuery(config.getSqlStatement());
@@ -82,11 +84,13 @@ public class SqlExecutorService {
                     run.setRowsAffected(rowCount);
                     run.setStatus(JobRunStatus.SUCCESS);
 
+                // DML: run an update and record the affected row count
                 } else if (sqlType == SqlType.DML) {
                     long rows = stmt.executeLargeUpdate(config.getSqlStatement());
                     run.setRowsAffected(rows);
                     run.setStatus(JobRunStatus.SUCCESS);
 
+                // DDL: execute the statement without expecting a row count
                 } else {
                     // DDL
                     stmt.execute(config.getSqlStatement());
@@ -139,24 +143,49 @@ public class SqlExecutorService {
     // Private helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Resolves the JDBC URL from a shared datasource, an inline URL override, or an inline
+     * DB type default, in that order of precedence.
+     *
+     * @param config the SQL configuration
+     * @return the resolved JDBC URL
+     * @throws IllegalArgumentException when neither a datasource nor inline config is present
+     */
     private String resolveJdbcUrl(SchedulerSqlConfig config) {
+        // Prefer a shared datasource when one is linked
         if (config.getDatasource() != null) {
             return buildJdbcUrlFromDatasource(config.getDatasource());
         }
+        // Otherwise use an explicit inline JDBC URL when provided
         if (config.getInlineJdbcUrl() != null && !config.getInlineJdbcUrl().isBlank()) {
             return config.getInlineJdbcUrl();
         }
         DbType dbType = config.getInlineDbType();
+        // No datasource or URL — an inline DB type is required to build a default URL
         if (dbType == null) throw new IllegalArgumentException("No datasource or inline JDBC config provided");
         return dbType.buildJdbcUrl("localhost", dbType.getDefaultPort(), "");
     }
 
+    /**
+     * Resolves the connection username from the linked datasource or inline config.
+     *
+     * @param config the SQL configuration
+     * @return the username, or {@code null}
+     */
     private String resolveUsername(SchedulerSqlConfig config) {
+        // Prefer the datasource username when a datasource is linked
         if (config.getDatasource() != null) return config.getDatasource().getUsername();
         return config.getInlineUsername();
     }
 
+    /**
+     * Resolves and decrypts the connection password from the linked datasource or inline config.
+     *
+     * @param config the SQL configuration
+     * @return the plaintext password, or {@code null}
+     */
     private String resolvePassword(SchedulerSqlConfig config) {
+        // Prefer the datasource password when a datasource is linked
         if (config.getDatasource() != null) {
             String enc = config.getDatasource().getPasswordEnc();
             return enc != null ? encryptionService.decrypt(enc) : null;
@@ -165,7 +194,15 @@ public class SqlExecutorService {
         return enc != null ? encryptionService.decrypt(enc) : null;
     }
 
+    /**
+     * Builds a JDBC URL for the datasource, honouring an explicit URL override when present
+     * and otherwise composing one from host, port, and database name.
+     *
+     * @param ds the datasource
+     * @return the JDBC URL
+     */
     private String buildJdbcUrlFromDatasource(SchedulerJdbcDatasource ds) {
+        // Use an explicit URL override when configured
         if (ds.getJdbcUrlOverride() != null && !ds.getJdbcUrlOverride().isBlank()) {
             return ds.getJdbcUrlOverride();
         }
@@ -173,20 +210,42 @@ public class SqlExecutorService {
         return ds.getDbType().buildJdbcUrl(ds.getHost(), port, ds.getDatabaseName());
     }
 
+    /**
+     * Loads the JDBC driver class for the datasource or inline DB type.
+     *
+     * @param config the SQL configuration
+     * @throws ClassNotFoundException when the driver class cannot be found on the classpath
+     */
     private void loadDriver(SchedulerSqlConfig config) throws ClassNotFoundException {
         DbType dbType = config.getDatasource() != null
                 ? config.getDatasource().getDbType()
                 : config.getInlineDbType();
+        // Load the driver only when a DB type is resolvable
         if (dbType != null) {
             Class.forName(getDriverClass(dbType));
         }
     }
 
+    /**
+     * Returns the JDBC driver class name for the given DB type, defaulting to PostgreSQL.
+     *
+     * @param dbType the database type; may be {@code null}
+     * @return the driver class name
+     */
     private String getDriverClass(DbType dbType) {
+        // Default to the PostgreSQL driver when no type is provided
         if (dbType == null) return "org.postgresql.Driver";
         return dbType.getDriverClass();
     }
 
+    /**
+     * Serialises up to {@code maxRows} of a result set into a JSON array of column-keyed maps.
+     *
+     * @param rs      the result set to read
+     * @param maxRows the maximum number of rows to serialise
+     * @return the JSON representation of the rows
+     * @throws Exception when reading the result set or serialising to JSON fails
+     */
     private String resultSetToJson(ResultSet rs, int maxRows) throws Exception {
         ResultSetMetaData meta = rs.getMetaData();
         int colCount = meta.getColumnCount();

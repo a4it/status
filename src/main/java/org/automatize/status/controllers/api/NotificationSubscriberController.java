@@ -58,8 +58,10 @@ public class NotificationSubscriberController {
     public ResponseEntity<List<NotificationSubscriberResponse>> getAllSubscribers(
             @RequestParam(required = false) UUID appId) {
         List<NotificationSubscriberResponse> subscribers;
+        // Filter by application when an appId is supplied
         if (appId != null) {
             subscribers = subscriberService.getSubscribersByAppId(appId);
+        // Otherwise return all subscribers
         } else {
             subscribers = subscriberService.getAllSubscribers();
         }

@@ -108,12 +108,16 @@ public class StatusAppService {
     public Page<StatusAppResponse> getAllStatusApps(UUID tenantId, UUID organizationId, String search, Pageable pageable) {
         List<StatusApp> apps;
         
+        // Filter by tenant when a tenant ID is provided
         if (tenantId != null) {
             apps = statusAppRepository.findByTenantId(tenantId);
+        // Otherwise filter by organization when an organization ID is provided
         } else if (organizationId != null) {
             apps = statusAppRepository.findByOrganizationId(organizationId);
+        // Otherwise apply the search term when one is provided
         } else if (search != null && !search.isEmpty()) {
             apps = statusAppRepository.search(search);
+        // Otherwise return the full paginated list
         } else {
             return statusAppRepository.findAll(pageable).map(this::mapToResponse);
         }
@@ -184,6 +188,7 @@ public class StatusAppService {
      * @throws RuntimeException if the tenant or organization is not found
      */
     public StatusAppResponse createStatusApp(StatusAppRequest request) {
+        // Reject creation when the slug already exists within the tenant
         if (request.getTenantId() != null && 
             statusAppRepository.existsByTenantIdAndSlug(request.getTenantId(), request.getSlug())) {
             throw new DuplicateResourceException("Status app with slug already exists in this tenant: " + request.getSlug());
@@ -192,18 +197,21 @@ public class StatusAppService {
         StatusApp app = new StatusApp();
         mapRequestToStatusApp(request, app);
         
+        // Associate the tenant when a tenant ID is provided
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
                     .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             app.setTenant(tenant);
         }
         
+        // Associate the organization when an organization ID is provided
         if (request.getOrganizationId() != null) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             app.setOrganization(organization);
         }
 
+        // Associate the platform when a platform ID is provided
         if (request.getPlatformId() != null) {
             StatusPlatform platform = statusPlatformRepository.findById(request.getPlatformId())
                     .orElseThrow(() -> new RuntimeException("Platform not found"));
@@ -234,6 +242,7 @@ public class StatusAppService {
         StatusApp app = statusAppRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND + id));
 
+        // Reject update when the changed slug collides with an existing app in the tenant
         if (!app.getSlug().equals(request.getSlug()) && 
             request.getTenantId() != null &&
             statusAppRepository.existsByTenantIdAndSlug(request.getTenantId(), request.getSlug())) {
@@ -242,6 +251,7 @@ public class StatusAppService {
 
         mapRequestToStatusApp(request, app);
         
+        // Reassign the tenant when the requested tenant differs from the current one
         if (request.getTenantId() != null && 
             (app.getTenant() == null || !app.getTenant().getId().equals(request.getTenantId()))) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
@@ -249,6 +259,7 @@ public class StatusAppService {
             app.setTenant(tenant);
         }
         
+        // Reassign the organization when the requested organization differs from the current one
         if (request.getOrganizationId() != null &&
             (app.getOrganization() == null || !app.getOrganization().getId().equals(request.getOrganizationId()))) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
@@ -256,12 +267,15 @@ public class StatusAppService {
             app.setOrganization(organization);
         }
 
+        // Update the platform association when a platform ID is provided
         if (request.getPlatformId() != null) {
+            // Reassign the platform when the requested platform differs from the current one
             if (app.getPlatform() == null || !app.getPlatform().getId().equals(request.getPlatformId())) {
                 StatusPlatform platform = statusPlatformRepository.findById(request.getPlatformId())
                         .orElseThrow(() -> new ResourceNotFoundException("Platform not found"));
                 app.setPlatform(platform);
             }
+        // Otherwise clear the platform association
         } else {
             app.setPlatform(null);
         }
@@ -269,6 +283,7 @@ public class StatusAppService {
         app.setLastModifiedBy(getCurrentUsername());
 
         // Generate API key if empty
+        // Generate a new API key when none is set
         if (app.getApiKey() == null || app.getApiKey().isEmpty()) {
             app.setApiKey(ApiKeyGenerator.generateApiKey());
         }
@@ -299,6 +314,7 @@ public class StatusAppService {
         StatusApp savedApp = statusAppRepository.save(app);
         
         // Update all components status if app status is major outage
+        // Cascade a major outage status to all of the app's components
         if ("MAJOR_OUTAGE".equals(status)) {
             List<StatusComponent> components = statusComponentRepository.findByAppId(id);
             components.forEach(component -> {
@@ -328,12 +344,14 @@ public class StatusAppService {
         
         // Check for active incidents
         Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(id);
+        // Prevent deletion when the app has active incidents
         if (activeIncidents > 0) {
             throw new BusinessRuleException("Cannot delete app with active incidents");
         }
         
         // Check for upcoming maintenance
         Long activeMaintenance = statusMaintenanceRepository.countActiveMaintenanceByAppId(id);
+        // Prevent deletion when the app has upcoming maintenance
         if (activeMaintenance > 0) {
             throw new BusinessRuleException("Cannot delete app with upcoming maintenance");
         }
@@ -361,6 +379,7 @@ public class StatusAppService {
         response.setLastUpdated(app.getLastModifiedDate());
 
         // Platform information
+        // Include platform details when the app has an associated platform
         if (app.getPlatform() != null) {
             response.setPlatformId(app.getPlatform().getId());
             response.setPlatformName(app.getPlatform().getName());
@@ -394,6 +413,7 @@ public class StatusAppService {
                 .filter(incident -> !incident.getStatus().equals("RESOLVED"))
                 .collect(Collectors.toList());
         
+        // Set the current incident when there are active incidents
         if (!activeIncidents.isEmpty()) {
             response.setCurrentIncident(mapIncidentToResponse(activeIncidents.get(0)));
         }
@@ -508,6 +528,7 @@ public class StatusAppService {
      */
     private String getCurrentUsername() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Return the principal directly when it is a username string
         if (principal instanceof String) {
             return (String) principal;
         }

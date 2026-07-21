@@ -41,6 +41,13 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link AuthService}.
+ *
+ * <p>Testing approach: Mockito unit tests covering authentication, registration,
+ * refresh-token rotation, logout and current-user resolution. Collaborators
+ * (authentication manager, repositories, password encoder and {@link JwtUtils}) are
+ * mocked, and the Spring {@link SecurityContextHolder} is cleared after each test.
+ * Refresh-token hashing is reproduced via a local SHA-256 helper so the stored hash
+ * can be asserted without invoking the private production method.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -63,6 +70,10 @@ class AuthServiceTest {
     @InjectMocks
     private AuthService authService;
 
+    /**
+     * Clears the Spring security context after each test to prevent authentication
+     * state leaking between test methods.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
@@ -78,6 +89,14 @@ class AuthServiceTest {
         return HexFormat.of().formatHex(hash);
     }
 
+    /**
+     * Builds an enabled {@link User} fixture with a derived email and encoded password.
+     *
+     * @param id       the user id to assign
+     * @param username the username (also used to derive the email)
+     * @param role     the role to assign
+     * @return a populated, enabled user fixture
+     */
     private User buildUser(UUID id, String username, String role) {
         User user = new User();
         user.setId(id);
@@ -89,6 +108,11 @@ class AuthServiceTest {
         return user;
     }
 
+    /**
+     * Verifies successful authentication returns a Bearer auth response with access and
+     * refresh tokens, and persists the refresh token as a hash (never plaintext).
+     * Expects a non-context-selection response for a regular user and a save of the user.
+     */
     @Test
     void authenticateUser_validCredentials_returnsAuthResponseAndStoresHashedRefreshToken() {
         UUID userId = UUID.randomUUID();
@@ -119,6 +143,10 @@ class AuthServiceTest {
         verify(userRepository).save(user);
     }
 
+    /**
+     * Verifies that authenticating a SUPERADMIN flags the response for tenant/context
+     * selection. Expects {@code requiresContextSelection} to be true.
+     */
     @Test
     void authenticateUser_superadmin_setsRequiresContextSelection() {
         UUID userId = UUID.randomUUID();
@@ -141,6 +169,10 @@ class AuthServiceTest {
         assertThat(response.isRequiresContextSelection()).isTrue();
     }
 
+    /**
+     * Verifies that if the user cannot be reloaded from the repository after successful
+     * authentication, the service throws. Expects a {@link RuntimeException} "User not found".
+     */
     @Test
     void authenticateUser_userNotFoundAfterAuth_throwsRuntimeException() {
         UUID userId = UUID.randomUUID();
@@ -162,6 +194,10 @@ class AuthServiceTest {
                 .hasMessage("User not found");
     }
 
+    /**
+     * Verifies registration is rejected when the username already exists.
+     * Expects an unsuccessful message response and no user save.
+     */
     @Test
     void registerUser_usernameTaken_returnsUnsuccessfulResponse() {
         RegisterRequest request = new RegisterRequest();
@@ -178,6 +214,10 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies registration is rejected when the email is already in use.
+     * Expects an unsuccessful message response and no user save.
+     */
     @Test
     void registerUser_emailInUse_returnsUnsuccessfulResponse() {
         RegisterRequest request = new RegisterRequest();
@@ -195,6 +235,10 @@ class AuthServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies a valid registration saves the user with the password encoded, the role
+     * forced to USER, and the account enabled. Expects a successful response.
+     */
     @Test
     void registerUser_validRequest_savesUserWithForcedUserRole() {
         RegisterRequest request = new RegisterRequest();
@@ -219,6 +263,10 @@ class AuthServiceTest {
         assertThat(saved.getEnabled()).isTrue();
     }
 
+    /**
+     * Verifies that when an organization id is supplied, the resolved organization is
+     * associated with the new user. Expects a successful response and the org set on the saved user.
+     */
     @Test
     void registerUser_withOrganizationId_associatesOrganization() {
         UUID orgId = UUID.randomUUID();
@@ -245,6 +293,10 @@ class AuthServiceTest {
         assertThat(captor.getValue().getOrganization()).isEqualTo(org);
     }
 
+    /**
+     * Verifies that a supplied organization id which cannot be resolved causes a failure.
+     * Expects a {@link RuntimeException} "Organization not found".
+     */
     @Test
     void registerUser_organizationNotFound_throwsRuntimeException() {
         UUID orgId = UUID.randomUUID();
@@ -265,6 +317,10 @@ class AuthServiceTest {
                 .hasMessage("Organization not found");
     }
 
+    /**
+     * Verifies that refreshing with a token that fails JWT validation is rejected.
+     * Expects an {@link UnauthorizedException} "Invalid refresh token".
+     */
     @Test
     void refreshToken_invalidToken_throwsUnauthorizedException() {
         RefreshTokenRequest request = new RefreshTokenRequest();
@@ -277,6 +333,10 @@ class AuthServiceTest {
                 .hasMessage("Invalid refresh token");
     }
 
+    /**
+     * Verifies that a valid token whose username resolves to no user is rejected.
+     * Expects a {@link RuntimeException} "User not found".
+     */
     @Test
     void refreshToken_userNotFound_throwsRuntimeException() {
         RefreshTokenRequest request = new RefreshTokenRequest();

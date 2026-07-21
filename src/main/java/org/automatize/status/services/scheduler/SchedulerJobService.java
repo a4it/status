@@ -353,6 +353,13 @@ public class SchedulerJobService {
         }
     }
 
+    /**
+     * Copies mutable REST config fields from {@code source} onto {@code target}, leaving
+     * secret fields untouched when the incoming value is blank (preserving stored secrets).
+     *
+     * @param target the config to update
+     * @param source the config carrying new values
+     */
     private void copyRestConfig(SchedulerRestConfig target, SchedulerRestConfig source) {
         target.setHttpMethod(source.getHttpMethod());
         target.setUrl(source.getUrl());
@@ -362,11 +369,14 @@ public class SchedulerJobService {
         target.setQueryParams(source.getQueryParams());
         target.setAuthType(source.getAuthType());
         target.setAuthUsername(source.getAuthUsername());
+        // Replace the auth password only when a new non-blank value is supplied
         if (source.getAuthPasswordEnc() != null && !source.getAuthPasswordEnc().isBlank())
             target.setAuthPasswordEnc(source.getAuthPasswordEnc());
+        // Replace the auth token only when a new non-blank value is supplied
         if (source.getAuthTokenEnc() != null && !source.getAuthTokenEnc().isBlank())
             target.setAuthTokenEnc(source.getAuthTokenEnc());
         target.setAuthApiKeyName(source.getAuthApiKeyName());
+        // Replace the API key value only when a new non-blank value is supplied
         if (source.getAuthApiKeyValueEnc() != null && !source.getAuthApiKeyValueEnc().isBlank())
             target.setAuthApiKeyValueEnc(source.getAuthApiKeyValueEnc());
         target.setAuthApiKeyLocation(source.getAuthApiKeyLocation());
@@ -379,11 +389,19 @@ public class SchedulerJobService {
         target.setAssertBodyContains(source.getAssertBodyContains());
     }
 
+    /**
+     * Copies mutable SQL config fields from {@code source} onto {@code target}, preserving
+     * the stored inline password when the incoming value is blank.
+     *
+     * @param target the config to update
+     * @param source the config carrying new values
+     */
     private void copySqlConfig(SchedulerSqlConfig target, SchedulerSqlConfig source) {
         target.setDatasource(source.getDatasource());
         target.setInlineDbType(source.getInlineDbType());
         target.setInlineJdbcUrl(source.getInlineJdbcUrl());
         target.setInlineUsername(source.getInlineUsername());
+        // Replace the inline password only when a new non-blank value is supplied
         if (source.getInlinePasswordEnc() != null && !source.getInlinePasswordEnc().isBlank())
             target.setInlinePasswordEnc(source.getInlinePasswordEnc());
         target.setSqlStatement(source.getSqlStatement());
@@ -393,6 +411,12 @@ public class SchedulerJobService {
         target.setQueryTimeoutSeconds(source.getQueryTimeoutSeconds());
     }
 
+    /**
+     * Copies mutable PROGRAM config fields from {@code source} onto {@code target}.
+     *
+     * @param target the config to update
+     * @param source the config carrying new values
+     */
     private void copyProgramConfig(SchedulerProgramConfig target, SchedulerProgramConfig source) {
         target.setCommand(source.getCommand());
         target.setArguments(source.getArguments());
@@ -403,6 +427,13 @@ public class SchedulerJobService {
         target.setRunAsUser(source.getRunAsUser());
     }
 
+    /**
+     * Copies mutable SOAP config fields from {@code source} onto {@code target}, preserving
+     * stored auth secrets when the incoming values are blank.
+     *
+     * @param target the config to update
+     * @param source the config carrying new values
+     */
     private void copySoapConfig(SchedulerSoapConfig target, SchedulerSoapConfig source) {
         target.setWsdlUrl(source.getWsdlUrl());
         target.setEndpointUrl(source.getEndpointUrl());
@@ -415,8 +446,10 @@ public class SchedulerJobService {
         target.setExtraHeaders(source.getExtraHeaders());
         target.setAuthType(source.getAuthType());
         target.setAuthUsername(source.getAuthUsername());
+        // Replace the auth password only when a new non-blank value is supplied
         if (source.getAuthPasswordEnc() != null && !source.getAuthPasswordEnc().isBlank())
             target.setAuthPasswordEnc(source.getAuthPasswordEnc());
+        // Replace the auth token only when a new non-blank value is supplied
         if (source.getAuthTokenEnc() != null && !source.getAuthTokenEnc().isBlank())
             target.setAuthTokenEnc(source.getAuthTokenEnc());
         target.setSslVerify(source.getSslVerify());

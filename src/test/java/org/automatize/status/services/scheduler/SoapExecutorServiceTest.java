@@ -44,6 +44,10 @@ class SoapExecutorServiceTest {
     // execute() - null config guard
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the null-config guard on {@code execute}.
+     * Expected outcome: run status is FAILURE with a "SOAP configuration is missing" message.
+     */
     @Test
     void execute_nullConfig_setsFailureWithMessage() {
         SchedulerJobRun run = new SchedulerJobRun();
@@ -58,6 +62,10 @@ class SoapExecutorServiceTest {
     // resolveContentType()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies SOAP 1.1 resolves to the {@code text/xml} content type.
+     * Expected outcome: content type is "text/xml; charset=utf-8".
+     */
     @Test
     void resolveContentType_soap11_returnsTextXml() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -69,6 +77,10 @@ class SoapExecutorServiceTest {
         assertThat(contentType).isEqualTo("text/xml; charset=utf-8");
     }
 
+    /**
+     * Verifies SOAP 1.2 without an action resolves to the {@code application/soap+xml} content type.
+     * Expected outcome: content type is "application/soap+xml; charset=utf-8".
+     */
     @Test
     void resolveContentType_soap12WithoutAction_returnsSoapXml() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -80,6 +92,10 @@ class SoapExecutorServiceTest {
         assertThat(contentType).isEqualTo("application/soap+xml; charset=utf-8");
     }
 
+    /**
+     * Verifies SOAP 1.2 with an action appends the action parameter to the content type.
+     * Expected outcome: content type includes {@code action="urn:doStuff"}.
+     */
     @Test
     void resolveContentType_soap12WithAction_appendsAction() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -96,6 +112,10 @@ class SoapExecutorServiceTest {
     // containsSoapFault()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies a {@code soap:Fault} element is detected as a fault.
+     * Expected outcome: fault detection returns {@code true}.
+     */
     @Test
     void containsSoapFault_soapPrefixedFault_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
@@ -104,6 +124,10 @@ class SoapExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies a {@code SOAP-ENV:Fault} element is detected as a fault.
+     * Expected outcome: fault detection returns {@code true}.
+     */
     @Test
     void containsSoapFault_soapEnvFault_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
@@ -112,6 +136,10 @@ class SoapExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies a bare {@code faultcode} element is detected as a fault.
+     * Expected outcome: fault detection returns {@code true}.
+     */
     @Test
     void containsSoapFault_faultcodeElement_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
@@ -120,6 +148,10 @@ class SoapExecutorServiceTest {
         assertThat(result).isTrue();
     }
 
+    /**
+     * Verifies a fault-free envelope is not flagged as a fault.
+     * Expected outcome: fault detection returns {@code false}.
+     */
     @Test
     void containsSoapFault_noFault_returnsFalse() {
         Boolean result = ReflectionTestUtils.invokeMethod(
@@ -128,6 +160,10 @@ class SoapExecutorServiceTest {
         assertThat(result).isFalse();
     }
 
+    /**
+     * Verifies a {@code null} body is safely treated as no fault.
+     * Expected outcome: fault detection returns {@code false}.
+     */
     @Test
     void containsSoapFault_nullBody_returnsFalse() {
         Boolean result = ReflectionTestUtils.invokeMethod(
@@ -140,6 +176,10 @@ class SoapExecutorServiceTest {
     // truncateBody()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies a body under the byte limit is returned unchanged.
+     * Expected outcome: the original body string is returned.
+     */
     @Test
     void truncateBody_belowLimit_returnsUnchanged() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -151,6 +191,10 @@ class SoapExecutorServiceTest {
         assertThat(result).isEqualTo("short body");
     }
 
+    /**
+     * Verifies a body over the byte limit is truncated with a marker.
+     * Expected outcome: the body is cut to the limit followed by the truncation marker.
+     */
     @Test
     void truncateBody_aboveLimit_truncates() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -166,6 +210,10 @@ class SoapExecutorServiceTest {
     // applyAuth()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies {@code AuthType.NONE} adds no Authorization header.
+     * Expected outcome: the built request has no Authorization header.
+     */
     @Test
     void applyAuth_none_addsNoAuthorizationHeader() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -177,6 +225,10 @@ class SoapExecutorServiceTest {
         assertThat(builder.build().headers().firstValue("Authorization")).isEmpty();
     }
 
+    /**
+     * Verifies BASIC auth decrypts the password and adds a Base64-encoded credentials header.
+     * Expected outcome: the Authorization header equals {@code Basic base64(user:secret)}.
+     */
     @Test
     void applyAuth_basic_addsBase64EncodedCredentials() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -193,6 +245,10 @@ class SoapExecutorServiceTest {
         assertThat(builder.build().headers().firstValue("Authorization")).hasValue(expected);
     }
 
+    /**
+     * Verifies BEARER auth decrypts the token and adds a bearer Authorization header.
+     * Expected outcome: the Authorization header equals {@code Bearer <token>}.
+     */
     @Test
     void applyAuth_bearer_addsBearerToken() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
@@ -210,6 +266,10 @@ class SoapExecutorServiceTest {
     // evaluateResponse() - response-to-run mapping (mocked HttpResponse)
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies a 2xx response with no SOAP fault maps to a successful run.
+     * Expected outcome: run is SUCCESS with the status code recorded and no error.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void evaluateResponse_2xxNoFault_setsSuccess() {
@@ -226,6 +286,10 @@ class SoapExecutorServiceTest {
         assertThat(run.getErrorMessage()).isNull();
     }
 
+    /**
+     * Verifies a 2xx response containing a SOAP fault maps to a failed run.
+     * Expected outcome: run is FAILURE with a "SOAP Fault detected" message.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void evaluateResponse_2xxWithFault_setsFailureWithFaultMessage() {
@@ -241,6 +305,10 @@ class SoapExecutorServiceTest {
         assertThat(run.getErrorMessage()).isEqualTo("SOAP call failed with HTTP 200 (SOAP Fault detected)");
     }
 
+    /**
+     * Verifies a 5xx response maps to a failed run.
+     * Expected outcome: run is FAILURE with a "SOAP call failed with HTTP 500" message.
+     */
     @Test
     @SuppressWarnings("unchecked")
     void evaluateResponse_serverError_setsFailure() {
@@ -260,6 +328,10 @@ class SoapExecutorServiceTest {
     // buildRequest() - header assembly for SOAP 1.1
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies SOAP 1.1 request assembly adds the SOAPAction header, content type and POST method.
+     * Expected outcome: SOAPAction and Content-Type headers are set and the method is POST.
+     */
     @Test
     void buildRequest_soap11WithAction_addsSoapActionHeader() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();

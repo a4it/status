@@ -116,6 +116,9 @@ class StatusPlatformServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that requesting a platform by an existing slug returns the matching response.
+     */
     @Test
     void getPlatformBySlug_found_returnsResponse() {
         when(statusPlatformRepository.findBySlug("cloud"))
@@ -126,6 +129,9 @@ class StatusPlatformServiceTest {
         assertThat(response.getSlug()).isEqualTo("cloud");
     }
 
+    /**
+     * Verifies that requesting a platform by an unknown slug throws a {@link RuntimeException}.
+     */
     @Test
     void getPlatformBySlug_notFound_throwsRuntime() {
         when(statusPlatformRepository.findBySlug("x")).thenReturn(Optional.empty());
@@ -134,6 +140,10 @@ class StatusPlatformServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that requesting all platforms without a filter delegates to the repository's paged findAll
+     * and returns the resulting page.
+     */
     @Test
     void getAllPlatforms_noFilter_returnsPageFromFindAll() {
         when(statusPlatformRepository.findAll(pageable))
@@ -144,6 +154,9 @@ class StatusPlatformServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that fetching all platforms ordered returns the position-ordered list from the repository.
+     */
     @Test
     void getAllPlatformsOrdered_returnsOrderedList() {
         when(statusPlatformRepository.findAllByOrderByPosition())
@@ -154,6 +167,9 @@ class StatusPlatformServiceTest {
         assertThat(result).hasSize(1);
     }
 
+    /**
+     * Verifies that creating a platform without a tenant persists it directly.
+     */
     @Test
     void createPlatform_noTenant_saves() {
         StatusPlatform platform = newPlatform(null, "cloud", "OPERATIONAL");
@@ -165,6 +181,10 @@ class StatusPlatformServiceTest {
         verify(statusPlatformRepository).save(platform);
     }
 
+    /**
+     * Verifies that creating a platform whose slug already exists within its tenant throws a
+     * {@link RuntimeException} and never persists it.
+     */
     @Test
     void createPlatform_duplicateSlugInTenant_throwsRuntime() {
         UUID tenantId = UUID.randomUUID();
@@ -179,6 +199,10 @@ class StatusPlatformServiceTest {
         verify(statusPlatformRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that creating a platform with explicit tenant and organization ids resolves both entities,
+     * assigns them to the platform and persists it.
+     */
     @Test
     void createPlatform_withTenantAndOrganizationIds_resolvesAndSaves() {
         UUID tenantId = UUID.randomUUID();
@@ -201,6 +225,9 @@ class StatusPlatformServiceTest {
         assertThat(platform.getOrganization()).isEqualTo(org);
     }
 
+    /**
+     * Verifies that updating a platform while keeping the same slug applies the new field values (name, status).
+     */
     @Test
     void updatePlatform_sameSlug_updatesFields() {
         UUID id = UUID.randomUUID();
@@ -217,6 +244,9 @@ class StatusPlatformServiceTest {
         assertThat(response.getStatus()).isEqualTo("DEGRADED");
     }
 
+    /**
+     * Verifies that updating a platform whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void updatePlatform_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -226,6 +256,9 @@ class StatusPlatformServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that changing a platform's status (e.g. to MAJOR_OUTAGE) updates and saves the platform.
+     */
     @Test
     void updateStatus_updatesAndSaves() {
         UUID id = UUID.randomUUID();
@@ -238,6 +271,9 @@ class StatusPlatformServiceTest {
         assertThat(response.getStatus()).isEqualTo("MAJOR_OUTAGE");
     }
 
+    /**
+     * Verifies that a platform with no associated apps can be deleted.
+     */
     @Test
     void deletePlatform_noAssociatedApps_deletes() {
         UUID id = UUID.randomUUID();
@@ -250,6 +286,10 @@ class StatusPlatformServiceTest {
         verify(statusPlatformRepository).delete(platform);
     }
 
+    /**
+     * Verifies that attempting to delete a platform that still has associated apps throws a
+     * {@link RuntimeException} and never deletes it.
+     */
     @Test
     void deletePlatform_withAssociatedApps_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -262,6 +302,9 @@ class StatusPlatformServiceTest {
         verify(statusPlatformRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that attempting to delete a platform whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void deletePlatform_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();

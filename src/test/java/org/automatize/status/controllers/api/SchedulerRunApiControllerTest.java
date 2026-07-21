@@ -42,6 +42,10 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private SchedulerJobRunRepository runRepository;
 
+    /**
+     * Installs an authenticated ADMIN {@link UserPrincipal} into the {@link SecurityContextHolder}
+     * before each test, since {@code listRuns} reads the current principal from the security context.
+     */
     @BeforeEach
     void setUpPrincipal() {
         UserPrincipal principal = new UserPrincipal(
@@ -51,11 +55,20 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
                 new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
     }
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test to avoid principal leakage between tests.
+     */
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a sample {@link SchedulerJobRun} fixture for stubbing repository calls.
+     *
+     * @param id the identifier to assign
+     * @return a SUCCESS run with a MANUAL trigger type
+     */
     private SchedulerJobRun sampleRun(UUID id) {
         SchedulerJobRun run = new SchedulerJobRun();
         run.setId(id);
@@ -68,6 +81,11 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/runs
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/runs without a jobId returns 200 with the tenant-scoped page of runs.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void listRuns_noJobId_returnsOkTenantPage() throws Exception {
         when(runRepository.findByTenantIdOrderByStartedAtDesc(any(), any()))
@@ -78,6 +96,11 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.content[0].status").value("SUCCESS"));
     }
 
+    /**
+     * Verifies GET /api/scheduler/runs with a jobId param returns 200 with the page of runs for that job.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void listRuns_withJobId_returnsOkJobPage() throws Exception {
         UUID jobId = UUID.randomUUID();
@@ -93,6 +116,11 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/runs/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/runs/{id} returns 200 with the run when the repository finds it.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getRun_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -103,6 +131,10 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.status").value("SUCCESS"));
     }
 
+    /**
+     * Verifies that when the repository returns empty, the controller's plain {@code RuntimeException}
+     * (no {@code @ResponseStatus}) propagates out of {@code mockMvc.perform}.
+     */
     @Test
     void getRun_notFound_propagatesRuntimeException() {
         UUID id = UUID.randomUUID();
@@ -116,6 +148,11 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
     // GET /api/scheduler/runs/job/{jobId}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies GET /api/scheduler/runs/job/{jobId} returns 200 with the page of runs for the given job.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getRunsForJob_returnsOkPage() throws Exception {
         UUID jobId = UUID.randomUUID();
@@ -131,6 +168,12 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
     // DELETE /api/scheduler/runs/{id}
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies DELETE /api/scheduler/runs/{id} returns 200 with a success message and deletes the run
+     * when it exists.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void deleteRun_found_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
@@ -144,6 +187,10 @@ class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
         verify(runRepository).delete(run);
     }
 
+    /**
+     * Verifies that deleting an unknown run causes the controller's plain {@code RuntimeException}
+     * (no {@code @ResponseStatus}) to propagate out of {@code mockMvc.perform}.
+     */
     @Test
     void deleteRun_notFound_propagatesRuntimeException() {
         UUID id = UUID.randomUUID();

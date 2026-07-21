@@ -92,6 +92,7 @@ public class UptimeHistoryService {
      */
     @Scheduled(cron = "0 5 0 * * *")
     public void calculateDailyUptime() {
+        // Skip calculation entirely when the feature is disabled
         if (!enabled) {
             logger.debug("Uptime history calculation is disabled");
             return;
@@ -191,8 +192,10 @@ public class UptimeHistoryService {
 
         for (StatusIncident incident : incidents) {
             int minutes = calculateIncidentMinutesForDay(incident, dayStart, dayEnd);
+            // Severe incidents contribute to outage minutes
             if (isSevereIncident(incident)) {
                 outageMinutes += minutes;
+            // Non-severe incidents contribute to degraded minutes
             } else {
                 degradedMinutes += minutes;
             }
@@ -221,8 +224,10 @@ public class UptimeHistoryService {
         for (StatusIncidentComponent ic : incidentComponents) {
             StatusIncident incident = ic.getIncident();
             int minutes = calculateIncidentMinutesForDay(incident, dayStart, dayEnd);
+            // Severe incidents contribute to outage minutes
             if (isSevereIncident(incident)) {
                 outageMinutes += minutes;
+            // Non-severe incidents contribute to degraded minutes
             } else {
                 degradedMinutes += minutes;
             }
@@ -246,6 +251,7 @@ public class UptimeHistoryService {
         ZonedDateTime effectiveEnd = incident.getResolvedAt() != null && incident.getResolvedAt().isBefore(dayEnd)
                 ? incident.getResolvedAt() : dayEnd;
 
+        // No overlap with the day when the clamped end precedes the clamped start
         if (effectiveEnd.isBefore(effectiveStart)) {
             return 0;
         }
@@ -299,10 +305,13 @@ public class UptimeHistoryService {
                 .setScale(3, RoundingMode.HALF_UP);
         record.setUptimePercentage(uptime);
 
+        // Any outage minutes mark the day as a major outage
         if (outageMinutes > 0) {
             record.setStatus("MAJOR_OUTAGE");
+        // Otherwise, any degraded minutes mark the day as degraded
         } else if (degradedMinutes > 0) {
             record.setStatus("DEGRADED");
+        // No outage or degradation means the day was fully operational
         } else {
             record.setStatus("OPERATIONAL");
         }

@@ -10,6 +10,17 @@ import org.springframework.web.bind.annotation.*;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
+/**
+ * REST API controller for process mining over ingested logs.
+ * <p>
+ * Base route: {@code /api/logs/process-mining}. Builds process mining datasets by
+ * correlating log entries by trace ID within a scope (platform or application) and
+ * time window. All endpoints require authentication.
+ * </p>
+ *
+ * @see ProcessMiningService
+ * @see ProcessMiningResponse
+ */
 @RestController
 @RequestMapping("/api/logs/process-mining")
 @PreAuthorize("isAuthenticated()")
@@ -28,6 +39,7 @@ public class LogProcessMiningController {
      * @param to          end of time window (ISO-8601, defaults to now)
      * @param maxCases    maximum number of distinct trace IDs to include (default 300, max 1000)
      * @param minEvents   minimum events per trace to include (default 2)
+     * @return ResponseEntity containing the assembled process mining dataset
      */
     @GetMapping
     public ResponseEntity<ProcessMiningResponse> getProcessMiningData(
@@ -39,9 +51,11 @@ public class LogProcessMiningController {
             @RequestParam(defaultValue = "300") int maxCases,
             @RequestParam(defaultValue = "2") int minEvents) {
 
+        // Default the window start to 24 hours ago when not supplied
         if (from == null) {
             from = ZonedDateTime.now().minusHours(24);
         }
+        // Default the window end to the current time when not supplied
         if (to == null) {
             to = ZonedDateTime.now();
         }

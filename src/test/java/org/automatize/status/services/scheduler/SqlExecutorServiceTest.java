@@ -45,6 +45,10 @@ class SqlExecutorServiceTest {
     // execute() - null config guard
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies the null-config guard on {@code execute}.
+     * Expected outcome: run status is FAILURE with a "SQL configuration is missing" message.
+     */
     @Test
     void execute_nullConfig_setsFailureWithMessage() {
         SchedulerJobRun run = new SchedulerJobRun();
@@ -59,6 +63,10 @@ class SqlExecutorServiceTest {
     // execute() - configuration validation and connection failure
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies that a config with neither a datasource nor inline JDBC settings is rejected.
+     * Expected outcome: {@link IllegalArgumentException} propagates before the guarded try block.
+     */
     @Test
     void execute_noDatasourceNoInlineConfig_throwsIllegalArgument() {
         // URL resolution happens before the guarded try block, so the exception propagates.
@@ -70,6 +78,10 @@ class SqlExecutorServiceTest {
                 .hasMessage("No datasource or inline JDBC config provided");
     }
 
+    /**
+     * Verifies a JDBC URL that no driver accepts causes a connection failure recorded on the run.
+     * Expected outcome: run is FAILURE with a non-blank error and no rows affected.
+     */
     @Test
     void execute_unroutableJdbcUrl_setsFailureWithMessage() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -91,6 +103,10 @@ class SqlExecutorServiceTest {
     // testConnection()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies {@code testConnection} against an unreachable URL reports failure with diagnostics.
+     * Expected outcome: result has success=false, a non-null error and a numeric latency.
+     */
     @Test
     void testConnection_unroutableUrl_returnsSuccessFalseWithError() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -110,6 +126,10 @@ class SqlExecutorServiceTest {
     // resolveJdbcUrl()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies URL resolution prefers a datasource's explicit JDBC URL override.
+     * Expected outcome: the override URL is returned verbatim.
+     */
     @Test
     void resolveJdbcUrl_withDatasourceOverride_usesOverride() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -123,6 +143,10 @@ class SqlExecutorServiceTest {
         assertThat(url).isEqualTo("jdbc:postgresql://db.host:5432/custom");
     }
 
+    /**
+     * Verifies URL resolution builds a URL from a datasource's host, port and database.
+     * Expected outcome: a well-formed {@code jdbc:postgresql://host:port/db} URL.
+     */
     @Test
     void resolveJdbcUrl_withDatasourceHostPortDb_buildsUrl() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -138,6 +162,10 @@ class SqlExecutorServiceTest {
         assertThat(url).isEqualTo("jdbc:postgresql://myhost:6543/mydb");
     }
 
+    /**
+     * Verifies URL resolution substitutes the DB type's default port when none is set.
+     * Expected outcome: the MySQL default port 3306 is used.
+     */
     @Test
     void resolveJdbcUrl_withDatasourceNoPort_usesDefaultPort() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -152,6 +180,10 @@ class SqlExecutorServiceTest {
         assertThat(url).isEqualTo("jdbc:mysql://myhost:3306/mydb");
     }
 
+    /**
+     * Verifies URL resolution uses an inline JDBC URL when no datasource is present.
+     * Expected outcome: the inline URL is returned verbatim.
+     */
     @Test
     void resolveJdbcUrl_inlineJdbcUrl_usesInline() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -162,6 +194,10 @@ class SqlExecutorServiceTest {
         assertThat(url).isEqualTo("jdbc:postgresql://inline:5432/db");
     }
 
+    /**
+     * Verifies URL resolution builds a default localhost URL from only an inline DB type.
+     * Expected outcome: a {@code jdbc:postgresql://localhost:5432/} URL.
+     */
     @Test
     void resolveJdbcUrl_inlineDbTypeOnly_buildsDefaultLocalhostUrl() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -176,6 +212,10 @@ class SqlExecutorServiceTest {
     // resolveUsername() / resolvePassword()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies username resolution prefers the datasource's username.
+     * Expected outcome: the datasource username is returned.
+     */
     @Test
     void resolveUsername_withDatasource_usesDatasourceUsername() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -188,6 +228,10 @@ class SqlExecutorServiceTest {
         assertThat(username).isEqualTo("ds-user");
     }
 
+    /**
+     * Verifies username resolution falls back to the inline username when no datasource is set.
+     * Expected outcome: the inline username is returned.
+     */
     @Test
     void resolveUsername_inline_usesInlineUsername() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -198,6 +242,10 @@ class SqlExecutorServiceTest {
         assertThat(username).isEqualTo("inline-user");
     }
 
+    /**
+     * Verifies password resolution decrypts the datasource's encrypted password.
+     * Expected outcome: the decrypted plaintext is returned.
+     */
     @Test
     void resolvePassword_withDatasourceEncrypted_decryptsPassword() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -211,6 +259,10 @@ class SqlExecutorServiceTest {
         assertThat(password).isEqualTo("plain-pw");
     }
 
+    /**
+     * Verifies password resolution decrypts the inline encrypted password when no datasource is set.
+     * Expected outcome: the decrypted plaintext is returned.
+     */
     @Test
     void resolvePassword_inlineEncrypted_decryptsPassword() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -222,6 +274,10 @@ class SqlExecutorServiceTest {
         assertThat(password).isEqualTo("plain-inline");
     }
 
+    /**
+     * Verifies password resolution returns {@code null} when no password is configured anywhere.
+     * Expected outcome: {@code null} is returned.
+     */
     @Test
     void resolvePassword_inlineNoPassword_returnsNull() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
@@ -235,6 +291,10 @@ class SqlExecutorServiceTest {
     // getDriverClass()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies driver-class resolution defaults to the PostgreSQL driver for a {@code null} DB type.
+     * Expected outcome: {@code org.postgresql.Driver} is returned.
+     */
     @Test
     void getDriverClass_nullDbType_returnsPostgresDefault() {
         String driver = ReflectionTestUtils.invokeMethod(
@@ -243,6 +303,10 @@ class SqlExecutorServiceTest {
         assertThat(driver).isEqualTo("org.postgresql.Driver");
     }
 
+    /**
+     * Verifies driver-class resolution returns the MySQL driver for the MYSQL DB type.
+     * Expected outcome: {@code com.mysql.cj.jdbc.Driver} is returned.
+     */
     @Test
     void getDriverClass_mysql_returnsMysqlDriver() {
         String driver = ReflectionTestUtils.invokeMethod(
@@ -255,6 +319,10 @@ class SqlExecutorServiceTest {
     // buildJdbcUrlFromDatasource()
     // -------------------------------------------------------------------------
 
+    /**
+     * Verifies datasource URL building prefers an explicit JDBC URL override.
+     * Expected outcome: the override URL is returned verbatim.
+     */
     @Test
     void buildJdbcUrlFromDatasource_override_usesOverride() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
@@ -267,6 +335,10 @@ class SqlExecutorServiceTest {
         assertThat(url).isEqualTo("jdbc:mariadb://override/db");
     }
 
+    /**
+     * Verifies datasource URL building assembles the URL from host/port/database when no override is set.
+     * Expected outcome: a well-formed {@code jdbc:mariadb://host:port/db} URL.
+     */
     @Test
     void buildJdbcUrlFromDatasource_noOverride_buildsFromParts() {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();

@@ -12,6 +12,11 @@ import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link AlertEvaluatorScheduler}.
+ *
+ * <p>Exercises the scheduled entry point that periodically triggers alert-rule
+ * evaluation. Uses Mockito to mock the collaborating {@link AlertRuleService} and
+ * verifies both the delegation contract and the scheduler's exception-swallowing
+ * behaviour so that a failing evaluation never breaks the scheduling loop.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class AlertEvaluatorSchedulerTest {
@@ -22,6 +27,10 @@ class AlertEvaluatorSchedulerTest {
     @InjectMocks
     private AlertEvaluatorScheduler scheduler;
 
+    /**
+     * Verifies the scheduled {@code evaluate()} tick delegates to the service.
+     * Expects {@link AlertRuleService#evaluateAll()} to be invoked exactly once.
+     */
     @Test
     void evaluate_delegatesToAlertRuleService() {
         scheduler.evaluate();
@@ -29,6 +38,11 @@ class AlertEvaluatorSchedulerTest {
         verify(alertRuleService).evaluateAll();
     }
 
+    /**
+     * Verifies that when the underlying service throws during evaluation, the
+     * scheduler swallows the exception rather than propagating it (so the schedule
+     * keeps running). Expects no exception and that the delegate was still called.
+     */
     @Test
     void evaluate_whenServiceThrows_doesNotPropagate() {
         doThrow(new RuntimeException("boom")).when(alertRuleService).evaluateAll();

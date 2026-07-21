@@ -166,6 +166,10 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.isEnabled()).isTrue();
     }
 
+    /**
+     * Verifies that a valid scheduler-interval setting is parsed to its numeric millisecond
+     * value.
+     */
     @Test
     void getSchedulerIntervalMs_validValue_isParsed() {
         when(repository.findBySettingKey("scheduler_interval_ms")).thenReturn(Optional.of(setting("scheduler_interval_ms", "25000")));
@@ -173,6 +177,10 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getSchedulerIntervalMs()).isEqualTo(25000L);
     }
 
+    /**
+     * Verifies that a non-numeric scheduler-interval setting falls back to the default of
+     * 10000 ms.
+     */
     @Test
     void getSchedulerIntervalMs_invalidValue_returnsDefault() {
         when(repository.findBySettingKey("scheduler_interval_ms")).thenReturn(Optional.of(setting("scheduler_interval_ms", "notanumber")));
@@ -180,6 +188,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getSchedulerIntervalMs()).isEqualTo(10000L);
     }
 
+    /**
+     * Verifies that a valid thread-pool-size setting is parsed to its numeric value.
+     */
     @Test
     void getThreadPoolSize_validValue_isParsed() {
         when(repository.findBySettingKey("thread_pool_size")).thenReturn(Optional.of(setting("thread_pool_size", "20")));
@@ -187,6 +198,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getThreadPoolSize()).isEqualTo(20);
     }
 
+    /**
+     * Verifies that a non-numeric thread-pool-size setting falls back to the default of 10.
+     */
     @Test
     void getThreadPoolSize_invalidValue_returnsDefault() {
         when(repository.findBySettingKey("thread_pool_size")).thenReturn(Optional.of(setting("thread_pool_size", "x")));
@@ -194,6 +208,10 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getThreadPoolSize()).isEqualTo(10);
     }
 
+    /**
+     * Verifies that a non-numeric default-interval setting falls back to the default of 60
+     * seconds.
+     */
     @Test
     void getDefaultIntervalSeconds_invalidValue_returnsDefault() {
         when(repository.findBySettingKey("default_interval_seconds")).thenReturn(Optional.of(setting("default_interval_seconds", "bad")));
@@ -201,6 +219,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getDefaultIntervalSeconds()).isEqualTo(60);
     }
 
+    /**
+     * Verifies that a valid default-timeout setting is parsed to its numeric second value.
+     */
     @Test
     void getDefaultTimeoutSeconds_validValue_isParsed() {
         when(repository.findBySettingKey("default_timeout_seconds")).thenReturn(Optional.of(setting("default_timeout_seconds", "30")));

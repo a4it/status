@@ -23,6 +23,14 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * Unit tests for {@link SchedulerRunRetentionService}, the scheduled cleanup task
+ * that deletes job runs older than a configured retention window, per job, while
+ * tolerating individual per-job failures.
+ *
+ * <p>Repositories are Mockito mocks; the {@code retentionDays} property is set via
+ * reflection per test.</p>
+ */
 @ExtendWith(MockitoExtension.class)
 class SchedulerRunRetentionServiceTest {
 
@@ -31,12 +39,22 @@ class SchedulerRunRetentionServiceTest {
 
     @InjectMocks private SchedulerRunRetentionService service;
 
+    /**
+     * Builds a minimal job carrying only the given id.
+     *
+     * @param id the job id to assign
+     * @return a new {@link SchedulerJob}
+     */
     private SchedulerJob jobWithId(UUID id) {
         SchedulerJob job = new SchedulerJob();
         job.setId(id);
         return job;
     }
 
+    /**
+     * Verifies each job's old runs are deleted using a cutoff of now minus the retention window.
+     * Expected outcome: a delete per job with the captured cutoff within the expected time bounds.
+     */
     @Test
     void cleanOldRuns_deletesRunsForEachJobWithCorrectCutoff() {
         ReflectionTestUtils.setField(service, "retentionDays", 30);
@@ -56,6 +74,10 @@ class SchedulerRunRetentionServiceTest {
         assertThat(cutoff).isAfterOrEqualTo(before).isBeforeOrEqualTo(after);
     }
 
+    /**
+     * Verifies a custom retention window is honoured when computing the cutoff.
+     * Expected outcome: the captured cutoff falls within now minus the configured days.
+     */
     @Test
     void cleanOldRuns_customRetentionDays_appliesConfiguredCutoff() {
         ReflectionTestUtils.setField(service, "retentionDays", 7);
@@ -71,6 +93,10 @@ class SchedulerRunRetentionServiceTest {
         assertThat(cutoffCaptor.getValue()).isAfterOrEqualTo(before).isBeforeOrEqualTo(after);
     }
 
+    /**
+     * Verifies a failure deleting one job's runs does not stop processing of the others.
+     * Expected outcome: the remaining job is still processed and both deletes are attempted.
+     */
     @Test
     void cleanOldRuns_oneJobFails_stillProcessesRemainingJobs() {
         ReflectionTestUtils.setField(service, "retentionDays", 30);
@@ -86,6 +112,10 @@ class SchedulerRunRetentionServiceTest {
         verify(runRepository, times(2)).deleteByJobIdAndStartedAtBefore(any(UUID.class), any(ZonedDateTime.class));
     }
 
+    /**
+     * Verifies that with no jobs present no delete is attempted.
+     * Expected outcome: the delete method is never invoked.
+     */
     @Test
     void cleanOldRuns_noJobs_doesNothing() {
         ReflectionTestUtils.setField(service, "retentionDays", 30);
