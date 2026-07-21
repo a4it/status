@@ -5,6 +5,8 @@ import org.automatize.status.api.request.StatusIncidentUpdateRequest;
 import org.automatize.status.api.response.StatusComponentResponse;
 import org.automatize.status.api.response.StatusIncidentResponse;
 import org.automatize.status.api.response.StatusIncidentUpdateResponse;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.*;
 import org.automatize.status.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,34 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class StatusIncidentService {
+
+    /**
+     * Message fragment used when an incident cannot be located by its identifier.
+     */
+    private static final String INCIDENT_NOT_FOUND = "Incident not found with id: ";
+
+    /**
+     * Message used when a referenced status app cannot be located.
+     */
+    private static final String STATUS_APP_NOT_FOUND = "Status app not found";
+
+    /**
+     * Incident lifecycle status representing a resolved incident.
+     */
+    private static final String STATUS_RESOLVED = "RESOLVED";
+
+    /**
+     * Incident severity levels.
+     */
+    private static final String SEVERITY_MINOR = "MINOR";
+    private static final String SEVERITY_MAJOR = "MAJOR";
+    private static final String SEVERITY_CRITICAL = "CRITICAL";
+
+    /**
+     * Impact / component status levels derived from incident severity.
+     */
+    private static final String IMPACT_PARTIAL_OUTAGE = "PARTIAL_OUTAGE";
+    private static final String IMPACT_MAJOR_OUTAGE = "MAJOR_OUTAGE";
 
     /**
      * Repository for status incident data access operations.
@@ -124,12 +154,12 @@ public class StatusIncidentService {
      *
      * @param id the UUID of the incident
      * @return the StatusIncidentResponse for the requested incident
-     * @throws RuntimeException if the incident is not found
+     * @throws ResourceNotFoundException if the incident is not found
      */
     @Transactional(readOnly = true)
     public StatusIncidentResponse getIncidentById(UUID id) {
         StatusIncident incident = statusIncidentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
         return mapToResponse(incident);
     }
 
@@ -153,7 +183,7 @@ public class StatusIncidentService {
         }
         
         return incidents.stream()
-                .filter(incident -> !"RESOLVED".equals(incident.getStatus()))
+                .filter(incident -> !STATUS_RESOLVED.equals(incident.getStatus()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -188,11 +218,11 @@ public class StatusIncidentService {
      *
      * @param request the incident creation request
      * @return the newly created StatusIncidentResponse
-     * @throws RuntimeException if the app is not found
+     * @throws ResourceNotFoundException if the app is not found
      */
     public StatusIncidentResponse createIncident(StatusIncidentRequest request) {
         StatusApp app = statusAppRepository.findById(request.getAppId())
-                .orElseThrow(() -> new RuntimeException("Status app not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
         StatusIncident incident = new StatusIncident();
         mapRequestToIncident(request, incident);
@@ -232,18 +262,16 @@ public class StatusIncidentService {
      * @param id the UUID of the incident to update
      * @param request the incident update request
      * @return the updated StatusIncidentResponse
-     * @throws RuntimeException if the incident is not found
+     * @throws ResourceNotFoundException if the incident is not found
      */
     public StatusIncidentResponse updateIncident(UUID id, StatusIncidentRequest request) {
         StatusIncident incident = statusIncidentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
-
-        String oldStatus = incident.getStatus();
+                .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
         mapRequestToIncident(request, incident);
         
         if (request.getAppId() != null && !incident.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
-                    .orElseThrow(() -> new RuntimeException("Status app not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
             incident.setApp(app);
         }
         
@@ -272,11 +300,11 @@ public class StatusIncidentService {
      * @param incidentId the UUID of the incident
      * @param request the incident update request containing status and message
      * @return the newly created StatusIncidentUpdateResponse
-     * @throws RuntimeException if the incident is not found
+     * @throws ResourceNotFoundException if the incident is not found
      */
     public StatusIncidentUpdateResponse addIncidentUpdate(UUID incidentId, StatusIncidentUpdateRequest request) {
         StatusIncident incident = statusIncidentRepository.findById(incidentId)
-                .orElseThrow(() -> new RuntimeException("Incident not found with id: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + incidentId));
 
         StatusIncidentUpdate update = createIncidentUpdate(incident, request.getStatus(), request.getMessage());
         
@@ -309,18 +337,18 @@ public class StatusIncidentService {
      * @param id the UUID of the incident to resolve
      * @param message optional resolution message
      * @return the resolved StatusIncidentResponse
-     * @throws RuntimeException if the incident is not found
-     * @throws RuntimeException if the incident is already resolved
+     * @throws ResourceNotFoundException if the incident is not found
+     * @throws BusinessRuleException if the incident is already resolved
      */
     public StatusIncidentResponse resolveIncident(UUID id, String message) {
         StatusIncident incident = statusIncidentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
 
-        if ("RESOLVED".equals(incident.getStatus())) {
-            throw new RuntimeException("Incident is already resolved");
+        if (STATUS_RESOLVED.equals(incident.getStatus())) {
+            throw new BusinessRuleException("Incident is already resolved");
         }
 
-        incident.setStatus("RESOLVED");
+        incident.setStatus(STATUS_RESOLVED);
         incident.setResolvedAt(ZonedDateTime.now());
         incident.setLastModifiedBy(getCurrentUsername());
 
@@ -328,7 +356,7 @@ public class StatusIncidentService {
         
         // Create resolution update
         String resolvedMessage = message != null ? message : "Incident has been resolved";
-        createIncidentUpdate(savedIncident, "RESOLVED", resolvedMessage);
+        createIncidentUpdate(savedIncident, STATUS_RESOLVED, resolvedMessage);
         
         // Reset component statuses
         List<StatusIncidentComponent> affectedComponents = statusIncidentComponentRepository.findByIncidentId(id);
@@ -355,15 +383,15 @@ public class StatusIncidentService {
      * </p>
      *
      * @param id the UUID of the incident to delete
-     * @throws RuntimeException if the incident is not found
-     * @throws RuntimeException if the incident is still active
+     * @throws ResourceNotFoundException if the incident is not found
+     * @throws BusinessRuleException if the incident is still active
      */
     public void deleteIncident(UUID id) {
         StatusIncident incident = statusIncidentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Incident not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(INCIDENT_NOT_FOUND + id));
 
-        if (!"RESOLVED".equals(incident.getStatus())) {
-            throw new RuntimeException("Cannot delete active incident. Resolve it first.");
+        if (!STATUS_RESOLVED.equals(incident.getStatus())) {
+            throw new BusinessRuleException("Cannot delete active incident. Resolve it first.");
         }
 
         statusIncidentRepository.delete(incident);
@@ -447,14 +475,14 @@ public class StatusIncidentService {
                 statusIncidentRepository.findActiveAutomatedIncidents(app.getId(), SYSTEM_USER);
 
         for (StatusIncident incident : automatedIncidents) {
-            incident.setStatus("RESOLVED");
+            incident.setStatus(STATUS_RESOLVED);
             incident.setResolvedAt(ZonedDateTime.now());
             incident.setLastModifiedBy(SYSTEM_USER);
 
             statusIncidentRepository.save(incident);
 
             String resolutionMessage = "Service has recovered and health checks are now passing.";
-            createIncidentUpdate(incident, "RESOLVED", resolutionMessage);
+            createIncidentUpdate(incident, STATUS_RESOLVED, resolutionMessage);
 
             // Notify subscribers about the resolution
             incidentNotificationService.notifySubscribersOfIncidentResolution(incident, resolutionMessage);
@@ -487,9 +515,9 @@ public class StatusIncidentService {
      */
     private int getSeverityPriority(String severity) {
         return switch (severity) {
-            case "MINOR" -> 1;
-            case "MAJOR" -> 2;
-            case "CRITICAL" -> 3;
+            case SEVERITY_MINOR -> 1;
+            case SEVERITY_MAJOR -> 2;
+            case SEVERITY_CRITICAL -> 3;
             default -> 0;
         };
     }
@@ -502,9 +530,9 @@ public class StatusIncidentService {
      */
     private String severityToImpact(String severity) {
         return switch (severity) {
-            case "CRITICAL" -> "MAJOR";
-            case "MAJOR" -> "PARTIAL_OUTAGE";
-            case "MINOR" -> "MINOR";
+            case SEVERITY_CRITICAL -> SEVERITY_MAJOR;
+            case SEVERITY_MAJOR -> IMPACT_PARTIAL_OUTAGE;
+            case SEVERITY_MINOR -> SEVERITY_MINOR;
             default -> "NONE";
         };
     }
@@ -534,12 +562,12 @@ public class StatusIncidentService {
      *
      * @param incident the incident to link components to
      * @param componentIds the list of component UUIDs to link
-     * @throws RuntimeException if any component is not found
+     * @throws ResourceNotFoundException if any component is not found
      */
     private void linkAffectedComponents(StatusIncident incident, List<UUID> componentIds) {
         for (UUID componentId : componentIds) {
             StatusComponent component = statusComponentRepository.findById(componentId)
-                    .orElseThrow(() -> new RuntimeException("Component not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Component not found"));
             
             StatusIncidentComponent incidentComponent = new StatusIncidentComponent();
             incidentComponent.setIncident(incident);
@@ -562,10 +590,10 @@ public class StatusIncidentService {
     private void updateComponentStatusForIncident(StatusComponent component, StatusIncident incident) {
         String newStatus = "DEGRADED";
         
-        if ("CRITICAL".equals(incident.getSeverity()) || "MAJOR_OUTAGE".equals(incident.getImpact())) {
-            newStatus = "MAJOR_OUTAGE";
-        } else if ("MAJOR".equals(incident.getSeverity()) || "PARTIAL_OUTAGE".equals(incident.getImpact())) {
-            newStatus = "PARTIAL_OUTAGE";
+        if (SEVERITY_CRITICAL.equals(incident.getSeverity()) || IMPACT_MAJOR_OUTAGE.equals(incident.getImpact())) {
+            newStatus = IMPACT_MAJOR_OUTAGE;
+        } else if (SEVERITY_MAJOR.equals(incident.getSeverity()) || IMPACT_PARTIAL_OUTAGE.equals(incident.getImpact())) {
+            newStatus = IMPACT_PARTIAL_OUTAGE;
         }
         
         component.setStatus(newStatus);
@@ -589,14 +617,14 @@ public class StatusIncidentService {
         if (activeIncidents > 0) {
             List<StatusIncident> incidents = statusIncidentRepository.findByAppId(app.getId());
             incidents = incidents.stream()
-                    .filter(i -> !"RESOLVED".equals(i.getStatus()))
+                    .filter(i -> !STATUS_RESOLVED.equals(i.getStatus()))
                     .collect(Collectors.toList());
             
             boolean hasCritical = incidents.stream()
-                    .anyMatch(i -> "CRITICAL".equals(i.getSeverity()) || "MAJOR_OUTAGE".equals(i.getImpact()));
+                    .anyMatch(i -> SEVERITY_CRITICAL.equals(i.getSeverity()) || IMPACT_MAJOR_OUTAGE.equals(i.getImpact()));
             
             if (hasCritical) {
-                newStatus = "MAJOR_OUTAGE";
+                newStatus = IMPACT_MAJOR_OUTAGE;
             } else {
                 newStatus = "DEGRADED";
             }
@@ -706,6 +734,6 @@ public class StatusIncidentService {
         if (principal instanceof String) {
             return (String) principal;
         }
-        return "system";
+        return SYSTEM_USER;
     }
 }

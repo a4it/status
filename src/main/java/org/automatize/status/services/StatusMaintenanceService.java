@@ -139,12 +139,12 @@ public class StatusMaintenanceService {
      *
      * @param id the UUID of the maintenance window
      * @return the StatusMaintenanceResponse for the requested maintenance
-     * @throws RuntimeException if the maintenance is not found
+     * @throws ResourceNotFoundException if the maintenance is not found
      */
     @Transactional(readOnly = true)
     public StatusMaintenanceResponse getMaintenanceById(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
         return mapToResponse(maintenance);
     }
 
@@ -174,7 +174,7 @@ public class StatusMaintenanceService {
         }
         
         return maintenances.stream()
-                .filter(m -> "SCHEDULED".equals(m.getStatus()))
+                .filter(m -> STATUS_SCHEDULED.equals(m.getStatus()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -214,21 +214,21 @@ public class StatusMaintenanceService {
      *
      * @param request the maintenance creation request
      * @return the newly created StatusMaintenanceResponse
-     * @throws RuntimeException if the app is not found
-     * @throws RuntimeException if the start time is after the end time
+     * @throws ResourceNotFoundException if the app is not found
+     * @throws BusinessRuleException if the start time is after the end time
      */
     public StatusMaintenanceResponse createMaintenance(StatusMaintenanceRequest request) {
         StatusApp app = statusAppRepository.findById(request.getAppId())
-                .orElseThrow(() -> new RuntimeException("Status app not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
         if (request.getStartsAt().isAfter(request.getEndsAt())) {
-            throw new RuntimeException("Start time must be before end time");
+            throw new BusinessRuleException("Start time must be before end time");
         }
 
         StatusMaintenance maintenance = new StatusMaintenance();
         mapRequestToMaintenance(request, maintenance);
         maintenance.setApp(app);
-        maintenance.setStatus("SCHEDULED");
+        maintenance.setStatus(STATUS_SCHEDULED);
         
         String currentUser = getCurrentUsername();
         maintenance.setCreatedBy(currentUser);
@@ -253,27 +253,27 @@ public class StatusMaintenanceService {
      * @param id the UUID of the maintenance to update
      * @param request the maintenance update request
      * @return the updated StatusMaintenanceResponse
-     * @throws RuntimeException if the maintenance is not found
-     * @throws RuntimeException if the maintenance is completed or cancelled
-     * @throws RuntimeException if the start time is after the end time
+     * @throws ResourceNotFoundException if the maintenance is not found
+     * @throws BusinessRuleException if the maintenance is completed or cancelled
+     * @throws BusinessRuleException if the start time is after the end time
      */
     public StatusMaintenanceResponse updateMaintenance(UUID id, StatusMaintenanceRequest request) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
         if ("COMPLETED".equals(maintenance.getStatus()) || "CANCELLED".equals(maintenance.getStatus())) {
-            throw new RuntimeException("Cannot update completed or cancelled maintenance");
+            throw new BusinessRuleException("Cannot update completed or cancelled maintenance");
         }
 
         if (request.getStartsAt().isAfter(request.getEndsAt())) {
-            throw new RuntimeException("Start time must be before end time");
+            throw new BusinessRuleException("Start time must be before end time");
         }
 
         mapRequestToMaintenance(request, maintenance);
         
         if (request.getAppId() != null && !maintenance.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
-                    .orElseThrow(() -> new RuntimeException("Status app not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
             maintenance.setApp(app);
         }
         
@@ -296,11 +296,11 @@ public class StatusMaintenanceService {
      * @param id the UUID of the maintenance
      * @param status the new status value
      * @return the updated StatusMaintenanceResponse
-     * @throws RuntimeException if the maintenance is not found
+     * @throws ResourceNotFoundException if the maintenance is not found
      */
     public StatusMaintenanceResponse updateStatus(UUID id, String status) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
         
         maintenance.setStatus(status);
         maintenance.setLastModifiedBy(getCurrentUsername());
@@ -322,18 +322,18 @@ public class StatusMaintenanceService {
      *
      * @param id the UUID of the maintenance to start
      * @return the started StatusMaintenanceResponse
-     * @throws RuntimeException if the maintenance is not found
-     * @throws RuntimeException if the maintenance is not in SCHEDULED status
+     * @throws ResourceNotFoundException if the maintenance is not found
+     * @throws BusinessRuleException if the maintenance is not in SCHEDULED status
      */
     public StatusMaintenanceResponse startMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
-        if (!"SCHEDULED".equals(maintenance.getStatus())) {
-            throw new RuntimeException("Can only start scheduled maintenance");
+        if (!STATUS_SCHEDULED.equals(maintenance.getStatus())) {
+            throw new BusinessRuleException("Can only start scheduled maintenance");
         }
 
-        maintenance.setStatus("IN_PROGRESS");
+        maintenance.setStatus(STATUS_IN_PROGRESS);
         maintenance.setLastModifiedBy(getCurrentUsername());
         
         StatusMaintenance savedMaintenance = statusMaintenanceRepository.save(maintenance);
@@ -344,7 +344,7 @@ public class StatusMaintenanceService {
         
         for (StatusMaintenanceComponent mc : maintenanceComponents) {
             StatusComponent component = mc.getComponent();
-            component.setStatus("UNDER_MAINTENANCE");
+            component.setStatus(STATUS_UNDER_MAINTENANCE);
             component.setLastModifiedBy(getCurrentUsername());
             statusComponentRepository.save(component);
         }
@@ -368,15 +368,15 @@ public class StatusMaintenanceService {
      *
      * @param id the UUID of the maintenance to complete
      * @return the completed StatusMaintenanceResponse
-     * @throws RuntimeException if the maintenance is not found
-     * @throws RuntimeException if the maintenance is not in IN_PROGRESS status
+     * @throws ResourceNotFoundException if the maintenance is not found
+     * @throws BusinessRuleException if the maintenance is not in IN_PROGRESS status
      */
     public StatusMaintenanceResponse completeMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
 
-        if (!"IN_PROGRESS".equals(maintenance.getStatus())) {
-            throw new RuntimeException("Can only complete in-progress maintenance");
+        if (!STATUS_IN_PROGRESS.equals(maintenance.getStatus())) {
+            throw new BusinessRuleException("Can only complete in-progress maintenance");
         }
 
         maintenance.setStatus("COMPLETED");
@@ -390,7 +390,7 @@ public class StatusMaintenanceService {
         
         for (StatusMaintenanceComponent mc : maintenanceComponents) {
             StatusComponent component = mc.getComponent();
-            component.setStatus("OPERATIONAL");
+            component.setStatus(STATUS_OPERATIONAL);
             component.setLastModifiedBy(getCurrentUsername());
             statusComponentRepository.save(component);
         }
@@ -408,15 +408,15 @@ public class StatusMaintenanceService {
      * </p>
      *
      * @param id the UUID of the maintenance to delete
-     * @throws RuntimeException if the maintenance is not found
-     * @throws RuntimeException if the maintenance is in progress
+     * @throws ResourceNotFoundException if the maintenance is not found
+     * @throws BusinessRuleException if the maintenance is in progress
      */
     public void deleteMaintenance(UUID id) {
         StatusMaintenance maintenance = statusMaintenanceRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Maintenance not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(MAINTENANCE_NOT_FOUND + id));
         
-        if ("IN_PROGRESS".equals(maintenance.getStatus())) {
-            throw new RuntimeException("Cannot delete in-progress maintenance");
+        if (STATUS_IN_PROGRESS.equals(maintenance.getStatus())) {
+            throw new BusinessRuleException("Cannot delete in-progress maintenance");
         }
         
         statusMaintenanceRepository.delete(maintenance);
@@ -427,12 +427,12 @@ public class StatusMaintenanceService {
      *
      * @param maintenance the maintenance to link components to
      * @param componentIds the list of component UUIDs to link
-     * @throws RuntimeException if any component is not found
+     * @throws ResourceNotFoundException if any component is not found
      */
     private void linkAffectedComponents(StatusMaintenance maintenance, List<UUID> componentIds) {
         for (UUID componentId : componentIds) {
             StatusComponent component = statusComponentRepository.findById(componentId)
-                    .orElseThrow(() -> new RuntimeException("Component not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Component not found"));
             
             StatusMaintenanceComponent maintenanceComponent = new StatusMaintenanceComponent();
             maintenanceComponent.setMaintenance(maintenance);
@@ -454,15 +454,15 @@ public class StatusMaintenanceService {
     private void updateAppStatusForMaintenance(StatusApp app) {
         Long activeMaintenance = statusMaintenanceRepository.countActiveMaintenanceByAppId(app.getId());
         
-        if (activeMaintenance > 0 && "OPERATIONAL".equals(app.getStatus())) {
-            app.setStatus("UNDER_MAINTENANCE");
+        if (activeMaintenance > 0 && STATUS_OPERATIONAL.equals(app.getStatus())) {
+            app.setStatus(STATUS_UNDER_MAINTENANCE);
             app.setLastModifiedBy(getCurrentUsername());
             statusAppRepository.save(app);
-        } else if (activeMaintenance == 0 && "UNDER_MAINTENANCE".equals(app.getStatus())) {
+        } else if (activeMaintenance == 0 && STATUS_UNDER_MAINTENANCE.equals(app.getStatus())) {
             // Check for active incidents before setting to operational
             Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(app.getId());
             if (activeIncidents == 0) {
-                app.setStatus("OPERATIONAL");
+                app.setStatus(STATUS_OPERATIONAL);
                 app.setLastModifiedBy(getCurrentUsername());
                 statusAppRepository.save(app);
             }
