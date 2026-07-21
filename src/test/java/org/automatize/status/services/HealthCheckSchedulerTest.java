@@ -1,0 +1,258 @@
+package org.automatize.status.services;
+
+import org.automatize.status.api.response.HealthCheckTriggerResponse;
+import org.automatize.status.models.StatusApp;
+import org.automatize.status.models.StatusComponent;
+import org.automatize.status.repositories.StatusAppRepository;
+import org.automatize.status.repositories.StatusComponentRepository;
+import org.automatize.status.services.HealthCheckService.HealthCheckResult;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Unit tests for {@link HealthCheckScheduler}.
+ */
+@ExtendWith(MockitoExtension.class)
+class HealthCheckSchedulerTest {
+
+    @Mock
+    private StatusAppRepository statusAppRepository;
+
+    @Mock
+    private StatusComponentRepository statusComponentRepository;
+
+    @Mock
+    private HealthCheckService healthCheckService;
+
+    @Mock
+    private HealthCheckSettingsService settingsService;
+
+    private HealthCheckScheduler scheduler;
+
+    @BeforeEach
+    void setUp() {
+        // Constructor takes a primitive thread-pool size which Mockito cannot inject,
+        // so the scheduler is wired up manually.
+        scheduler = new HealthCheckScheduler(statusAppRepository, statusComponentRepository,
+                healthCheckService, settingsService, 2);
+        ReflectionTestUtils.setField(scheduler, "healthCheckEnabledDefault", true);
+    }
+
+    private StatusApp checkableApp() {
+        StatusApp app = new StatusApp();
+        app.setName("app");
+        app.setCheckEnabled(true);
+        app.setCheckType("HTTP_GET");
+        app.setCheckUrl("http://8.8.8.8");
+        app.setCheckTimeoutSeconds(5);
+        app.setCheckExpectedStatus(200);
+        return app;
+    }
+
+    private StatusComponent checkableComponent() {
+        StatusComponent component = new StatusComponent();
+        component.setName("component");
+        component.setCheckEnabled(true);
+        component.setCheckType("HTTP_GET");
+        component.setCheckUrl("http://8.8.8.8");
+        component.setCheckTimeoutSeconds(5);
+        component.setCheckExpectedStatus(200);
+        return component;
+    }
+
+    // --------------------------------------------------------- runHealthChecks
+
+    @Test
+    void runHealthChecks_whenDisabled_doesNothing() {
+        when(settingsService.isEnabled()).thenReturn(false);
+
+        scheduler.runHealthChecks();
+
+        verify(statusAppRepository, never()).findCheckEnabledApps();
+        verify(statusComponentRepository, never()).findCheckEnabledComponents();
+    }
+
+    @Test
+    void runHealthChecks_whenEnabled_submitsChecksForDueApps() {
+        StatusApp app = checkableApp(); // lastCheckAt null -> due
+        when(settingsService.isEnabled()).thenReturn(true);
+        when(statusAppRepository.findCheckEnabledApps()).thenReturn(List.of(app));
+        when(statusComponentRepository.findCheckEnabledComponents()).thenReturn(List.of());
+        when(healthCheckService.performCheck(any(), any(), anyInt(), any()))
+                .thenReturn(new HealthCheckResult(true, "ok"));
+
+        scheduler.runHealthChecks();
+
+        verify(healthCheckService, timeout(2000)).updateAppCheckResult(eq(app), any());
+    }
+
+    // -------------------------------------------------------- triggerAllChecks
+
+    @Test
+    void triggerAllChecks_returnsCountAndSubmitsChecks() {
+        StatusApp app = checkableApp();
+        StatusComponent component = checkableComponent();
+        when(statusAppRepository.findCheckEnabledApps()).thenReturn(List.of(app));
+        when(statusComponentRepository.findCheckEnabledComponents()).thenReturn(List.of(component));
+        when(healthCheckService.performCheck(any(), any(), anyInt(), any()))
+                .thenReturn(new HealthCheckResult(true, "ok"));
+
+        int count = scheduler.triggerAllChecks();
+
+        assertThat(count).isEqualTo(2);
+        verify(healthCheckService, timeout(2000)).updateAppCheckResult(eq(app), any());
+        verify(healthCheckService, timeout(2000)).updateComponentCheckResult(eq(component), any());
+    }
+
+    // --------------------------------------------------------- triggerAppCheck
+
+    @Test
+    void triggerAppCheck_appNotFound_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.empty());
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("App not found");
+    }
+
+    @Test
+    void triggerAppCheck_checkDisabled_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        StatusApp app = checkableApp();
+        app.setCheckEnabled(false);
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("not enabled");
+    }
+
+    @Test
+    void triggerAppCheck_noCheckType_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        StatusApp app = checkableApp();
+        app.setCheckType(null);
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("No check type");
+    }
+
+    @Test
+    void triggerAppCheck_noCheckUrl_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        StatusApp app = checkableApp();
+        app.setCheckUrl("  ");
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("No check URL");
+    }
+
+    @Test
+    void triggerAppCheck_happyPath_returnsSuccessWithDuration() {
+        UUID id = UUID.randomUUID();
+        StatusApp app = checkableApp();
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
+        when(healthCheckService.performCheck(eq("HTTP_GET"), eq("http://8.8.8.8"), eq(5), eq(200)))
+                .thenReturn(new HealthCheckResult(true, "HTTP 200"));
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isTrue();
+        assertThat(response.getMessage()).isEqualTo("HTTP 200");
+        assertThat(response.getDurationMs()).isNotNull();
+        verify(healthCheckService).updateAppCheckResult(eq(app), any());
+    }
+
+    @Test
+    void triggerAppCheck_whenPerformCheckThrows_returnsCheckError() {
+        UUID id = UUID.randomUUID();
+        StatusApp app = checkableApp();
+        when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
+        when(healthCheckService.performCheck(any(), any(), anyInt(), any()))
+                .thenThrow(new RuntimeException("boom"));
+
+        HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("Check error:");
+    }
+
+    // --------------------------------------------------- triggerComponentCheck
+
+    @Test
+    void triggerComponentCheck_notFound_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        when(statusComponentRepository.findById(id)).thenReturn(java.util.Optional.empty());
+
+        HealthCheckTriggerResponse response = scheduler.triggerComponentCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("Component not found");
+    }
+
+    @Test
+    void triggerComponentCheck_inheritsFromApp_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        StatusComponent component = checkableComponent();
+        component.setCheckInheritFromApp(true);
+        when(statusComponentRepository.findById(id)).thenReturn(java.util.Optional.of(component));
+
+        HealthCheckTriggerResponse response = scheduler.triggerComponentCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("inherits check from app");
+    }
+
+    @Test
+    void triggerComponentCheck_disabled_returnsFailure() {
+        UUID id = UUID.randomUUID();
+        StatusComponent component = checkableComponent();
+        component.setCheckEnabled(false);
+        when(statusComponentRepository.findById(id)).thenReturn(java.util.Optional.of(component));
+
+        HealthCheckTriggerResponse response = scheduler.triggerComponentCheck(id);
+
+        assertThat(response.getSuccess()).isFalse();
+        assertThat(response.getMessage()).contains("not enabled");
+    }
+
+    @Test
+    void triggerComponentCheck_happyPath_returnsSuccess() {
+        UUID id = UUID.randomUUID();
+        StatusComponent component = checkableComponent();
+        when(statusComponentRepository.findById(id)).thenReturn(java.util.Optional.of(component));
+        when(healthCheckService.performCheck(eq("HTTP_GET"), eq("http://8.8.8.8"), eq(5), eq(200)))
+                .thenReturn(new HealthCheckResult(true, "HTTP 200"));
+
+        HealthCheckTriggerResponse response = scheduler.triggerComponentCheck(id);
+
+        assertThat(response.getSuccess()).isTrue();
+        assertThat(response.getMessage()).isEqualTo("HTTP 200");
+        verify(healthCheckService).updateComponentCheckResult(eq(component), any());
+    }
+}
