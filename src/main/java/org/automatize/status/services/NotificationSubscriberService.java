@@ -228,7 +228,7 @@ public class NotificationSubscriberService {
                 return (String) principal;
             }
         } catch (Exception e) {
-            // Ignore
+            logger.debug("Could not resolve current username, falling back to 'system'", e);
         }
         return "system";
     }

@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import org.automatize.status.api.response.LogViewerResponse;
 import org.automatize.status.api.response.LoggerInfoResponse;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import java.util.*;
 
 @Service
 public class LogViewerService {
+
+    private static final Logger logger = LoggerFactory.getLogger(LogViewerService.class);
 
     private static final int MAX_LINES = 2000;
 

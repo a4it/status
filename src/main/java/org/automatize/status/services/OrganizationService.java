@@ -1,6 +1,9 @@
 package org.automatize.status.services;
 
 import org.automatize.status.api.request.OrganizationRequest;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.Tenant;
 import org.automatize.status.repositories.OrganizationRepository;
@@ -103,7 +106,7 @@ public class OrganizationService {
     @Transactional(readOnly = true)
     public Organization getOrganizationById(UUID id) {
         return organizationRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Organization not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found with id: " + id));
     }
 
     /**
@@ -129,7 +132,7 @@ public class OrganizationService {
         UUID organizationId = principal.getOrganizationId();
         
         if (organizationId == null) {
-            throw new RuntimeException("User does not belong to any organization");
+            throw new BusinessRuleException("User does not belong to any organization");
         }
         
         return getOrganizationById(organizationId);
@@ -149,11 +152,11 @@ public class OrganizationService {
      */
     public Organization createOrganization(OrganizationRequest request) {
         if (organizationRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Organization with name already exists: " + request.getName());
+            throw new DuplicateResourceException("Organization with name already exists: " + request.getName());
         }
 
         if (request.getEmail() != null && organizationRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Organization with email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Organization with email already exists: " + request.getEmail());
         }
 
         Organization organization = new Organization();
@@ -161,7 +164,7 @@ public class OrganizationService {
         
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             organization.setTenant(tenant);
         }
         
@@ -190,13 +193,13 @@ public class OrganizationService {
 
         if (!organization.getName().equals(request.getName()) && 
             organizationRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Organization with name already exists: " + request.getName());
+            throw new DuplicateResourceException("Organization with name already exists: " + request.getName());
         }
 
         if (request.getEmail() != null && 
             !request.getEmail().equals(organization.getEmail()) && 
             organizationRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Organization with email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Organization with email already exists: " + request.getEmail());
         }
 
         mapRequestToOrganization(request, organization);
@@ -204,7 +207,7 @@ public class OrganizationService {
         if (request.getTenantId() != null && 
             (organization.getTenant() == null || !organization.getTenant().getId().equals(request.getTenantId()))) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             organization.setTenant(tenant);
         }
         
@@ -243,7 +246,7 @@ public class OrganizationService {
         
         Long userCount = userRepository.countByOrganizationId(id);
         if (userCount > 0) {
-            throw new RuntimeException("Cannot delete organization with active users");
+            throw new BusinessRuleException("Cannot delete organization with active users");
         }
         
         organizationRepository.delete(organization);

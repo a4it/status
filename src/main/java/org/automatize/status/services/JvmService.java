@@ -51,7 +51,8 @@ public class JvmService {
             if (osBean instanceof com.sun.management.OperatingSystemMXBean sunOsBean) {
                 cpuLoad = sunOsBean.getProcessCpuLoad();
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            logger.debug("Unable to read process CPU load", e);
         }
         response.setProcessCpuLoad(cpuLoad);
 
