@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.Map;
 
 /**
  * Executor service for scheduler jobs of type {@code SOAP}.
@@ -58,72 +57,10 @@ public class SoapExecutorService {
         }
 
         try {
-            HttpClient.Builder clientBuilder = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
-                    .followRedirects(HttpClient.Redirect.NORMAL);
-
-            if (!Boolean.TRUE.equals(config.getSslVerify())) {
-                clientBuilder.sslContext(buildTrustAllSslContext());
-            }
-
-            HttpClient client = clientBuilder.build();
-
-            // SOAP content type differs between 1.1 and 1.2
-            String contentType;
-            if (config.getSoapVersion() == SoapVersion.V1_2) {
-                contentType = "application/soap+xml; charset=utf-8";
-                if (config.getSoapAction() != null) {
-                    contentType += "; action=\"" + config.getSoapAction() + "\"";
-                }
-            } else {
-                contentType = "text/xml; charset=utf-8";
-            }
-
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(config.getEndpointUrl()))
-                    .header("Content-Type", contentType)
-                    .timeout(Duration.ofMillis(config.getReadTimeoutMs() != null ? config.getReadTimeoutMs() : 60000));
-
-            // SOAPAction header is only required for SOAP 1.1
-            if (config.getSoapVersion() != SoapVersion.V1_2 && config.getSoapAction() != null) {
-                reqBuilder.header("SOAPAction", "\"" + config.getSoapAction() + "\"");
-            }
-
-            if (config.getExtraHeaders() != null) {
-                for (Map.Entry<String, String> e : config.getExtraHeaders().entrySet()) {
-                    reqBuilder.header(e.getKey(), e.getValue());
-                }
-            }
-
-            applyAuth(config, reqBuilder);
-
-            reqBuilder.POST(HttpRequest.BodyPublishers.ofString(config.getSoapEnvelope(), StandardCharsets.UTF_8));
-
-            HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-
-            int httpStatus = response.statusCode();
-            String responseBody = response.body();
-
-            int maxBytes = config.getMaxResponseBytes() != null ? config.getMaxResponseBytes() : 524288;
-            if (responseBody != null && responseBody.length() > maxBytes) {
-                responseBody = responseBody.substring(0, maxBytes) + "\n... [TRUNCATED]";
-            }
-
-            run.setHttpStatusCode(httpStatus);
-            run.setResponseBody(responseBody);
-
-            boolean hasFault = responseBody != null
-                    && (responseBody.contains("<soap:Fault")
-                        || responseBody.contains("<SOAP-ENV:Fault")
-                        || responseBody.contains("<faultcode>"));
-
-            if (httpStatus >= 200 && httpStatus < 300 && !hasFault) {
-                run.setStatus(JobRunStatus.SUCCESS);
-            } else {
-                run.setStatus(JobRunStatus.FAILURE);
-                run.setErrorMessage("SOAP call failed with HTTP " + httpStatus
-                        + (hasFault ? " (SOAP Fault detected)" : ""));
-            }
-
+            HttpClient client = buildHttpClient(config);
+            HttpRequest request = buildRequest(config);
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            evaluateResponse(config, run, response);
         } catch (Exception e) {
             logger.error("SOAP execution failed", e);
             run.setStatus(JobRunStatus.FAILURE);
@@ -134,6 +71,78 @@ public class SoapExecutorService {
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private HttpClient buildHttpClient(SchedulerSoapConfig config) {
+        HttpClient.Builder clientBuilder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
+                .followRedirects(HttpClient.Redirect.NORMAL);
+        if (!Boolean.TRUE.equals(config.getSslVerify())) {
+            clientBuilder.sslContext(buildTrustAllSslContext());
+        }
+        return clientBuilder.build();
+    }
+
+    /** Resolves the SOAP {@code Content-Type} header, which differs between SOAP 1.1 and 1.2. */
+    private String resolveContentType(SchedulerSoapConfig config) {
+        if (config.getSoapVersion() != SoapVersion.V1_2) {
+            return "text/xml; charset=utf-8";
+        }
+        String contentType = "application/soap+xml; charset=utf-8";
+        if (config.getSoapAction() != null) {
+            contentType += "; action=\"" + config.getSoapAction() + "\"";
+        }
+        return contentType;
+    }
+
+    private HttpRequest buildRequest(SchedulerSoapConfig config) {
+        HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(config.getEndpointUrl()))
+                .header("Content-Type", resolveContentType(config))
+                .timeout(Duration.ofMillis(config.getReadTimeoutMs() != null ? config.getReadTimeoutMs() : 60000));
+
+        // SOAPAction header is only required for SOAP 1.1
+        if (config.getSoapVersion() != SoapVersion.V1_2 && config.getSoapAction() != null) {
+            reqBuilder.header("SOAPAction", "\"" + config.getSoapAction() + "\"");
+        }
+        if (config.getExtraHeaders() != null) {
+            config.getExtraHeaders().forEach(reqBuilder::header);
+        }
+        applyAuth(config, reqBuilder);
+        reqBuilder.POST(HttpRequest.BodyPublishers.ofString(config.getSoapEnvelope(), StandardCharsets.UTF_8));
+        return reqBuilder.build();
+    }
+
+    /** Populates {@code run} from the SOAP response, applying truncation and fault detection. */
+    private void evaluateResponse(SchedulerSoapConfig config, SchedulerJobRun run, HttpResponse<String> response) {
+        int httpStatus = response.statusCode();
+        String responseBody = truncateBody(response.body(), config);
+
+        run.setHttpStatusCode(httpStatus);
+        run.setResponseBody(responseBody);
+
+        boolean hasFault = containsSoapFault(responseBody);
+        if (httpStatus >= 200 && httpStatus < 300 && !hasFault) {
+            run.setStatus(JobRunStatus.SUCCESS);
+        } else {
+            run.setStatus(JobRunStatus.FAILURE);
+            run.setErrorMessage("SOAP call failed with HTTP " + httpStatus
+                    + (hasFault ? " (SOAP Fault detected)" : ""));
+        }
+    }
+
+    private String truncateBody(String responseBody, SchedulerSoapConfig config) {
+        int maxBytes = config.getMaxResponseBytes() != null ? config.getMaxResponseBytes() : 524288;
+        if (responseBody != null && responseBody.length() > maxBytes) {
+            return responseBody.substring(0, maxBytes) + "\n... [TRUNCATED]";
+        }
+        return responseBody;
+    }
+
+    private boolean containsSoapFault(String responseBody) {
+        return responseBody != null
+                && (responseBody.contains("<soap:Fault")
+                    || responseBody.contains("<SOAP-ENV:Fault")
+                    || responseBody.contains("<faultcode>"));
+    }
 
     private void applyAuth(SchedulerSoapConfig config, HttpRequest.Builder reqBuilder) {
         if (config.getAuthType() == null || config.getAuthType() == AuthType.NONE) return;
@@ -167,7 +176,7 @@ public class SoapExecutorService {
             }}, null);
             return ctx;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to build trust-all SSL context", e);
+            throw new IllegalStateException("Failed to build trust-all SSL context", e);
         }
     }
 }

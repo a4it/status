@@ -1,5 +1,6 @@
 package org.automatize.status.services.scheduler;
 
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.SchedulerJdbcDatasource;
 import org.automatize.status.models.Tenant;
 import org.automatize.status.repositories.SchedulerJdbcDatasourceRepository;
@@ -28,6 +29,8 @@ import java.util.UUID;
 @Transactional
 public class SchedulerDatasourceService {
 
+    private static final String DATASOURCE_NOT_FOUND = "Datasource not found";
+
     @Autowired private SchedulerJdbcDatasourceRepository datasourceRepository;
     @Autowired private TenantRepository tenantRepository;
     @Autowired private SchedulerEncryptionService encryptionService;
@@ -54,7 +57,7 @@ public class SchedulerDatasourceService {
     @Transactional(readOnly = true)
     public SchedulerJdbcDatasource get(UUID id, UUID tenantId) {
         return datasourceRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new RuntimeException("Datasource not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(DATASOURCE_NOT_FOUND));
     }
 
     /**
@@ -67,7 +70,7 @@ public class SchedulerDatasourceService {
      */
     public SchedulerJdbcDatasource create(SchedulerJdbcDatasource ds, UUID tenantId, String username) {
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
         ds.setTenant(tenant);
         ds.setCreatedBy(username);
         ds.setLastModifiedBy(username);
@@ -90,7 +93,7 @@ public class SchedulerDatasourceService {
     public SchedulerJdbcDatasource update(UUID id, SchedulerJdbcDatasource dsData,
                                           UUID tenantId, String username) {
         SchedulerJdbcDatasource existing = datasourceRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new RuntimeException("Datasource not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(DATASOURCE_NOT_FOUND));
 
         existing.setName(dsData.getName());
         existing.setDescription(dsData.getDescription());
@@ -121,7 +124,7 @@ public class SchedulerDatasourceService {
      */
     public void delete(UUID id, UUID tenantId) {
         SchedulerJdbcDatasource ds = datasourceRepository.findByIdAndTenantId(id, tenantId)
-                .orElseThrow(() -> new RuntimeException("Datasource not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(DATASOURCE_NOT_FOUND));
         datasourceRepository.delete(ds);
     }
 

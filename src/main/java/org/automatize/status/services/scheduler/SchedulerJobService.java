@@ -1,5 +1,6 @@
 package org.automatize.status.services.scheduler;
 
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.*;
 import org.automatize.status.models.scheduler.*;
 import org.automatize.status.repositories.*;
@@ -31,6 +32,8 @@ import java.util.UUID;
 public class SchedulerJobService {
 
     private static final Logger logger = LoggerFactory.getLogger(SchedulerJobService.class);
+
+    private static final String JOB_NOT_FOUND = "Job not found";
 
     @Autowired private SchedulerJobRepository jobRepository;
     @Autowired private SchedulerJobRunRepository runRepository;
@@ -78,7 +81,7 @@ public class SchedulerJobService {
     @Transactional(readOnly = true)
     public SchedulerJob getJob(UUID jobId, UUID tenantId) {
         return jobRepository.findByIdAndTenantId(jobId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
     }
 
     // -------------------------------------------------------------------------
@@ -101,7 +104,7 @@ public class SchedulerJobService {
         }
 
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         jobData.setTenant(tenant);
         jobData.setCreatedBy(username);
@@ -135,7 +138,7 @@ public class SchedulerJobService {
      */
     public SchedulerJob updateJob(UUID jobId, SchedulerJob jobData, UUID tenantId, String username) {
         SchedulerJob existing = jobRepository.findByIdAndTenantId(jobId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
 
         if (!existing.getCronExpression().equals(jobData.getCronExpression())) {
             if (!cronValidationService.isValid(jobData.getCronExpression())) {
@@ -175,7 +178,7 @@ public class SchedulerJobService {
      */
     public void deleteJob(UUID jobId, UUID tenantId) {
         SchedulerJob job = jobRepository.findByIdAndTenantId(jobId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
         engineService.unregisterJob(jobId);
         jobRepository.delete(job);
     }
@@ -190,7 +193,7 @@ public class SchedulerJobService {
      */
     public SchedulerJob pauseJob(UUID jobId, UUID tenantId, String username) {
         SchedulerJob job = jobRepository.findByIdAndTenantId(jobId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
         job.setStatus(JobStatus.PAUSED);
         job.setLastModifiedBy(username);
         engineService.unregisterJob(jobId);
@@ -208,7 +211,7 @@ public class SchedulerJobService {
      */
     public SchedulerJob resumeJob(UUID jobId, UUID tenantId, String username) {
         SchedulerJob job = jobRepository.findByIdAndTenantId(jobId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Job not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(JOB_NOT_FOUND));
         job.setStatus(JobStatus.ACTIVE);
         job.setLastModifiedBy(username);
         String tz = job.getTimeZone() != null ? job.getTimeZone() : "UTC";
@@ -276,7 +279,8 @@ public class SchedulerJobService {
             // Decryption succeeded — value is already encrypted
             return value;
         } catch (Exception e) {
-            // Decryption failed — treat as plaintext and encrypt
+            // Decryption failed — value is plaintext, so encrypt it
+            logger.trace("Value is not valid ciphertext; treating as plaintext and encrypting", e);
             return encryptionService.encrypt(value);
         }
     }

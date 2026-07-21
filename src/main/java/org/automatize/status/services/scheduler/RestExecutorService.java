@@ -1,5 +1,6 @@
 package org.automatize.status.services.scheduler;
 
+import org.automatize.status.exceptions.SchedulerExecutionException;
 import org.automatize.status.models.SchedulerJobRun;
 import org.automatize.status.models.SchedulerRestConfig;
 import org.automatize.status.models.scheduler.AuthType;
@@ -58,63 +59,12 @@ public class RestExecutorService {
         }
 
         try {
-            String url = buildUrl(config);
-
-            HttpClient.Builder clientBuilder = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
-                    .followRedirects(Boolean.TRUE.equals(config.getFollowRedirects())
-                            ? HttpClient.Redirect.NORMAL
-                            : HttpClient.Redirect.NEVER);
-
-            if (!Boolean.TRUE.equals(config.getSslVerify())) {
-                clientBuilder.sslContext(buildTrustAllSslContext());
-            }
-
-            HttpClient client = clientBuilder.build();
-            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(url));
-
-            if (config.getHeaders() != null) {
-                for (Map.Entry<String, String> e : config.getHeaders().entrySet()) {
-                    reqBuilder.header(e.getKey(), e.getValue());
-                }
-            }
-
-            applyAuth(config, reqBuilder);
-
-            String method = config.getHttpMethod() != null ? config.getHttpMethod().name() : "GET";
-            String body = config.getRequestBody();
-
-            if (body != null && !body.isBlank()) {
-                String contentType = config.getContentType() != null ? config.getContentType() : "application/json";
-                reqBuilder.header("Content-Type", contentType);
-                reqBuilder.method(method, HttpRequest.BodyPublishers.ofString(body));
-            } else {
-                reqBuilder.method(method, HttpRequest.BodyPublishers.noBody());
-            }
-
-            int readTimeout = config.getReadTimeoutMs() != null ? config.getReadTimeoutMs() : 30000;
-            reqBuilder.timeout(Duration.ofMillis(readTimeout));
-
-            HttpResponse<String> response = client.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
-
-            int httpStatus = response.statusCode();
-            String responseBody = response.body();
-
-            int maxBytes = config.getMaxResponseBytes() != null ? config.getMaxResponseBytes() : 102400;
-            if (responseBody != null && responseBody.length() > maxBytes) {
-                responseBody = responseBody.substring(0, maxBytes) + "\n... [TRUNCATED]";
-            }
-
-            run.setHttpStatusCode(httpStatus);
-            run.setResponseBody(responseBody);
-
-            boolean success = checkAssertions(config, httpStatus, responseBody);
-            run.setStatus(success ? JobRunStatus.SUCCESS : JobRunStatus.FAILURE);
-            if (!success) {
-                run.setErrorMessage("Assertion failed for HTTP " + httpStatus);
-            }
-
+            HttpClient client = buildClient(config);
+            HttpRequest request = buildRequest(config);
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            recordResponse(config, run, response);
         } catch (java.net.http.HttpTimeoutException e) {
+            logger.warn("REST execution timed out for {}", config.getUrl(), e);
             run.setStatus(JobRunStatus.TIMEOUT);
             run.setErrorMessage("Request timed out: " + e.getMessage());
         } catch (Exception e) {
@@ -127,6 +77,61 @@ public class RestExecutorService {
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
+
+    private HttpClient buildClient(SchedulerRestConfig config) {
+        HttpClient.Builder clientBuilder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
+                .followRedirects(Boolean.TRUE.equals(config.getFollowRedirects())
+                        ? HttpClient.Redirect.NORMAL
+                        : HttpClient.Redirect.NEVER);
+        if (!Boolean.TRUE.equals(config.getSslVerify())) {
+            clientBuilder.sslContext(buildTrustAllSslContext());
+        }
+        return clientBuilder.build();
+    }
+
+    private HttpRequest buildRequest(SchedulerRestConfig config) {
+        HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(buildUrl(config)));
+        if (config.getHeaders() != null) {
+            config.getHeaders().forEach(reqBuilder::header);
+        }
+        applyAuth(config, reqBuilder);
+        applyMethodAndBody(config, reqBuilder);
+        int readTimeout = config.getReadTimeoutMs() != null ? config.getReadTimeoutMs() : 30000;
+        reqBuilder.timeout(Duration.ofMillis(readTimeout));
+        return reqBuilder.build();
+    }
+
+    private void applyMethodAndBody(SchedulerRestConfig config, HttpRequest.Builder reqBuilder) {
+        String method = config.getHttpMethod() != null ? config.getHttpMethod().name() : "GET";
+        String body = config.getRequestBody();
+        if (body != null && !body.isBlank()) {
+            String contentType = config.getContentType() != null ? config.getContentType() : "application/json";
+            reqBuilder.header("Content-Type", contentType);
+            reqBuilder.method(method, HttpRequest.BodyPublishers.ofString(body));
+        } else {
+            reqBuilder.method(method, HttpRequest.BodyPublishers.noBody());
+        }
+    }
+
+    private void recordResponse(SchedulerRestConfig config, SchedulerJobRun run, HttpResponse<String> response) {
+        int httpStatus = response.statusCode();
+        String responseBody = response.body();
+
+        int maxBytes = config.getMaxResponseBytes() != null ? config.getMaxResponseBytes() : 102400;
+        if (responseBody != null && responseBody.length() > maxBytes) {
+            responseBody = responseBody.substring(0, maxBytes) + "\n... [TRUNCATED]";
+        }
+
+        run.setHttpStatusCode(httpStatus);
+        run.setResponseBody(responseBody);
+
+        boolean success = checkAssertions(config, httpStatus, responseBody);
+        run.setStatus(success ? JobRunStatus.SUCCESS : JobRunStatus.FAILURE);
+        if (!success) {
+            run.setErrorMessage("Assertion failed for HTTP " + httpStatus);
+        }
+    }
 
     private String buildUrl(SchedulerRestConfig config) {
         String url = config.getUrl();
@@ -149,32 +154,38 @@ public class RestExecutorService {
         if (config.getAuthType() == null || config.getAuthType() == AuthType.NONE) return;
 
         switch (config.getAuthType()) {
-            case BASIC -> {
-                String user = config.getAuthUsername() != null ? config.getAuthUsername() : "";
-                String pass = config.getAuthPasswordEnc() != null
-                        ? encryptionService.decrypt(config.getAuthPasswordEnc()) : "";
-                String encoded = Base64.getEncoder()
-                        .encodeToString((user + ":" + pass).getBytes(StandardCharsets.UTF_8));
-                reqBuilder.header("Authorization", "Basic " + encoded);
-            }
-            case BEARER -> {
-                String token = config.getAuthTokenEnc() != null
-                        ? encryptionService.decrypt(config.getAuthTokenEnc()) : "";
-                reqBuilder.header("Authorization", "Bearer " + token);
-            }
-            case API_KEY -> {
-                String keyName = config.getAuthApiKeyName() != null ? config.getAuthApiKeyName() : "X-API-Key";
-                String keyValue = config.getAuthApiKeyValueEnc() != null
-                        ? encryptionService.decrypt(config.getAuthApiKeyValueEnc()) : "";
-                // Only add as header when location is HEADER (or null — default)
-                if (config.getAuthApiKeyLocation() == null
-                        || !"QUERY_PARAM".equals(config.getAuthApiKeyLocation().name())) {
-                    reqBuilder.header(keyName, keyValue);
-                }
-            }
+            case BASIC -> applyBasicAuth(config, reqBuilder);
+            case BEARER -> applyBearerAuth(config, reqBuilder);
+            case API_KEY -> applyApiKeyAuth(config, reqBuilder);
             default -> {
                 // NONE or unhandled — no auth header
             }
+        }
+    }
+
+    private void applyBasicAuth(SchedulerRestConfig config, HttpRequest.Builder reqBuilder) {
+        String user = config.getAuthUsername() != null ? config.getAuthUsername() : "";
+        String pass = config.getAuthPasswordEnc() != null
+                ? encryptionService.decrypt(config.getAuthPasswordEnc()) : "";
+        String encoded = Base64.getEncoder()
+                .encodeToString((user + ":" + pass).getBytes(StandardCharsets.UTF_8));
+        reqBuilder.header("Authorization", "Basic " + encoded);
+    }
+
+    private void applyBearerAuth(SchedulerRestConfig config, HttpRequest.Builder reqBuilder) {
+        String token = config.getAuthTokenEnc() != null
+                ? encryptionService.decrypt(config.getAuthTokenEnc()) : "";
+        reqBuilder.header("Authorization", "Bearer " + token);
+    }
+
+    private void applyApiKeyAuth(SchedulerRestConfig config, HttpRequest.Builder reqBuilder) {
+        String keyName = config.getAuthApiKeyName() != null ? config.getAuthApiKeyName() : "X-API-Key";
+        String keyValue = config.getAuthApiKeyValueEnc() != null
+                ? encryptionService.decrypt(config.getAuthApiKeyValueEnc()) : "";
+        // Only add as header when location is HEADER (or null — default)
+        if (config.getAuthApiKeyLocation() == null
+                || !"QUERY_PARAM".equals(config.getAuthApiKeyLocation().name())) {
+            reqBuilder.header(keyName, keyValue);
         }
     }
 
@@ -201,7 +212,7 @@ public class RestExecutorService {
             }}, null);
             return ctx;
         } catch (Exception e) {
-            throw new RuntimeException("Failed to build trust-all SSL context", e);
+            throw new SchedulerExecutionException("Failed to build trust-all SSL context", e);
         }
     }
 }

@@ -76,7 +76,8 @@ public class SqlExecutorService {
                     try {
                         List<?> rows = objectMapper.readValue(json, List.class);
                         rowCount = rows.size();
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        logger.trace("Could not parse result set JSON to count rows", e);
                     }
                     run.setRowsAffected(rowCount);
                     run.setStatus(JobRunStatus.SUCCESS);
@@ -93,6 +94,7 @@ public class SqlExecutorService {
                 }
             }
         } catch (SQLTimeoutException e) {
+            logger.warn("SQL query timed out", e);
             run.setStatus(JobRunStatus.TIMEOUT);
             run.setErrorMessage("Query timed out: " + e.getMessage());
         } catch (Exception e) {
@@ -125,6 +127,7 @@ public class SqlExecutorService {
                 result.put("latencyMs", System.currentTimeMillis() - start);
             }
         } catch (Exception e) {
+            logger.warn("Datasource connection test failed", e);
             result.put("success", false);
             result.put("error", e.getMessage());
             result.put("latencyMs", System.currentTimeMillis() - start);
@@ -144,7 +147,7 @@ public class SqlExecutorService {
             return config.getInlineJdbcUrl();
         }
         DbType dbType = config.getInlineDbType();
-        if (dbType == null) throw new RuntimeException("No datasource or inline JDBC config provided");
+        if (dbType == null) throw new IllegalArgumentException("No datasource or inline JDBC config provided");
         return dbType.buildJdbcUrl("localhost", dbType.getDefaultPort(), "");
     }
 
