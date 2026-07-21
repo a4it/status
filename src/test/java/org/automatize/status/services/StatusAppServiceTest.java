@@ -257,6 +257,10 @@ class StatusAppServiceTest {
         verify(statusAppRepository).save(existing);
     }
 
+    /**
+     * Verifies that setting an app to MAJOR_OUTAGE cascades the status to all its
+     * components and saves them.
+     */
     @Test
     void updateStatus_majorOutage_cascadesToComponents() {
         UUID id = UUID.randomUUID();
@@ -277,6 +281,10 @@ class StatusAppServiceTest {
         verify(statusComponentRepository).saveAll(List.of(c1, c2));
     }
 
+    /**
+     * Verifies that setting an app to OPERATIONAL does not cascade to or query its
+     * components.
+     */
     @Test
     void updateStatus_operational_doesNotCascade() {
         UUID id = UUID.randomUUID();
@@ -290,6 +298,9 @@ class StatusAppServiceTest {
         verify(statusComponentRepository, never()).findByAppId(id);
     }
 
+    /**
+     * Verifies that an app with no active incidents or maintenance is deleted.
+     */
     @Test
     void deleteStatusApp_noActiveIncidentsOrMaintenance_deletes() {
         UUID id = UUID.randomUUID();

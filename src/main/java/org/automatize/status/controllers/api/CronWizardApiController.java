@@ -101,6 +101,14 @@ public class CronWizardApiController {
     // Common cron presets
     // -------------------------------------------------------------------------
 
+    /**
+     * Returns a curated list of common cron expression presets.
+     * <p>
+     * Handles {@code GET /api/scheduler/cron/presets}.
+     * </p>
+     *
+     * @return ResponseEntity containing the preset definitions (name, expression, description)
+     */
     @GetMapping("/presets")
     public ResponseEntity<List<Map<String, String>>> presets() {
         List<Map<String, String>> presets = new ArrayList<>();
@@ -125,6 +133,14 @@ public class CronWizardApiController {
     // Available timezones
     // -------------------------------------------------------------------------
 
+    /**
+     * Returns the list of timezones available for scheduling.
+     * <p>
+     * Handles {@code GET /api/scheduler/cron/timezones}.
+     * </p>
+     *
+     * @return ResponseEntity containing the available timezone identifiers
+     */
     @GetMapping("/timezones")
     public ResponseEntity<List<String>> timezones() {
         return ResponseEntity.ok(cronValidationService.getAvailableTimezones());
@@ -134,6 +150,14 @@ public class CronWizardApiController {
     // Helpers
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds a single preset entry as an ordered map.
+     *
+     * @param name the display name of the preset
+     * @param expression the cron expression
+     * @param humanReadable the human-readable description
+     * @return an ordered map representing the preset
+     */
     private Map<String, String> preset(String name, String expression, String humanReadable) {
         Map<String, String> m = new LinkedHashMap<>();
         m.put("name", name);

@@ -245,6 +245,10 @@ class OrganizationServiceTest {
         assertThat(organizationService.getCurrentUserOrganization()).isSameAs(org);
     }
 
+    /**
+     * Verifies that when the current principal has no organization id, requesting the current user's
+     * organization throws {@link BusinessRuleException}.
+     */
     @Test
     void getCurrentUserOrganization_noOrganization_throwsBusinessRuleException() {
         setPrincipal(null);

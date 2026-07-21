@@ -38,6 +38,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private PublicStatusService publicStatusService;
 
+    /**
+     * Builds a sample {@link StatusAppResponse} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return a public app response named "Public App" with slug "public-app"
+     */
     private StatusAppResponse sampleApp(UUID id) {
         StatusAppResponse r = new StatusAppResponse();
         r.setId(id);
@@ -46,6 +52,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Builds a sample {@link StatusComponentResponse} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return a component response named "API"
+     */
     private StatusComponentResponse sampleComponent(UUID id) {
         StatusComponentResponse r = new StatusComponentResponse();
         r.setId(id);
@@ -53,6 +65,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Builds a sample {@link StatusIncidentResponse} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return an incident response titled "Outage"
+     */
     private StatusIncidentResponse sampleIncident(UUID id) {
         StatusIncidentResponse r = new StatusIncidentResponse();
         r.setId(id);
@@ -60,6 +78,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Builds a sample {@link StatusMaintenanceResponse} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign
+     * @return a maintenance response titled "Upgrade"
+     */
     private StatusMaintenanceResponse sampleMaintenance(UUID id) {
         StatusMaintenanceResponse r = new StatusMaintenanceResponse();
         r.setId(id);

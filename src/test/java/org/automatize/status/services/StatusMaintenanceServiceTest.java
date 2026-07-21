@@ -459,6 +459,9 @@ class StatusMaintenanceServiceTest {
         assertThat(result.get(0).getStatus()).isEqualTo("SCHEDULED");
     }
 
+    /**
+     * Verifies that fetching active maintenance filtered by app returns only maintenances belonging to that app.
+     */
     @Test
     void getActiveMaintenance_byApp_filtersByApp() {
         UUID appId = UUID.randomUUID();

@@ -122,6 +122,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(captor.getValue().getSettingValue()).isEqualTo("true");
     }
 
+    /**
+     * Verifies that a bulk update persists one save per entry in the supplied map.
+     */
     @Test
     void updateSettings_updatesEachEntry() {
         when(repository.findBySettingKey(any())).thenReturn(Optional.empty());
@@ -131,6 +134,10 @@ class HealthCheckSettingsServiceTest {
         verify(repository, times(2)).save(any(HealthCheckSettings.class));
     }
 
+    /**
+     * Verifies that {@code isEnabled} returns true when the stored "enabled" value is
+     * "true".
+     */
     @Test
     void isEnabled_whenValueTrue_returnsTrue() {
         when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "true")));

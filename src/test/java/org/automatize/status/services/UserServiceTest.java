@@ -523,6 +523,10 @@ class UserServiceTest {
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
+    /**
+     * Verifies that {@code updateCurrentUserProfile} throws {@link DuplicateResourceException}
+     * when the requested email is already taken.
+     */
     @Test
     void updateCurrentUserProfile_duplicateEmail_throwsDuplicateResourceException() {
         User user = buildUser(currentUserId, "tester");
@@ -537,6 +541,10 @@ class UserServiceTest {
 
     // ---------- changePassword ----------
 
+    /**
+     * Verifies that {@code changePassword} updates and persists the encoded new password
+     * when a user changes their own password with the correct current password.
+     */
     @Test
     void changePassword_selfWithCorrectCurrentPassword_updatesPassword() {
         UUID id = UUID.randomUUID();
@@ -558,6 +566,10 @@ class UserServiceTest {
         verify(userRepository).save(user);
     }
 
+    /**
+     * Verifies that {@code changePassword} throws {@link BusinessRuleException} and saves
+     * nothing when a user supplies an incorrect current password for their own account.
+     */
     @Test
     void changePassword_selfWithWrongCurrentPassword_throwsBusinessRuleException() {
         UUID id = UUID.randomUUID();
