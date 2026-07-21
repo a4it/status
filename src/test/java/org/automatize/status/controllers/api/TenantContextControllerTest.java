@@ -9,12 +9,16 @@ import org.automatize.status.services.TenantContextService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 import java.util.UUID;
@@ -38,6 +42,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = TenantContextController.class)
 class TenantContextControllerTest extends AbstractApiControllerTest {
+
+    /**
+     * The WebMvc slice does not register Spring Security's
+     * {@code @AuthenticationPrincipal} resolver, so without this the
+     * {@link UserPrincipal} parameter falls through to model binding and 400s.
+     */
+    @TestConfiguration
+    static class SecurityArgumentResolverConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new AuthenticationPrincipalArgumentResolver());
+        }
+    }
 
     @MockitoBean
     private TenantContextService tenantContextService;

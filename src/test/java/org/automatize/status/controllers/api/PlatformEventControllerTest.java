@@ -161,13 +161,15 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
-    void createEvent_serviceRuntimeException_returns500() throws Exception {
+    void createEvent_serviceRuntimeException_propagates() {
         when(platformEventService.createEvent(any(), any(), any(), any(), any(), any(), any()))
                 .thenThrow(new RuntimeException("Status app not found"));
 
+        // No @ControllerAdvice and a plain (unannotated) RuntimeException: the
+        // exception is not mapped to a status and propagates out of the servlet.
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
-        mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isInternalServerError());
+        org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
+                mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(body)));
     }
 
     // ---- deleteEvent ----
