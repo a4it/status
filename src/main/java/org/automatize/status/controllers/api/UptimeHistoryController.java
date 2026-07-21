@@ -31,6 +31,10 @@ import java.util.Map;
 @PreAuthorize("isAuthenticated()")
 public class UptimeHistoryController {
 
+    private static final String KEY_SUCCESS = "success";
+    private static final String KEY_MESSAGE = "message";
+    private static final String KEY_DURATION_MS = "durationMs";
+
     private final UptimeHistoryService uptimeHistoryService;
 
     public UptimeHistoryController(UptimeHistoryService uptimeHistoryService) {
@@ -55,15 +59,15 @@ public class UptimeHistoryController {
 
         if (days < 1) {
             Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Days must be at least 1");
+            error.put(KEY_SUCCESS,false);
+            error.put(KEY_MESSAGE,"Days must be at least 1");
             return ResponseEntity.badRequest().body(error);
         }
 
         if (days > 365) {
             Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Days cannot exceed 365");
+            error.put(KEY_SUCCESS,false);
+            error.put(KEY_MESSAGE,"Days cannot exceed 365");
             return ResponseEntity.badRequest().body(error);
         }
 
@@ -72,11 +76,11 @@ public class UptimeHistoryController {
         long duration = System.currentTimeMillis() - startTime;
 
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Backfilled " + processed + " days of uptime history");
+        response.put(KEY_SUCCESS,true);
+        response.put(KEY_MESSAGE,"Backfilled " + processed + " days of uptime history");
         response.put("daysRequested", days);
         response.put("daysProcessed", processed);
-        response.put("durationMs", duration);
+        response.put(KEY_DURATION_MS,duration);
 
         return ResponseEntity.ok(response);
     }
@@ -101,15 +105,15 @@ public class UptimeHistoryController {
             targetDate = LocalDate.parse(date, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException e) {
             Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Invalid date format. Use yyyy-MM-dd");
+            error.put(KEY_SUCCESS,false);
+            error.put(KEY_MESSAGE,"Invalid date format. Use yyyy-MM-dd");
             return ResponseEntity.badRequest().body(error);
         }
 
         if (targetDate.isAfter(LocalDate.now().minusDays(1))) {
             Map<String, Object> error = new HashMap<>();
-            error.put("success", false);
-            error.put("message", "Cannot calculate uptime for today or future dates");
+            error.put(KEY_SUCCESS,false);
+            error.put(KEY_MESSAGE,"Cannot calculate uptime for today or future dates");
             return ResponseEntity.badRequest().body(error);
         }
 
@@ -118,10 +122,10 @@ public class UptimeHistoryController {
         long duration = System.currentTimeMillis() - startTime;
 
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Calculated uptime for " + date);
+        response.put(KEY_SUCCESS,true);
+        response.put(KEY_MESSAGE,"Calculated uptime for " + date);
         response.put("date", date);
-        response.put("durationMs", duration);
+        response.put(KEY_DURATION_MS,duration);
 
         return ResponseEntity.ok(response);
     }
@@ -144,10 +148,10 @@ public class UptimeHistoryController {
         long duration = System.currentTimeMillis() - startTime;
 
         Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Calculated uptime for " + yesterday);
+        response.put(KEY_SUCCESS,true);
+        response.put(KEY_MESSAGE,"Calculated uptime for " + yesterday);
         response.put("date", yesterday.toString());
-        response.put("durationMs", duration);
+        response.put(KEY_DURATION_MS,duration);
 
         return ResponseEntity.ok(response);
     }

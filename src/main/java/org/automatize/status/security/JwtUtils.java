@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.UUID;
 
@@ -44,6 +43,18 @@ public class JwtUtils {
      * Logger instance for recording JWT-related events and errors.
      */
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
+
+    /** JWT claim key for the user identifier. */
+    private static final String CLAIM_USER_ID = "userId";
+
+    /** JWT claim key for the user's email address. */
+    private static final String CLAIM_EMAIL = "email";
+
+    /** JWT claim key for the organization identifier. */
+    private static final String CLAIM_ORGANIZATION_ID = "organizationId";
+
+    /** JWT claim key indicating whether context selection is required. */
+    private static final String CLAIM_REQUIRES_CONTEXT_SELECTION = "requiresContextSelection";
 
     /**
      * Base64-encoded secret key used for signing and verifying JWT tokens.
@@ -99,11 +110,11 @@ public class JwtUtils {
                 .setSubject((userPrincipal.getUsername()))
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .claim("userId", userPrincipal.getId())
-                .claim("email", userPrincipal.getEmail())
-                .claim("organizationId", userPrincipal.getOrganizationId() != null ? userPrincipal.getOrganizationId().toString() : null)
+                .claim(CLAIM_USER_ID, userPrincipal.getId())
+                .claim(CLAIM_EMAIL, userPrincipal.getEmail())
+                .claim(CLAIM_ORGANIZATION_ID, userPrincipal.getOrganizationId() != null ? userPrincipal.getOrganizationId().toString() : null)
                 .claim("role", userPrincipal.getRole())
-                .claim("requiresContextSelection", isSuperadmin)
+                .claim(CLAIM_REQUIRES_CONTEXT_SELECTION, isSuperadmin)
                 .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
@@ -128,11 +139,11 @@ public class JwtUtils {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .claim("userId", userId.toString())
-                .claim("email", email)
-                .claim("organizationId", organizationId != null ? organizationId.toString() : null)
+                .claim(CLAIM_USER_ID, userId.toString())
+                .claim(CLAIM_EMAIL, email)
+                .claim(CLAIM_ORGANIZATION_ID, organizationId != null ? organizationId.toString() : null)
                 .claim("role", role)
-                .claim("requiresContextSelection", isSuperadmin)
+                .claim(CLAIM_REQUIRES_CONTEXT_SELECTION, isSuperadmin)
                 .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
@@ -155,12 +166,12 @@ public class JwtUtils {
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-                .claim("userId", userId.toString())
-                .claim("email", email)
-                .claim("organizationId", organizationId != null ? organizationId.toString() : null)
+                .claim(CLAIM_USER_ID, userId.toString())
+                .claim(CLAIM_EMAIL, email)
+                .claim(CLAIM_ORGANIZATION_ID, organizationId != null ? organizationId.toString() : null)
                 .claim("role", role)
                 .claim("tenantId", tenantId != null ? tenantId.toString() : null)
-                .claim("requiresContextSelection", false)
+                .claim(CLAIM_REQUIRES_CONTEXT_SELECTION, false)
                 .signWith(key(), Jwts.SIG.HS256)
                 .compact();
     }
@@ -207,7 +218,7 @@ public class JwtUtils {
     public UUID getUserIdFromJwtToken(String token) {
         Claims claims = Jwts.parser().verifyWith(key()).build()
                 .parseSignedClaims(token).getPayload();
-        String userId = claims.get("userId", String.class);
+        String userId = claims.get(CLAIM_USER_ID, String.class);
         return userId != null ? UUID.fromString(userId) : null;
     }
 
@@ -283,7 +294,7 @@ public class JwtUtils {
      */
     public UUID getOrganizationIdFromJwtToken(String token) {
         Claims claims = getAllClaimsFromToken(token);
-        String orgId = claims.get("organizationId", String.class);
+        String orgId = claims.get(CLAIM_ORGANIZATION_ID, String.class);
         return orgId != null ? UUID.fromString(orgId) : null;
     }
 
@@ -295,7 +306,7 @@ public class JwtUtils {
      */
     public boolean requiresContextSelection(String token) {
         Claims claims = getAllClaimsFromToken(token);
-        Boolean flag = claims.get("requiresContextSelection", Boolean.class);
+        Boolean flag = claims.get(CLAIM_REQUIRES_CONTEXT_SELECTION, Boolean.class);
         return Boolean.TRUE.equals(flag);
     }
 }

@@ -220,6 +220,22 @@ public class SchedulerJobApiController {
     // -------------------------------------------------------------------------
 
     private void buildJobFromRequest(SchedulerJobRequest req, SchedulerJob job) {
+        applyCommonFields(req, job);
+        applyOrganization(req, job);
+
+        switch (job.getJobType()) {
+            case PROGRAM -> applyProgramConfig(req, job);
+            case SQL -> applySqlConfig(req, job);
+            case REST -> applyRestConfig(req, job);
+            case SOAP -> applySoapConfig(req, job);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Helper: base fields shared by every job type
+    // -------------------------------------------------------------------------
+
+    private void applyCommonFields(SchedulerJobRequest req, SchedulerJob job) {
         job.setName(req.getName());
         job.setDescription(req.getDescription());
         job.setCronExpression(req.getCronExpression());
@@ -235,127 +251,154 @@ public class SchedulerJobApiController {
         if (req.getJobType() != null) {
             job.setJobType(JobType.valueOf(req.getJobType().toUpperCase()));
         }
+    }
 
+    // -------------------------------------------------------------------------
+    // Helper: resolve and attach the owning organization
+    // -------------------------------------------------------------------------
+
+    private void applyOrganization(SchedulerJobRequest req, SchedulerJob job) {
         if (req.getOrganizationId() != null) {
             organizationRepository.findById(req.getOrganizationId())
                     .ifPresent(job::setOrganization);
         }
+    }
 
-        switch (job.getJobType()) {
-            case PROGRAM -> {
-                if (req.getProgramConfig() != null) {
-                    SchedulerProgramConfig cfg = new SchedulerProgramConfig();
-                    cfg.setJob(job);
-                    cfg.setCommand(req.getProgramConfig().getCommand());
-                    cfg.setArguments(req.getProgramConfig().getArguments());
-                    cfg.setWorkingDirectory(req.getProgramConfig().getWorkingDirectory());
-                    cfg.setEnvironmentVars(req.getProgramConfig().getEnvironmentVars());
-                    cfg.setShellWrap(req.getProgramConfig().getShellWrap() != null
-                            ? req.getProgramConfig().getShellWrap() : false);
-                    cfg.setShellPath(req.getProgramConfig().getShellPath() != null
-                            ? req.getProgramConfig().getShellPath() : "/bin/bash");
-                    cfg.setRunAsUser(req.getProgramConfig().getRunAsUser());
-                    job.setProgramConfig(cfg);
-                }
-            }
-            case SQL -> {
-                if (req.getSqlConfig() != null) {
-                    SchedulerSqlConfig cfg = new SchedulerSqlConfig();
-                    cfg.setJob(job);
-                    SchedulerJobRequest.SqlConfigRequest sc = req.getSqlConfig();
-                    if (sc.getDatasourceId() != null) {
-                        datasourceRepository.findById(sc.getDatasourceId())
-                                .ifPresent(cfg::setDatasource);
-                    }
-                    if (sc.getInlineDbType() != null) {
-                        cfg.setInlineDbType(DbType.valueOf(sc.getInlineDbType().toUpperCase()));
-                    }
-                    cfg.setInlineJdbcUrl(sc.getInlineJdbcUrl());
-                    cfg.setInlineUsername(sc.getInlineUsername());
-                    // Stored as plaintext; service layer will encrypt
-                    cfg.setInlinePasswordEnc(sc.getInlinePassword());
-                    cfg.setSqlStatement(sc.getSqlStatement());
-                    if (sc.getSqlType() != null) {
-                        cfg.setSqlType(SqlType.valueOf(sc.getSqlType().toUpperCase()));
-                    }
-                    cfg.setCaptureResultSet(sc.getCaptureResultSet() != null ? sc.getCaptureResultSet() : false);
-                    cfg.setMaxResultRows(sc.getMaxResultRows() != null ? sc.getMaxResultRows() : 100);
-                    cfg.setQueryTimeoutSeconds(sc.getQueryTimeoutSeconds() != null ? sc.getQueryTimeoutSeconds() : 60);
-                    job.setSqlConfig(cfg);
-                }
-            }
-            case REST -> {
-                if (req.getRestConfig() != null) {
-                    SchedulerRestConfig cfg = new SchedulerRestConfig();
-                    cfg.setJob(job);
-                    SchedulerJobRequest.RestConfigRequest rc = req.getRestConfig();
-                    if (rc.getHttpMethod() != null) {
-                        cfg.setHttpMethod(HttpMethod.valueOf(rc.getHttpMethod().toUpperCase()));
-                    }
-                    cfg.setUrl(rc.getUrl());
-                    cfg.setRequestBody(rc.getRequestBody());
-                    cfg.setContentType(rc.getContentType() != null ? rc.getContentType() : "application/json");
-                    cfg.setHeaders(rc.getHeaders());
-                    cfg.setQueryParams(rc.getQueryParams());
-                    if (rc.getAuthType() != null) {
-                        cfg.setAuthType(AuthType.valueOf(rc.getAuthType().toUpperCase()));
-                    }
-                    cfg.setAuthUsername(rc.getAuthUsername());
-                    // Plaintext; service will encrypt
-                    cfg.setAuthPasswordEnc(rc.getAuthPassword());
-                    cfg.setAuthTokenEnc(rc.getAuthToken());
-                    cfg.setAuthApiKeyName(rc.getAuthApiKeyName());
-                    cfg.setAuthApiKeyValueEnc(rc.getAuthApiKeyValue());
-                    if (rc.getAuthApiKeyLocation() != null) {
-                        cfg.setAuthApiKeyLocation(ApiKeyLocation.valueOf(rc.getAuthApiKeyLocation().toUpperCase()));
-                    }
-                    cfg.setAuthOauth2TokenUrl(rc.getAuthOauth2TokenUrl());
-                    cfg.setAuthOauth2ClientId(rc.getAuthOauth2ClientId());
-                    cfg.setAuthOauth2ClientSecretEnc(rc.getAuthOauth2ClientSecret());
-                    cfg.setAuthOauth2Scope(rc.getAuthOauth2Scope());
-                    cfg.setSslVerify(rc.getSslVerify() != null ? rc.getSslVerify() : true);
-                    cfg.setConnectTimeoutMs(rc.getConnectTimeoutMs() != null ? rc.getConnectTimeoutMs() : 5000);
-                    cfg.setReadTimeoutMs(rc.getReadTimeoutMs() != null ? rc.getReadTimeoutMs() : 30000);
-                    cfg.setFollowRedirects(rc.getFollowRedirects() != null ? rc.getFollowRedirects() : true);
-                    cfg.setMaxResponseBytes(rc.getMaxResponseBytes() != null ? rc.getMaxResponseBytes() : 102400);
-                    cfg.setAssertStatusCode(rc.getAssertStatusCode());
-                    cfg.setAssertBodyContains(rc.getAssertBodyContains());
-                    cfg.setAssertJsonPath(rc.getAssertJsonPath());
-                    cfg.setAssertJsonValue(rc.getAssertJsonValue());
-                    job.setRestConfig(cfg);
-                }
-            }
-            case SOAP -> {
-                if (req.getSoapConfig() != null) {
-                    SchedulerSoapConfig cfg = new SchedulerSoapConfig();
-                    cfg.setJob(job);
-                    SchedulerJobRequest.SoapConfigRequest sc = req.getSoapConfig();
-                    cfg.setWsdlUrl(sc.getWsdlUrl());
-                    cfg.setEndpointUrl(sc.getEndpointUrl());
-                    cfg.setServiceName(sc.getServiceName());
-                    cfg.setPortName(sc.getPortName());
-                    cfg.setOperationName(sc.getOperationName());
-                    cfg.setSoapAction(sc.getSoapAction());
-                    if (sc.getSoapVersion() != null) {
-                        cfg.setSoapVersion(SoapVersion.valueOf(sc.getSoapVersion().toUpperCase()));
-                    }
-                    cfg.setSoapEnvelope(sc.getSoapEnvelope());
-                    cfg.setExtraHeaders(sc.getExtraHeaders());
-                    if (sc.getAuthType() != null) {
-                        cfg.setAuthType(AuthType.valueOf(sc.getAuthType().toUpperCase()));
-                    }
-                    cfg.setAuthUsername(sc.getAuthUsername());
-                    // Plaintext; service will encrypt
-                    cfg.setAuthPasswordEnc(sc.getAuthPassword());
-                    cfg.setAuthTokenEnc(sc.getAuthToken());
-                    cfg.setSslVerify(sc.getSslVerify() != null ? sc.getSslVerify() : true);
-                    cfg.setConnectTimeoutMs(sc.getConnectTimeoutMs() != null ? sc.getConnectTimeoutMs() : 5000);
-                    cfg.setReadTimeoutMs(sc.getReadTimeoutMs() != null ? sc.getReadTimeoutMs() : 60000);
-                    cfg.setMaxResponseBytes(sc.getMaxResponseBytes() != null ? sc.getMaxResponseBytes() : 524288);
-                    job.setSoapConfig(cfg);
-                }
-            }
+    // -------------------------------------------------------------------------
+    // Helper: PROGRAM job configuration
+    // -------------------------------------------------------------------------
+
+    private void applyProgramConfig(SchedulerJobRequest req, SchedulerJob job) {
+        if (req.getProgramConfig() == null) {
+            return;
         }
+        SchedulerProgramConfig cfg = new SchedulerProgramConfig();
+        cfg.setJob(job);
+        cfg.setCommand(req.getProgramConfig().getCommand());
+        cfg.setArguments(req.getProgramConfig().getArguments());
+        cfg.setWorkingDirectory(req.getProgramConfig().getWorkingDirectory());
+        cfg.setEnvironmentVars(req.getProgramConfig().getEnvironmentVars());
+        cfg.setShellWrap(req.getProgramConfig().getShellWrap() != null
+                ? req.getProgramConfig().getShellWrap() : false);
+        cfg.setShellPath(req.getProgramConfig().getShellPath() != null
+                ? req.getProgramConfig().getShellPath() : "/bin/bash");
+        cfg.setRunAsUser(req.getProgramConfig().getRunAsUser());
+        job.setProgramConfig(cfg);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helper: SQL job configuration
+    // -------------------------------------------------------------------------
+
+    private void applySqlConfig(SchedulerJobRequest req, SchedulerJob job) {
+        if (req.getSqlConfig() == null) {
+            return;
+        }
+        SchedulerSqlConfig cfg = new SchedulerSqlConfig();
+        cfg.setJob(job);
+        SchedulerJobRequest.SqlConfigRequest sc = req.getSqlConfig();
+        if (sc.getDatasourceId() != null) {
+            datasourceRepository.findById(sc.getDatasourceId())
+                    .ifPresent(cfg::setDatasource);
+        }
+        if (sc.getInlineDbType() != null) {
+            cfg.setInlineDbType(DbType.valueOf(sc.getInlineDbType().toUpperCase()));
+        }
+        cfg.setInlineJdbcUrl(sc.getInlineJdbcUrl());
+        cfg.setInlineUsername(sc.getInlineUsername());
+        // Stored as plaintext; service layer will encrypt
+        cfg.setInlinePasswordEnc(sc.getInlinePassword());
+        cfg.setSqlStatement(sc.getSqlStatement());
+        if (sc.getSqlType() != null) {
+            cfg.setSqlType(SqlType.valueOf(sc.getSqlType().toUpperCase()));
+        }
+        cfg.setCaptureResultSet(sc.getCaptureResultSet() != null ? sc.getCaptureResultSet() : false);
+        cfg.setMaxResultRows(sc.getMaxResultRows() != null ? sc.getMaxResultRows() : 100);
+        cfg.setQueryTimeoutSeconds(sc.getQueryTimeoutSeconds() != null ? sc.getQueryTimeoutSeconds() : 60);
+        job.setSqlConfig(cfg);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helper: REST job configuration
+    // -------------------------------------------------------------------------
+
+    private void applyRestConfig(SchedulerJobRequest req, SchedulerJob job) {
+        if (req.getRestConfig() == null) {
+            return;
+        }
+        SchedulerRestConfig cfg = new SchedulerRestConfig();
+        cfg.setJob(job);
+        SchedulerJobRequest.RestConfigRequest rc = req.getRestConfig();
+        if (rc.getHttpMethod() != null) {
+            cfg.setHttpMethod(HttpMethod.valueOf(rc.getHttpMethod().toUpperCase()));
+        }
+        cfg.setUrl(rc.getUrl());
+        cfg.setRequestBody(rc.getRequestBody());
+        cfg.setContentType(rc.getContentType() != null ? rc.getContentType() : "application/json");
+        cfg.setHeaders(rc.getHeaders());
+        cfg.setQueryParams(rc.getQueryParams());
+        if (rc.getAuthType() != null) {
+            cfg.setAuthType(AuthType.valueOf(rc.getAuthType().toUpperCase()));
+        }
+        cfg.setAuthUsername(rc.getAuthUsername());
+        // Plaintext; service will encrypt
+        cfg.setAuthPasswordEnc(rc.getAuthPassword());
+        cfg.setAuthTokenEnc(rc.getAuthToken());
+        cfg.setAuthApiKeyName(rc.getAuthApiKeyName());
+        cfg.setAuthApiKeyValueEnc(rc.getAuthApiKeyValue());
+        if (rc.getAuthApiKeyLocation() != null) {
+            cfg.setAuthApiKeyLocation(ApiKeyLocation.valueOf(rc.getAuthApiKeyLocation().toUpperCase()));
+        }
+        cfg.setAuthOauth2TokenUrl(rc.getAuthOauth2TokenUrl());
+        cfg.setAuthOauth2ClientId(rc.getAuthOauth2ClientId());
+        cfg.setAuthOauth2ClientSecretEnc(rc.getAuthOauth2ClientSecret());
+        cfg.setAuthOauth2Scope(rc.getAuthOauth2Scope());
+        cfg.setSslVerify(rc.getSslVerify() != null ? rc.getSslVerify() : true);
+        cfg.setConnectTimeoutMs(rc.getConnectTimeoutMs() != null ? rc.getConnectTimeoutMs() : 5000);
+        cfg.setReadTimeoutMs(rc.getReadTimeoutMs() != null ? rc.getReadTimeoutMs() : 30000);
+        cfg.setFollowRedirects(rc.getFollowRedirects() != null ? rc.getFollowRedirects() : true);
+        cfg.setMaxResponseBytes(rc.getMaxResponseBytes() != null ? rc.getMaxResponseBytes() : 102400);
+        cfg.setAssertStatusCode(rc.getAssertStatusCode());
+        cfg.setAssertBodyContains(rc.getAssertBodyContains());
+        cfg.setAssertJsonPath(rc.getAssertJsonPath());
+        cfg.setAssertJsonValue(rc.getAssertJsonValue());
+        job.setRestConfig(cfg);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helper: SOAP job configuration
+    // -------------------------------------------------------------------------
+
+    private void applySoapConfig(SchedulerJobRequest req, SchedulerJob job) {
+        if (req.getSoapConfig() == null) {
+            return;
+        }
+        SchedulerSoapConfig cfg = new SchedulerSoapConfig();
+        cfg.setJob(job);
+        SchedulerJobRequest.SoapConfigRequest sc = req.getSoapConfig();
+        cfg.setWsdlUrl(sc.getWsdlUrl());
+        cfg.setEndpointUrl(sc.getEndpointUrl());
+        cfg.setServiceName(sc.getServiceName());
+        cfg.setPortName(sc.getPortName());
+        cfg.setOperationName(sc.getOperationName());
+        cfg.setSoapAction(sc.getSoapAction());
+        if (sc.getSoapVersion() != null) {
+            cfg.setSoapVersion(SoapVersion.valueOf(sc.getSoapVersion().toUpperCase()));
+        }
+        cfg.setSoapEnvelope(sc.getSoapEnvelope());
+        cfg.setExtraHeaders(sc.getExtraHeaders());
+        if (sc.getAuthType() != null) {
+            cfg.setAuthType(AuthType.valueOf(sc.getAuthType().toUpperCase()));
+        }
+        cfg.setAuthUsername(sc.getAuthUsername());
+        // Plaintext; service will encrypt
+        cfg.setAuthPasswordEnc(sc.getAuthPassword());
+        cfg.setAuthTokenEnc(sc.getAuthToken());
+        cfg.setSslVerify(sc.getSslVerify() != null ? sc.getSslVerify() : true);
+        cfg.setConnectTimeoutMs(sc.getConnectTimeoutMs() != null ? sc.getConnectTimeoutMs() : 5000);
+        cfg.setReadTimeoutMs(sc.getReadTimeoutMs() != null ? sc.getReadTimeoutMs() : 60000);
+        cfg.setMaxResponseBytes(sc.getMaxResponseBytes() != null ? sc.getMaxResponseBytes() : 524288);
+        job.setSoapConfig(cfg);
     }
 
     // -------------------------------------------------------------------------

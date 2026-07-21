@@ -5,6 +5,8 @@ import org.automatize.status.api.request.RefreshTokenRequest;
 import org.automatize.status.api.request.RegisterRequest;
 import org.automatize.status.api.response.AuthResponse;
 import org.automatize.status.api.response.MessageResponse;
+import org.automatize.status.exceptions.HashingException;
+import org.automatize.status.exceptions.UnauthorizedException;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.User;
 import org.automatize.status.repositories.OrganizationRepository;
@@ -57,6 +59,11 @@ public class AuthService {
      * Logger instance for authentication-related logging.
      */
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    /**
+     * Message used when a user cannot be found.
+     */
+    private static final String USER_NOT_FOUND = "User not found";
 
     /**
      * Spring Security authentication manager for validating user credentials.
@@ -115,7 +122,7 @@ public class AuthService {
         String refreshToken = jwtUtils.generateRefreshToken(userPrincipal.getUsername());
         
         User user = userRepository.findById(userPrincipal.getId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
         
         // HIGH-02: store hash of refresh token, never the plaintext
         user.setRefreshToken(hashToken(refreshToken));
@@ -195,16 +202,16 @@ public class AuthService {
         String refreshToken = refreshTokenRequest.getRefreshToken();
         
         if (!jwtUtils.validateJwtToken(refreshToken)) {
-            throw new RuntimeException("Invalid refresh token");
+            throw new UnauthorizedException("Invalid refresh token");
         }
 
         String username = jwtUtils.getUserNameFromJwtToken(refreshToken);
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
 
         // HIGH-02: compare hash of incoming token against stored hash
         if (!hashToken(refreshToken).equals(user.getRefreshToken())) {
-            throw new RuntimeException("Refresh token mismatch");
+            throw new UnauthorizedException("Refresh token mismatch");
         }
 
         String newAccessToken = jwtUtils.generateJwtTokenFromUserId(
@@ -254,7 +261,7 @@ public class AuthService {
             byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+            throw new HashingException("SHA-256 not available", e);
         }
     }
 
@@ -267,7 +274,7 @@ public class AuthService {
             UUID userId = jwtUtils.getUserIdFromJwtToken(jwt);
             
             User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
+                    .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
             
             user.setRefreshToken(null);
             userRepository.save(user);
@@ -294,13 +301,13 @@ public class AuthService {
      */
     public AuthResponse getCurrentUser(String token) {
         if (token == null || !token.startsWith("Bearer ")) {
-            throw new RuntimeException("Invalid authorization header");
+            throw new UnauthorizedException("Invalid authorization header");
         }
         String jwt = token.substring(7);
         UUID userId = jwtUtils.getUserIdFromJwtToken(jwt);
         
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException(USER_NOT_FOUND));
 
         AuthResponse response = new AuthResponse();
         response.setUserId(user.getId());

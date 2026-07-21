@@ -7,6 +7,8 @@ import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.api.response.PlatformEventResponse;
 import org.automatize.status.models.PlatformEvent;
 import org.automatize.status.services.PlatformEventService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,8 @@ import java.util.UUID;
 @RequestMapping("/api/events")
 @PreAuthorize("isAuthenticated()")
 public class PlatformEventController {
+
+    private static final Logger logger = LoggerFactory.getLogger(PlatformEventController.class);
 
     @Autowired
     private PlatformEventService platformEventService;
@@ -71,6 +75,7 @@ public class PlatformEventController {
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponse(event));
         } catch (RuntimeException e) {
+            logger.warn("Failed to log event with API key", e);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new MessageResponse(e.getMessage(), false));
         }
@@ -163,6 +168,7 @@ public class PlatformEventController {
             String newApiKey = platformEventService.regenerateComponentApiKey(componentId);
             return ResponseEntity.ok(java.util.Map.of("apiKey", newApiKey, "success", true));
         } catch (RuntimeException e) {
+            logger.warn("Failed to regenerate component API key", e);
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), false));
         }
     }
@@ -180,6 +186,7 @@ public class PlatformEventController {
             String newApiKey = platformEventService.regenerateAppApiKey(appId);
             return ResponseEntity.ok(java.util.Map.of("apiKey", newApiKey, "success", true));
         } catch (RuntimeException e) {
+            logger.warn("Failed to regenerate app API key", e);
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage(), false));
         }
     }

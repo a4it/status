@@ -99,7 +99,7 @@ public class EmailService {
             mailSender.send(message);
             logger.info("Sent HTML email to {} with subject: {}", to, subject);
         } catch (MessagingException e) {
-            logger.error("Failed to send HTML email to {}: {}", to, e.getMessage());
+            logger.error("Failed to send HTML email to {}: {}", to, e.getMessage(), e);
         }
     }
 

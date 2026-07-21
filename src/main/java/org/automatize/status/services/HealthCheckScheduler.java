@@ -39,6 +39,8 @@ public class HealthCheckScheduler {
 
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckScheduler.class);
 
+    private static final String CHECK_ERROR_PREFIX = "Check error: ";
+
     private final StatusAppRepository statusAppRepository;
     private final StatusComponentRepository statusComponentRepository;
     private final HealthCheckService healthCheckService;
@@ -78,7 +80,7 @@ public class HealthCheckScheduler {
         try {
             return settingsService.isEnabled();
         } catch (Exception e) {
-            logger.debug("Could not read health check enabled setting from database, using default: {}", healthCheckEnabledDefault);
+            logger.debug("Could not read health check enabled setting from database, using default: {}", healthCheckEnabledDefault, e);
             return healthCheckEnabledDefault;
         }
     }
@@ -186,7 +188,7 @@ public class HealthCheckScheduler {
         } catch (Exception e) {
             logger.error("Error during manual app check for {}: {}", appId, e.getMessage());
             long duration = System.currentTimeMillis() - startTime;
-            return new HealthCheckTriggerResponse(false, "Check error: " + e.getMessage(), duration);
+            return new HealthCheckTriggerResponse(false, CHECK_ERROR_PREFIX + e.getMessage(), duration);
         }
     }
 
@@ -239,7 +241,7 @@ public class HealthCheckScheduler {
         } catch (Exception e) {
             logger.error("Error during manual component check for {}: {}", componentId, e.getMessage());
             long duration = System.currentTimeMillis() - startTime;
-            return new HealthCheckTriggerResponse(false, "Check error: " + e.getMessage(), duration);
+            return new HealthCheckTriggerResponse(false, CHECK_ERROR_PREFIX + e.getMessage(), duration);
         }
     }
 
@@ -300,7 +302,7 @@ public class HealthCheckScheduler {
         } catch (Exception e) {
             logger.error("Error checking app {}: {}", app.getName(), e.getMessage());
             healthCheckService.updateAppCheckResult(app,
-                    new HealthCheckService.HealthCheckResult(false, "Check error: " + e.getMessage()));
+                    new HealthCheckService.HealthCheckResult(false, CHECK_ERROR_PREFIX + e.getMessage()));
         }
     }
 
@@ -328,7 +330,7 @@ public class HealthCheckScheduler {
         } catch (Exception e) {
             logger.error("Error checking component {}: {}", component.getName(), e.getMessage());
             healthCheckService.updateComponentCheckResult(component,
-                    new HealthCheckService.HealthCheckResult(false, "Check error: " + e.getMessage()));
+                    new HealthCheckService.HealthCheckResult(false, CHECK_ERROR_PREFIX + e.getMessage()));
         }
     }
 }

@@ -92,7 +92,8 @@ public class LogViewerService {
         long fileSize = 0;
         try {
             fileSize = Files.size(path);
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            logger.debug("Unable to determine size of log file: {}", filePath, e);
         }
 
         response.setLines(resultLines);

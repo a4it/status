@@ -1,5 +1,7 @@
 package org.automatize.status.services;
 
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.UnauthorizedException;
 import org.automatize.status.models.PlatformEvent;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
@@ -50,6 +52,8 @@ public class PlatformEventService {
     @Autowired
     private StatusComponentRepository statusComponentRepository;
 
+    private static final String INVALID_API_KEY = "Invalid API key";
+
     /**
      * Validates an API key and returns the associated app.
      *
@@ -60,10 +64,10 @@ public class PlatformEventService {
     @Transactional(readOnly = true)
     public StatusApp validateAppApiKey(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException("API key is required");
+            throw new BusinessRuleException("API key is required");
         }
         return statusAppRepository.findByApiKey(apiKey)
-                .orElseThrow(() -> new RuntimeException("Invalid API key"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_API_KEY));
     }
 
     /**
@@ -76,10 +80,10 @@ public class PlatformEventService {
     @Transactional(readOnly = true)
     public StatusComponent validateComponentApiKey(String apiKey) {
         if (apiKey == null || apiKey.isEmpty()) {
-            throw new RuntimeException("API key is required");
+            throw new BusinessRuleException("API key is required");
         }
         return statusComponentRepository.findByApiKey(apiKey)
-                .orElseThrow(() -> new RuntimeException("Invalid API key"));
+                .orElseThrow(() -> new UnauthorizedException(INVALID_API_KEY));
     }
 
     /**
@@ -103,7 +107,7 @@ public class PlatformEventService {
         if (app == null) {
             // Try to find by component API key
             component = statusComponentRepository.findByApiKey(apiKey)
-                    .orElseThrow(() -> new RuntimeException("Invalid API key"));
+                    .orElseThrow(() -> new UnauthorizedException(INVALID_API_KEY));
             app = component.getApp();
         }
 
@@ -143,7 +147,7 @@ public class PlatformEventService {
                     .orElseThrow(() -> new RuntimeException("Component not found with id: " + componentId));
 
             if (!component.getApp().getId().equals(appId)) {
-                throw new RuntimeException("Component does not belong to the specified app");
+                throw new BusinessRuleException("Component does not belong to the specified app");
             }
         }
 

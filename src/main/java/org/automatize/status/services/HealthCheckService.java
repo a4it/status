@@ -51,6 +51,21 @@ public class HealthCheckService {
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckService.class);
 
     /**
+     * Prefix used when reporting HTTP response codes in check messages.
+     */
+    private static final String HTTP_PREFIX = "HTTP ";
+
+    /**
+     * Status value representing degraded performance.
+     */
+    private static final String STATUS_DEGRADED = "DEGRADED_PERFORMANCE";
+
+    /**
+     * Status value representing a major outage.
+     */
+    private static final String STATUS_MAJOR_OUTAGE = "MAJOR_OUTAGE";
+
+    /**
      * Repository for status app data access and updates.
      */
     private final StatusAppRepository statusAppRepository;
@@ -169,6 +184,7 @@ public class HealthCheckService {
         try {
             uri = URI.create(urlString);
         } catch (IllegalArgumentException e) {
+            logger.debug("Invalid URL for HTTP GET check {}: {}", urlString, e.getMessage(), e);
             return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
         }
         String scheme = uri.getScheme();
@@ -189,9 +205,9 @@ public class HealthCheckService {
             long responseTime = System.currentTimeMillis() - startTime;
 
             if (responseCode == expectedStatus || (expectedStatus == 200 && responseCode >= 200 && responseCode < 300)) {
-                return new HealthCheckResult(true, "HTTP " + responseCode + " (" + responseTime + "ms)");
+                return new HealthCheckResult(true, HTTP_PREFIX + responseCode + " (" + responseTime + "ms)");
             } else {
-                return new HealthCheckResult(false, "HTTP " + responseCode + " (expected " + expectedStatus + ")");
+                return new HealthCheckResult(false, HTTP_PREFIX + responseCode + " (expected " + expectedStatus + ")");
             }
         } catch (IOException e) {
             logger.debug("HTTP GET failed for {}: {}", urlString, e.getMessage());
@@ -224,6 +240,7 @@ public class HealthCheckService {
         try {
             healthUri = URI.create(healthUrl);
         } catch (IllegalArgumentException e) {
+            logger.debug("Invalid URL for Spring Boot health check {}: {}", healthUrl, e.getMessage(), e);
             return new HealthCheckResult(false, "Invalid URL: " + e.getMessage());
         }
         String scheme = healthUri.getScheme();
@@ -244,19 +261,7 @@ public class HealthCheckService {
             int responseCode = connection.getResponseCode();
             long responseTime = System.currentTimeMillis() - startTime;
 
-            if (responseCode >= 200 && responseCode < 300) {
-                String responseBody = new String(connection.getInputStream().readAllBytes());
-                JsonNode jsonNode = objectMapper.readTree(responseBody);
-                String status = jsonNode.has("status") ? jsonNode.get("status").asText() : "UNKNOWN";
-
-                if ("UP".equalsIgnoreCase(status)) {
-                    return new HealthCheckResult(true, "Health: UP (" + responseTime + "ms)");
-                } else {
-                    return new HealthCheckResult(false, "Health: " + status);
-                }
-            } else {
-                return new HealthCheckResult(false, "HTTP " + responseCode);
-            }
+            return parseSpringBootHealthResponse(connection, responseCode, responseTime);
         } catch (IOException e) {
             logger.debug("Spring Boot health check failed for {}: {}", urlString, e.getMessage());
             return new HealthCheckResult(false, "Health check failed: " + e.getMessage());
@@ -264,6 +269,31 @@ public class HealthCheckService {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    /**
+     * Parses the Spring Boot Actuator health response and maps it to a check result.
+     *
+     * @param connection the open connection to read the response body from
+     * @param responseCode the HTTP response code
+     * @param responseTime the measured response time in milliseconds
+     * @return a HealthCheckResult reflecting the reported application status
+     * @throws IOException if reading or parsing the response fails
+     */
+    private HealthCheckResult parseSpringBootHealthResponse(HttpURLConnection connection, int responseCode, long responseTime) throws IOException {
+        if (responseCode >= 200 && responseCode < 300) {
+            String responseBody = new String(connection.getInputStream().readAllBytes());
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
+            String status = jsonNode.has("status") ? jsonNode.get("status").asText() : "UNKNOWN";
+
+            if ("UP".equalsIgnoreCase(status)) {
+                return new HealthCheckResult(true, "Health: UP (" + responseTime + "ms)");
+            } else {
+                return new HealthCheckResult(false, "Health: " + status);
+            }
+        } else {
+            return new HealthCheckResult(false, HTTP_PREFIX + responseCode);
         }
     }
 
@@ -350,7 +380,7 @@ public class HealthCheckService {
         if (result.success()) {
             app.setConsecutiveFailures(0);
             // Auto-restore to OPERATIONAL if it was auto-degraded
-            if ("DEGRADED_PERFORMANCE".equals(app.getStatus()) || "MAJOR_OUTAGE".equals(app.getStatus())) {
+            if (STATUS_DEGRADED.equals(app.getStatus()) || STATUS_MAJOR_OUTAGE.equals(app.getStatus())) {
                 app.setStatus("OPERATIONAL");
                 logger.info("App {} auto-restored from {} to OPERATIONAL", app.getName(), previousStatus);
 
@@ -358,30 +388,41 @@ public class HealthCheckService {
                 statusIncidentService.resolveAutomatedIncidents(app);
             }
         } else {
-            int failures = (app.getConsecutiveFailures() != null ? app.getConsecutiveFailures() : 0) + 1;
-            app.setConsecutiveFailures(failures);
-
-            Integer threshold = app.getCheckFailureThreshold() != null ? app.getCheckFailureThreshold() : 3;
-            if (failures >= threshold * 2) {
-                if (!"MAJOR_OUTAGE".equals(app.getStatus())) {
-                    app.setStatus("MAJOR_OUTAGE");
-                    logger.warn("App {} changed to MAJOR_OUTAGE after {} consecutive failures", app.getName(), failures);
-
-                    // Create or upgrade automated incident with CRITICAL severity
-                    statusIncidentService.createAutomatedIncident(app, "CRITICAL", result.message());
-                }
-            } else if (failures >= threshold) {
-                if (!"DEGRADED_PERFORMANCE".equals(app.getStatus()) && !"MAJOR_OUTAGE".equals(app.getStatus())) {
-                    app.setStatus("DEGRADED_PERFORMANCE");
-                    logger.warn("App {} changed to DEGRADED_PERFORMANCE after {} consecutive failures", app.getName(), failures);
-
-                    // Create automated incident with MAJOR severity
-                    statusIncidentService.createAutomatedIncident(app, "MAJOR", result.message());
-                }
-            }
+            handleFailedAppCheck(app, result);
         }
 
         statusAppRepository.save(app);
+    }
+
+    /**
+     * Handles a failed app health check by incrementing the failure counter and
+     * escalating the app status to DEGRADED_PERFORMANCE or MAJOR_OUTAGE when the
+     * configured thresholds are exceeded, creating automated incidents as needed.
+     *
+     * @param app the status app to update
+     * @param result the failed health check result
+     */
+    private void handleFailedAppCheck(StatusApp app, HealthCheckResult result) {
+        int failures = (app.getConsecutiveFailures() != null ? app.getConsecutiveFailures() : 0) + 1;
+        app.setConsecutiveFailures(failures);
+
+        Integer threshold = app.getCheckFailureThreshold() != null ? app.getCheckFailureThreshold() : 3;
+        if (failures >= threshold * 2) {
+            if (!STATUS_MAJOR_OUTAGE.equals(app.getStatus())) {
+                app.setStatus(STATUS_MAJOR_OUTAGE);
+                logger.warn("App {} changed to MAJOR_OUTAGE after {} consecutive failures", app.getName(), failures);
+
+                // Create or upgrade automated incident with CRITICAL severity
+                statusIncidentService.createAutomatedIncident(app, "CRITICAL", result.message());
+            }
+        } else if (failures >= threshold
+                && !STATUS_DEGRADED.equals(app.getStatus()) && !STATUS_MAJOR_OUTAGE.equals(app.getStatus())) {
+            app.setStatus(STATUS_DEGRADED);
+            logger.warn("App {} changed to DEGRADED_PERFORMANCE after {} consecutive failures", app.getName(), failures);
+
+            // Create automated incident with MAJOR severity
+            statusIncidentService.createAutomatedIncident(app, "MAJOR", result.message());
+        }
     }
 
     /**
@@ -406,30 +447,40 @@ public class HealthCheckService {
         if (result.success()) {
             component.setConsecutiveFailures(0);
             // Auto-restore to OPERATIONAL if it was auto-degraded
-            if ("DEGRADED_PERFORMANCE".equals(component.getStatus()) || "MAJOR_OUTAGE".equals(component.getStatus())) {
+            if (STATUS_DEGRADED.equals(component.getStatus()) || STATUS_MAJOR_OUTAGE.equals(component.getStatus())) {
                 String previousStatus = component.getStatus();
                 component.setStatus("OPERATIONAL");
                 logger.info("Component {} auto-restored from {} to OPERATIONAL", component.getName(), previousStatus);
             }
         } else {
-            int failures = (component.getConsecutiveFailures() != null ? component.getConsecutiveFailures() : 0) + 1;
-            component.setConsecutiveFailures(failures);
-
-            Integer threshold = component.getCheckFailureThreshold() != null ? component.getCheckFailureThreshold() : 3;
-            if (failures >= threshold * 2) {
-                if (!"MAJOR_OUTAGE".equals(component.getStatus())) {
-                    component.setStatus("MAJOR_OUTAGE");
-                    logger.warn("Component {} changed to MAJOR_OUTAGE after {} consecutive failures", component.getName(), failures);
-                }
-            } else if (failures >= threshold) {
-                if (!"DEGRADED_PERFORMANCE".equals(component.getStatus()) && !"MAJOR_OUTAGE".equals(component.getStatus())) {
-                    component.setStatus("DEGRADED_PERFORMANCE");
-                    logger.warn("Component {} changed to DEGRADED_PERFORMANCE after {} consecutive failures", component.getName(), failures);
-                }
-            }
+            handleFailedComponentCheck(component);
         }
 
         statusComponentRepository.save(component);
+    }
+
+    /**
+     * Handles a failed component health check by incrementing the failure counter
+     * and escalating the component status to DEGRADED_PERFORMANCE or MAJOR_OUTAGE
+     * when the configured thresholds are exceeded.
+     *
+     * @param component the status component to update
+     */
+    private void handleFailedComponentCheck(StatusComponent component) {
+        int failures = (component.getConsecutiveFailures() != null ? component.getConsecutiveFailures() : 0) + 1;
+        component.setConsecutiveFailures(failures);
+
+        Integer threshold = component.getCheckFailureThreshold() != null ? component.getCheckFailureThreshold() : 3;
+        if (failures >= threshold * 2) {
+            if (!STATUS_MAJOR_OUTAGE.equals(component.getStatus())) {
+                component.setStatus(STATUS_MAJOR_OUTAGE);
+                logger.warn("Component {} changed to MAJOR_OUTAGE after {} consecutive failures", component.getName(), failures);
+            }
+        } else if (failures >= threshold
+                && !STATUS_DEGRADED.equals(component.getStatus()) && !STATUS_MAJOR_OUTAGE.equals(component.getStatus())) {
+            component.setStatus(STATUS_DEGRADED);
+            logger.warn("Component {} changed to DEGRADED_PERFORMANCE after {} consecutive failures", component.getName(), failures);
+        }
     }
 
     /**
