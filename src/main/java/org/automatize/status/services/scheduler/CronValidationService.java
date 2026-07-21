@@ -1,5 +1,7 @@
 package org.automatize.status.services.scheduler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +25,8 @@ import java.util.List;
 @Service
 public class CronValidationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(CronValidationService.class);
+
     /**
      * Returns {@code true} when the expression is a valid 6-field Spring cron expression.
      *
@@ -35,6 +39,7 @@ public class CronValidationService {
             CronExpression.parse(cronExpression);
             return true;
         } catch (Exception e) {
+            logger.debug("Invalid cron expression '{}': {}", cronExpression, e.getMessage());
             return false;
         }
     }
@@ -51,6 +56,7 @@ public class CronValidationService {
             CronExpression.parse(cronExpression);
             return null;
         } catch (Exception e) {
+            logger.debug("Cron validation failed for '{}': {}", cronExpression, e.getMessage());
             return e.getMessage();
         }
     }
@@ -75,7 +81,7 @@ public class CronValidationService {
                 result.add(current);
             }
         } catch (Exception e) {
-            // Return empty list on any parse/compute error
+            logger.debug("Failed to compute next executions for '{}': {}", cronExpression, e.getMessage());
         }
         return result;
     }

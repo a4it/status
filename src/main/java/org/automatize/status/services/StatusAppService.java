@@ -5,6 +5,9 @@ import org.automatize.status.api.response.StatusAppResponse;
 import org.automatize.status.api.response.StatusComponentResponse;
 import org.automatize.status.api.response.StatusIncidentResponse;
 import org.automatize.status.api.response.StatusMaintenanceResponse;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.*;
 import org.automatize.status.repositories.OrganizationRepository;
 import org.automatize.status.repositories.StatusAppRepository;
@@ -50,6 +53,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class StatusAppService {
+
+    private static final String STATUS_APP_NOT_FOUND = "Status app not found with id: ";
 
     /**
      * Repository for status app data access operations.
@@ -130,7 +135,7 @@ public class StatusAppService {
     @Transactional(readOnly = true)
     public StatusAppResponse getStatusAppById(UUID id) {
         StatusApp app = statusAppRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND + id));
         return mapToResponse(app);
     }
 
@@ -181,7 +186,7 @@ public class StatusAppService {
     public StatusAppResponse createStatusApp(StatusAppRequest request) {
         if (request.getTenantId() != null && 
             statusAppRepository.existsByTenantIdAndSlug(request.getTenantId(), request.getSlug())) {
-            throw new RuntimeException("Status app with slug already exists in this tenant: " + request.getSlug());
+            throw new DuplicateResourceException("Status app with slug already exists in this tenant: " + request.getSlug());
         }
 
         StatusApp app = new StatusApp();
@@ -189,13 +194,13 @@ public class StatusAppService {
         
         if (request.getTenantId() != null) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             app.setTenant(tenant);
         }
         
         if (request.getOrganizationId() != null) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             app.setOrganization(organization);
         }
 
@@ -227,12 +232,12 @@ public class StatusAppService {
      */
     public StatusAppResponse updateStatusApp(UUID id, StatusAppRequest request) {
         StatusApp app = statusAppRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND + id));
 
         if (!app.getSlug().equals(request.getSlug()) && 
             request.getTenantId() != null &&
             statusAppRepository.existsByTenantIdAndSlug(request.getTenantId(), request.getSlug())) {
-            throw new RuntimeException("Status app with slug already exists in this tenant: " + request.getSlug());
+            throw new DuplicateResourceException("Status app with slug already exists in this tenant: " + request.getSlug());
         }
 
         mapRequestToStatusApp(request, app);
@@ -240,21 +245,21 @@ public class StatusAppService {
         if (request.getTenantId() != null && 
             (app.getTenant() == null || !app.getTenant().getId().equals(request.getTenantId()))) {
             Tenant tenant = tenantRepository.findById(request.getTenantId())
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             app.setTenant(tenant);
         }
         
         if (request.getOrganizationId() != null &&
             (app.getOrganization() == null || !app.getOrganization().getId().equals(request.getOrganizationId()))) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             app.setOrganization(organization);
         }
 
         if (request.getPlatformId() != null) {
             if (app.getPlatform() == null || !app.getPlatform().getId().equals(request.getPlatformId())) {
                 StatusPlatform platform = statusPlatformRepository.findById(request.getPlatformId())
-                        .orElseThrow(() -> new RuntimeException("Platform not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Platform not found"));
                 app.setPlatform(platform);
             }
         } else {
@@ -286,7 +291,7 @@ public class StatusAppService {
      */
     public StatusAppResponse updateStatus(UUID id, String status) {
         StatusApp app = statusAppRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND + id));
         
         app.setStatus(status);
         app.setLastModifiedBy(getCurrentUsername());
@@ -319,18 +324,18 @@ public class StatusAppService {
      */
     public void deleteStatusApp(UUID id) {
         StatusApp app = statusAppRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Status app not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND + id));
         
         // Check for active incidents
         Long activeIncidents = statusIncidentRepository.countActiveIncidentsByAppId(id);
         if (activeIncidents > 0) {
-            throw new RuntimeException("Cannot delete app with active incidents");
+            throw new BusinessRuleException("Cannot delete app with active incidents");
         }
         
         // Check for upcoming maintenance
         Long activeMaintenance = statusMaintenanceRepository.countActiveMaintenanceByAppId(id);
         if (activeMaintenance > 0) {
-            throw new RuntimeException("Cannot delete app with upcoming maintenance");
+            throw new BusinessRuleException("Cannot delete app with upcoming maintenance");
         }
         
         statusAppRepository.delete(app);

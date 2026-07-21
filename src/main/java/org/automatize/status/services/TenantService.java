@@ -1,6 +1,8 @@
 package org.automatize.status.services;
 
 import org.automatize.status.api.request.TenantRequest;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.Tenant;
 import org.automatize.status.repositories.TenantRepository;
 import org.automatize.status.security.UserPrincipal;
@@ -69,7 +71,7 @@ public class TenantService {
     @Transactional(readOnly = true)
     public Tenant getTenantById(UUID id) {
         return tenantRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tenant not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with id: " + id));
     }
 
     /**
@@ -82,7 +84,7 @@ public class TenantService {
     @Transactional(readOnly = true)
     public Tenant getTenantByName(String name) {
         return tenantRepository.findByName(name)
-                .orElseThrow(() -> new RuntimeException("Tenant not found with name: " + name));
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found with name: " + name));
     }
 
     /**
@@ -97,7 +99,7 @@ public class TenantService {
      */
     public Tenant createTenant(TenantRequest request) {
         if (tenantRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Tenant with name already exists: " + request.getName());
+            throw new DuplicateResourceException("Tenant with name already exists: " + request.getName());
         }
 
         Tenant tenant = new Tenant();
@@ -128,7 +130,7 @@ public class TenantService {
 
         if (!tenant.getName().equals(request.getName()) &&
             tenantRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Tenant with name already exists: " + request.getName());
+            throw new DuplicateResourceException("Tenant with name already exists: " + request.getName());
         }
 
         tenant.setName(request.getName());

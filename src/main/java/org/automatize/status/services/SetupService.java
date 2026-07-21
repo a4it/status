@@ -4,6 +4,7 @@ import org.automatize.status.api.request.*;
 import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.api.response.SetupStatusResponse;
 import org.automatize.status.config.SetupFilter;
+import org.automatize.status.exceptions.SetupException;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.Tenant;
 import org.automatize.status.models.User;
@@ -35,6 +36,12 @@ import java.util.*;
 public class SetupService {
 
     private static final Logger logger = LoggerFactory.getLogger(SetupService.class);
+
+    private static final String PROP_DATASOURCE_URL = "spring.datasource.url";
+    private static final String PROP_DATASOURCE_USERNAME = "spring.datasource.username";
+    private static final String PROP_DATASOURCE_PASSWORD = "spring.datasource.password";
+    private static final String PROP_JWT_SECRET = "jwt.secret";
+    private static final String PROP_MAIL_PASSWORD = "spring.mail.password";
 
     @Autowired
     private TenantService tenantService;
@@ -91,6 +98,7 @@ public class SetupService {
         try (var conn = dataSource.getConnection()) {
             status.setDbConnected(conn.isValid(2));
         } catch (Exception e) {
+            logger.warn("DB connection check failed during setup status: {}", e.getMessage(), e);
             status.setDbConnected(false);
             status.setDbError(e.getMessage());
         }
@@ -108,6 +116,7 @@ public class SetupService {
                 status.setFlywayVersion("unknown");
             }
         } catch (Exception e) {
+            logger.warn("Could not read Flyway migration info during setup status: {}", e.getMessage(), e);
             status.setFlywayVersion("unknown");
         }
 
@@ -188,10 +197,10 @@ public class SetupService {
         try (Connection conn = DriverManager.getConnection(request.getUrl(), request.getUsername(), password)) {
             if (conn.isValid(5)) {
                 if (request.isSaveToProperties()) {
-                    writeProperty("spring.datasource.url", request.getUrl());
-                    writeProperty("spring.datasource.username", request.getUsername());
+                    writeProperty(PROP_DATASOURCE_URL, request.getUrl());
+                    writeProperty(PROP_DATASOURCE_USERNAME, request.getUsername());
                     if (!password.isEmpty()) {
-                        writeProperty("spring.datasource.password", password);
+                        writeProperty(PROP_DATASOURCE_PASSWORD, password);
                     }
                 }
                 return new MessageResponse("Connection successful.", true);
@@ -218,7 +227,7 @@ public class SetupService {
             logger.info("Setup wizard completed. app.setup.completed=true written to properties file.");
         } catch (IOException e) {
             logger.error("Failed to write app.setup.completed=true to properties file", e);
-            throw new RuntimeException("Could not persist setup completion: " + e.getMessage(), e);
+            throw new SetupException("Could not persist setup completion: " + e.getMessage(), e);
         }
     }
 
@@ -238,8 +247,8 @@ public class SetupService {
 
         Map<String, List<PropertyEntry>> groups = new LinkedHashMap<>();
         groups.put("Critical", buildGroup(props, descriptions, sensitive,
-                "spring.datasource.url", "spring.datasource.username", "spring.datasource.password",
-                "jwt.secret", "server.port"));
+                PROP_DATASOURCE_URL, PROP_DATASOURCE_USERNAME, PROP_DATASOURCE_PASSWORD,
+                PROP_JWT_SECRET, "server.port"));
         groups.put("Important", buildGroup(props, descriptions, sensitive,
                 "jwt.expiration", "jwt.refresh.expiration",
                 "app.registration.enabled",
@@ -247,7 +256,7 @@ public class SetupService {
                 "health-check.default-interval-seconds"));
         groups.put("Optional", buildGroup(props, descriptions, sensitive,
                 "app.email.enabled", "spring.mail.host", "spring.mail.port",
-                "spring.mail.username", "spring.mail.password"));
+                "spring.mail.username", PROP_MAIL_PASSWORD));
         groups.put("Advanced", buildGroup(props, descriptions, sensitive,
                 "logging.level.org.springframework.security",
                 "logging.level.org.automatize.status",
@@ -345,10 +354,10 @@ public class SetupService {
 
     private Map<String, String> buildDescriptions() {
         Map<String, String> d = new LinkedHashMap<>();
-        d.put("spring.datasource.url", "PostgreSQL JDBC URL (jdbc:postgresql://host:port/dbname)");
-        d.put("spring.datasource.username", "Database username");
-        d.put("spring.datasource.password", "Database password");
-        d.put("jwt.secret", "JWT signing secret (Base64 encoded, min 256 bits)");
+        d.put(PROP_DATASOURCE_URL, "PostgreSQL JDBC URL (jdbc:postgresql://host:port/dbname)");
+        d.put(PROP_DATASOURCE_USERNAME, "Database username");
+        d.put(PROP_DATASOURCE_PASSWORD, "Database password");
+        d.put(PROP_JWT_SECRET, "JWT signing secret (Base64 encoded, min 256 bits)");
         d.put("server.port", "HTTP port the application listens on");
         d.put("jwt.expiration", "Access token expiry in milliseconds (86400000 = 24h)");
         d.put("jwt.refresh.expiration", "Refresh token expiry in milliseconds (604800000 = 7d)");
@@ -360,7 +369,7 @@ public class SetupService {
         d.put("spring.mail.host", "SMTP server hostname");
         d.put("spring.mail.port", "SMTP server port (587 for STARTTLS)");
         d.put("spring.mail.username", "SMTP sender email address");
-        d.put("spring.mail.password", "SMTP authentication password");
+        d.put(PROP_MAIL_PASSWORD, "SMTP authentication password");
         d.put("logging.level.org.springframework.security", "Spring Security log level (DEBUG/INFO/WARN)");
         d.put("logging.level.org.automatize.status", "Application log level (DEBUG/INFO/WARN)");
         d.put("logs.retention.days", "Days to retain log entries before auto-deletion");
@@ -371,9 +380,9 @@ public class SetupService {
 
     private Map<String, Boolean> buildSensitiveKeys() {
         Map<String, Boolean> s = new HashMap<>();
-        s.put("spring.datasource.password", true);
-        s.put("jwt.secret", true);
-        s.put("spring.mail.password", true);
+        s.put(PROP_DATASOURCE_PASSWORD, true);
+        s.put(PROP_JWT_SECRET, true);
+        s.put(PROP_MAIL_PASSWORD, true);
         return s;
     }
 

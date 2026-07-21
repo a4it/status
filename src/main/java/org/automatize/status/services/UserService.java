@@ -2,6 +2,10 @@ package org.automatize.status.services;
 
 import org.automatize.status.api.request.PasswordChangeRequest;
 import org.automatize.status.api.request.UserRequest;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
+import org.automatize.status.exceptions.UnauthorizedException;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.User;
 import org.automatize.status.repositories.OrganizationRepository;
@@ -11,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,6 +48,11 @@ import java.util.UUID;
 @Service
 @Transactional
 public class UserService {
+
+    /**
+     * Role name granting administrative privileges.
+     */
+    private static final String ROLE_ADMIN = "ADMIN";
 
     /**
      * Repository for user data access operations.
@@ -105,7 +115,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public User getUserById(UUID id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
     }
 
     /**
@@ -145,11 +155,11 @@ public class UserService {
      */
     public User createUser(UserRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+            throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
         User user = new User();
@@ -161,10 +171,10 @@ public class UserService {
         
         if (request.getOrganizationId() != null) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             user.setOrganization(organization);
         }
-        
+
         String currentUser = getCurrentUsername();
         user.setCreatedBy(currentUser);
         user.setLastModifiedBy(currentUser);
@@ -191,31 +201,31 @@ public class UserService {
         UserPrincipal currentUser = getCurrentUserPrincipal();
         
         // Check if user is updating their own profile or has admin role
-        if (!currentUser.getId().equals(id) && !currentUser.getRole().equals("ADMIN")) {
-            throw new RuntimeException("Insufficient permissions to update this user");
+        if (!currentUser.getId().equals(id) && !ROLE_ADMIN.equals(currentUser.getRole())) {
+            throw new AccessDeniedException("Insufficient permissions to update this user");
         }
 
-        if (!user.getUsername().equals(request.getUsername()) && 
+        if (!user.getUsername().equals(request.getUsername()) &&
             userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+            throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
-        if (!user.getEmail().equals(request.getEmail()) && 
+        if (!user.getEmail().equals(request.getEmail()) &&
             userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
         mapRequestToUser(request, user);
-        
+
         // Only admin can change password during update
-        if (request.getPassword() != null && currentUser.getRole().equals("ADMIN")) {
+        if (request.getPassword() != null && ROLE_ADMIN.equals(currentUser.getRole())) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
-        
+
         // Only admin can change organization
-        if (request.getOrganizationId() != null && currentUser.getRole().equals("ADMIN")) {
+        if (request.getOrganizationId() != null && ROLE_ADMIN.equals(currentUser.getRole())) {
             Organization organization = organizationRepository.findById(request.getOrganizationId())
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             user.setOrganization(organization);
         }
         
@@ -239,14 +249,14 @@ public class UserService {
         UserPrincipal principal = getCurrentUserPrincipal();
         User user = getUserById(principal.getId());
 
-        if (!user.getUsername().equals(request.getUsername()) && 
+        if (!user.getUsername().equals(request.getUsername()) &&
             userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists: " + request.getUsername());
+            throw new DuplicateResourceException("Username already exists: " + request.getUsername());
         }
 
-        if (!user.getEmail().equals(request.getEmail()) && 
+        if (!user.getEmail().equals(request.getEmail()) &&
             userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists: " + request.getEmail());
+            throw new DuplicateResourceException("Email already exists: " + request.getEmail());
         }
 
         user.setUsername(request.getUsername());
@@ -276,14 +286,14 @@ public class UserService {
         UserPrincipal currentUser = getCurrentUserPrincipal();
         
         // Check if user is changing their own password or has admin role
-        if (!currentUser.getId().equals(id) && !currentUser.getRole().equals("ADMIN")) {
-            throw new RuntimeException("Insufficient permissions to change password for this user");
+        if (!currentUser.getId().equals(id) && !ROLE_ADMIN.equals(currentUser.getRole())) {
+            throw new AccessDeniedException("Insufficient permissions to change password for this user");
         }
-        
+
         // Verify current password if user is changing their own password
-        if (currentUser.getId().equals(id) && 
+        if (currentUser.getId().equals(id) &&
             !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new BusinessRuleException("Current password is incorrect");
         }
         
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -387,6 +397,6 @@ public class UserService {
         if (principal instanceof UserPrincipal) {
             return (UserPrincipal) principal;
         }
-        throw new RuntimeException("Unable to get current user");
+        throw new UnauthorizedException("Unable to get current user");
     }
 }

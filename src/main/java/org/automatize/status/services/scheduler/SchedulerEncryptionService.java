@@ -1,5 +1,6 @@
 package org.automatize.status.services.scheduler;
 
+import org.automatize.status.exceptions.EncryptionException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -66,7 +67,7 @@ public class SchedulerEncryptionService {
             System.arraycopy(ciphertext, 0, combined, iv.length, ciphertext.length);
             return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to encrypt value", e);
+            throw new EncryptionException("Failed to encrypt value", e);
         }
     }
 
@@ -89,7 +90,7 @@ public class SchedulerEncryptionService {
             cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_LENGTH, iv));
             return new String(cipher.doFinal(encrypted));
         } catch (Exception e) {
-            throw new RuntimeException("Failed to decrypt value", e);
+            throw new EncryptionException("Failed to decrypt value", e);
         }
     }
 

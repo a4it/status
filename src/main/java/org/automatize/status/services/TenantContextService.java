@@ -1,6 +1,8 @@
 package org.automatize.status.services;
 
 import org.automatize.status.api.response.ContextResponse;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.Organization;
 import org.automatize.status.models.Tenant;
 import org.automatize.status.models.User;
@@ -43,25 +45,25 @@ public class TenantContextService {
 
     public ContextResponse switchContext(UUID userId, UUID tenantId, UUID organizationId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!"SUPERADMIN".equals(user.getRole())) {
             throw new AccessDeniedException("Only SUPERADMIN can switch context");
         }
 
         Tenant tenant = tenantRepository.findById(tenantId)
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
         if (!Boolean.TRUE.equals(tenant.getIsActive())) {
-            throw new RuntimeException("Tenant is not active");
+            throw new BusinessRuleException("Tenant is not active");
         }
 
         Organization org = organizationRepository.findById(organizationId)
-                .orElseThrow(() -> new RuntimeException("Organization not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
         if (!"ACTIVE".equals(org.getStatus())) {
-            throw new RuntimeException("Organization is not active");
+            throw new BusinessRuleException("Organization is not active");
         }
         if (org.getTenant() == null || !tenantId.equals(org.getTenant().getId())) {
-            throw new RuntimeException("Organization does not belong to the selected tenant");
+            throw new BusinessRuleException("Organization does not belong to the selected tenant");
         }
 
         String newToken = jwtUtils.generateJwtTokenWithContext(

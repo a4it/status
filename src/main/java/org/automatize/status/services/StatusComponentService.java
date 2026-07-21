@@ -3,6 +3,9 @@ package org.automatize.status.services;
 import org.automatize.status.api.request.StatusComponentRequest;
 import org.automatize.status.api.response.StatusComponentResponse;
 import org.automatize.status.controllers.api.ComponentOrderRequest;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
 import org.automatize.status.repositories.StatusAppRepository;
@@ -46,6 +49,16 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class StatusComponentService {
+
+    /**
+     * Message fragment used when a component cannot be located by its identifier.
+     */
+    private static final String COMPONENT_NOT_FOUND = "Component not found with id: ";
+
+    /**
+     * Message used when a referenced status app cannot be located.
+     */
+    private static final String STATUS_APP_NOT_FOUND = "Status app not found";
 
     /**
      * Repository for status component data access operations.
@@ -105,12 +118,12 @@ public class StatusComponentService {
      *
      * @param id the UUID of the component
      * @return the StatusComponentResponse for the requested component
-     * @throws RuntimeException if the component is not found
+     * @throws ResourceNotFoundException if the component is not found
      */
     @Transactional(readOnly = true)
     public StatusComponentResponse getComponentById(UUID id) {
         StatusComponent component = statusComponentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Component not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + id));
         return mapToResponse(component);
     }
 
@@ -136,15 +149,15 @@ public class StatusComponentService {
      *
      * @param request the component creation request
      * @return the newly created StatusComponentResponse
-     * @throws RuntimeException if the app is not found
-     * @throws RuntimeException if a component with the same name already exists in the app
+     * @throws ResourceNotFoundException if the app is not found
+     * @throws DuplicateResourceException if a component with the same name already exists in the app
      */
     public StatusComponentResponse createComponent(StatusComponentRequest request) {
         StatusApp app = statusAppRepository.findById(request.getAppId())
-                .orElseThrow(() -> new RuntimeException("Status app not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
         if (statusComponentRepository.existsByAppIdAndName(request.getAppId(), request.getName())) {
-            throw new RuntimeException("Component with name already exists in this app: " + request.getName());
+            throw new DuplicateResourceException("Component with name already exists in this app: " + request.getName());
         }
 
         StatusComponent component = new StatusComponent();
@@ -174,23 +187,23 @@ public class StatusComponentService {
      * @param id the UUID of the component to update
      * @param request the component update request
      * @return the updated StatusComponentResponse
-     * @throws RuntimeException if the component is not found
-     * @throws RuntimeException if the new name conflicts with an existing component
+     * @throws ResourceNotFoundException if the component is not found
+     * @throws DuplicateResourceException if the new name conflicts with an existing component
      */
     public StatusComponentResponse updateComponent(UUID id, StatusComponentRequest request) {
         StatusComponent component = statusComponentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Component not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + id));
 
-        if (!component.getName().equals(request.getName()) && 
+        if (!component.getName().equals(request.getName()) &&
             statusComponentRepository.existsByAppIdAndName(component.getApp().getId(), request.getName())) {
-            throw new RuntimeException("Component with name already exists in this app: " + request.getName());
+            throw new DuplicateResourceException("Component with name already exists in this app: " + request.getName());
         }
 
         mapRequestToComponent(request, component);
         
         if (request.getAppId() != null && !component.getApp().getId().equals(request.getAppId())) {
             StatusApp app = statusAppRepository.findById(request.getAppId())
-                    .orElseThrow(() -> new RuntimeException("Status app not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
             component.setApp(app);
         }
         
@@ -215,11 +228,11 @@ public class StatusComponentService {
      * @param id the UUID of the component
      * @param status the new status value
      * @return the updated StatusComponentResponse
-     * @throws RuntimeException if the component is not found
+     * @throws ResourceNotFoundException if the component is not found
      */
     public StatusComponentResponse updateStatus(UUID id, String status) {
         StatusComponent component = statusComponentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Component not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + id));
         
         component.setStatus(status);
         component.setLastModifiedBy(getCurrentUsername());
@@ -239,24 +252,24 @@ public class StatusComponentService {
      * </p>
      *
      * @param id the UUID of the component to delete
-     * @throws RuntimeException if the component is not found
-     * @throws RuntimeException if the component has active incidents
-     * @throws RuntimeException if the component has scheduled maintenance
+     * @throws ResourceNotFoundException if the component is not found
+     * @throws BusinessRuleException if the component has active incidents
+     * @throws BusinessRuleException if the component has scheduled maintenance
      */
     public void deleteComponent(UUID id) {
         StatusComponent component = statusComponentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Component not found with id: " + id));
-        
+                .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + id));
+
         // Check for active incidents
         Long activeIncidents = statusIncidentComponentRepository.countByComponentId(id);
         if (activeIncidents > 0) {
-            throw new RuntimeException("Cannot delete component with active incidents");
+            throw new BusinessRuleException("Cannot delete component with active incidents");
         }
-        
+
         // Check for upcoming maintenance
         Long activeMaintenance = statusMaintenanceComponentRepository.countByComponentId(id);
         if (activeMaintenance > 0) {
-            throw new RuntimeException("Cannot delete component with scheduled maintenance");
+            throw new BusinessRuleException("Cannot delete component with scheduled maintenance");
         }
         
         statusComponentRepository.delete(component);
@@ -266,13 +279,13 @@ public class StatusComponentService {
      * Reorders components based on the provided order requests.
      *
      * @param orderRequests a list of ComponentOrderRequest objects specifying new positions
-     * @throws RuntimeException if any component in the list is not found
+     * @throws ResourceNotFoundException if any component in the list is not found
      */
     @Transactional
     public void reorderComponents(List<ComponentOrderRequest> orderRequests) {
         for (ComponentOrderRequest orderRequest : orderRequests) {
             StatusComponent component = statusComponentRepository.findById(orderRequest.getComponentId())
-                    .orElseThrow(() -> new RuntimeException("Component not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(COMPONENT_NOT_FOUND + orderRequest.getComponentId()));
             
             component.setPosition(orderRequest.getPosition());
             component.setLastModifiedBy(getCurrentUsername());
@@ -315,8 +328,8 @@ public class StatusComponentService {
         }
         
         StatusApp app = statusAppRepository.findById(appId)
-                .orElseThrow(() -> new RuntimeException("Status app not found"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
+
         if (!app.getStatus().equals(appStatus)) {
             app.setStatus(appStatus);
             app.setLastModifiedBy(getCurrentUsername());

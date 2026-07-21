@@ -1,6 +1,7 @@
 package org.automatize.status.services.scheduler;
 
 import jakarta.annotation.PostConstruct;
+import org.automatize.status.exceptions.JobSchedulingException;
 import org.automatize.status.models.SchedulerJob;
 import org.automatize.status.models.scheduler.JobStatus;
 import org.automatize.status.repositories.SchedulerJobRepository;
@@ -87,7 +88,7 @@ public class SchedulerEngineService {
      * No-ops when the job is disabled or not in ACTIVE status.
      *
      * @param job the job to schedule
-     * @throws RuntimeException when the cron expression is invalid or scheduling fails
+     * @throws JobSchedulingException when the cron expression is invalid or scheduling fails
      */
     public void registerJob(SchedulerJob job) {
         unregisterJob(job.getId());
@@ -105,7 +106,7 @@ public class SchedulerEngineService {
             scheduledTasks.put(jobId, future);
         } catch (Exception e) {
             logger.error("Failed to register cron job {}: {}", job.getId(), e.getMessage(), e);
-            throw new RuntimeException("Failed to schedule job: " + e.getMessage(), e);
+            throw new JobSchedulingException("Failed to schedule job: " + e.getMessage(), e);
         }
     }
 
