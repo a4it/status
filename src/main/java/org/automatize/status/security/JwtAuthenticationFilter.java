@@ -94,16 +94,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
+            // Only proceed when a non-blank token is present and passes validation
             if (StringUtils.hasText(jwt) && jwtUtils.validateJwtToken(jwt)) {
                 java.util.UUID userId = jwtUtils.getUserIdFromJwtToken(jwt);
                 java.util.UUID tenantId = jwtUtils.getTenantIdFromJwtToken(jwt);
                 java.util.UUID organizationId = jwtUtils.getOrganizationIdFromJwtToken(jwt);
 
                 UserDetails userDetails;
+                // Token carries both user ID and tenant context: load user with that context
                 if (userId != null && tenantId != null) {
                     userDetails = customUserDetailsService.loadUserByIdWithContext(userId, tenantId, organizationId);
+                // Token carries only a user ID: load user by ID without context
                 } else if (userId != null) {
                     userDetails = customUserDetailsService.loadUserById(userId);
+                // No user ID claim: fall back to loading by username (subject)
                 } else {
                     String username = jwtUtils.getUserNameFromJwtToken(jwt);
                     userDetails = customUserDetailsService.loadUserByUsername(username);
@@ -135,6 +139,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      */
     private String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
+        // Header is present and uses the expected "Bearer " scheme
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }

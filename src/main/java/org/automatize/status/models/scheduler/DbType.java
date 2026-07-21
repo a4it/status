@@ -6,15 +6,26 @@ package org.automatize.status.models.scheduler;
  */
 public enum DbType {
 
+    /** PostgreSQL database (default port 5432). */
     POSTGRESQL("org.postgresql.Driver", "jdbc:postgresql://%s:%d/%s", 5432),
+    /** MySQL database using the Connector/J driver (default port 3306). */
     MYSQL("com.mysql.cj.jdbc.Driver", "jdbc:mysql://%s:%d/%s", 3306),
+    /** MariaDB database (default port 3306). */
     MARIADB("org.mariadb.jdbc.Driver", "jdbc:mariadb://%s:%d/%s", 3306),
+    /** H2 database in TCP server mode (default port 9092). */
     H2("org.h2.Driver", "jdbc:h2:tcp://%s:%d/%s", 9092);
 
     private final String driverClass;
     private final String urlTemplate;
     private final int defaultPort;
 
+    /**
+     * Creates a database type constant.
+     *
+     * @param driverClass the fully-qualified JDBC driver class name
+     * @param urlTemplate the JDBC URL template with host, port, and database placeholders
+     * @param defaultPort the default TCP port for this database engine
+     */
     DbType(String driverClass, String urlTemplate, int defaultPort) {
         this.driverClass = driverClass;
         this.urlTemplate = urlTemplate;

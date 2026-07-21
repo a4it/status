@@ -76,6 +76,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     private final StatusAppRepository statusAppRepository;
     private final LogRepository logRepository;
 
+    /**
+     * Constructs the process mining data initializer with the repositories it needs
+     * to look up the demo tenant/organization and to persist the demo platform,
+     * apps and generated log traces.
+     *
+     * @param tenantRepository         repository used to locate the demo tenant
+     * @param organizationRepository   repository used to locate the demo organization
+     * @param statusPlatformRepository repository used to persist and clean up the demo platform
+     * @param statusAppRepository      repository used to persist and clean up the demo apps/services
+     * @param logRepository            repository used to persist and clean up the generated log traces
+     */
     public ProcessMiningDataInitializer(TenantRepository tenantRepository,
                                         OrganizationRepository organizationRepository,
                                         StatusPlatformRepository statusPlatformRepository,
@@ -88,26 +99,41 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         this.logRepository = logRepository;
     }
 
+    /**
+     * Seeds the process mining demo data on application startup.
+     * <p>
+     * Skips seeding when the initializer is disabled, when the setup wizard has not
+     * completed, or when the default tenant/organization are missing. Otherwise it
+     * wipes any previous demo data, then recreates the demo platform, its services
+     * and a fresh set of correlated log traces.
+     * </p>
+     *
+     * @param args command line arguments (unused)
+     */
     @Override
     @Transactional
     public void run(String... args) {
+        // Initializer switched off via configuration — nothing to seed
         if (!enabled) {
             logger.info("Process mining demo data initializer is disabled (data.initializer.enabled=false)");
             return;
         }
 
+        // Setup wizard not finished yet — defer seeding until the app is configured
         if (!setupCompleted) {
             logger.info("Skipping process mining data initializer: setup wizard not yet complete (app.setup.completed=false)");
             return;
         }
 
         Tenant tenant = tenantRepository.findByName("Default Tenant").orElse(null);
+        // Default tenant missing — cannot attach demo data, so skip
         if (tenant == null) {
             logger.warn("Default Tenant not found — skipping process mining data initialization");
             return;
         }
 
         Organization org = organizationRepository.findByName("Default Organization").orElse(null);
+        // Default organization missing — cannot attach demo data, so skip
         if (org == null) {
             logger.warn("Default Organization not found — skipping process mining data initialization");
             return;
@@ -118,6 +144,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
             logger.info("Removing existing demo data before re-seeding...");
             List<StatusApp> existingApps = statusAppRepository.findByPlatformId(existing.getId());
             List<String> serviceNames = existingApps.stream().map(StatusApp::getName).toList();
+            // Only delete logs when there are service names to match against
             if (!serviceNames.isEmpty()) {
                 logRepository.deleteByServiceIn(serviceNames);
             }
@@ -149,6 +176,13 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         logger.info("Process mining demo data seeded: 1 platform, {} apps, logs generated", apps.size());
     }
 
+    /**
+     * Creates and persists the demo {@link StatusPlatform} that groups the demo services.
+     *
+     * @param tenant the tenant the demo platform belongs to
+     * @param org    the organization the demo platform belongs to
+     * @return the persisted demo platform
+     */
     private StatusPlatform createPlatform(Tenant tenant, Organization org) {
         StatusPlatform p = new StatusPlatform();
         p.setName("Demo Platform");
@@ -163,6 +197,15 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         return statusPlatformRepository.save(p);
     }
 
+    /**
+     * Creates and persists a single demo {@link StatusApp} (service) under the demo platform.
+     *
+     * @param name     the display name of the service
+     * @param platform the demo platform the service belongs to
+     * @param tenant   the tenant the service belongs to
+     * @param org      the organization the service belongs to
+     * @return the persisted demo service
+     */
     private StatusApp createApp(String name, StatusPlatform platform, Tenant tenant, Organization org) {
         StatusApp app = new StatusApp();
         app.setName(name);
@@ -178,6 +221,14 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         return statusAppRepository.save(app);
     }
 
+    /**
+     * Generates and persists 300 correlated log traces spread over the last 30 days,
+     * choosing a workflow pattern per trace via a fixed-seed random generator so the
+     * demo data is deterministic.
+     *
+     * @param tenant the tenant the generated logs belong to
+     * @param apps   the demo services, indexed by the {@code SVC_*} constants
+     */
     private void generateLogs(Tenant tenant, List<StatusApp> apps) {
         Random rng = new Random(42);
         ZonedDateTime now = ZonedDateTime.now();
@@ -210,24 +261,50 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
      *  8 = scheduled batch job   ( 7%) — Order → Inventory → Payment → Notify (no Gateway / Auth)
      *  9 = search-driven order   ( 8%) — Search → Gateway → Auth → Order → Inventory → Payment → Notify
      * 10 = payment retry success ( 8%) — full flow with Payment fail → retry → succeed
+     *
+     * @param rng the random generator used to draw the weighted pattern
+     * @return the selected pattern index (0–10)
      */
     private int pickPattern(Random rng) {
         int r = rng.nextInt(100);
+        // 0–19 → happy path
         if (r < 20) return 0;
+        // 20–29 → auth failure
         if (r < 30) return 1;
+        // 30–39 → payment failure
         if (r < 40) return 2;
+        // 40–47 → pre-paid / wallet order
         if (r < 48) return 3;
+        // 48–54 → timeout / critical
         if (r < 55) return 4;
+        // 55–62 → cache-hit checkout
         if (r < 63) return 5;
+        // 63–69 → guest checkout
         if (r < 70) return 6;
+        // 70–76 → fraud detected
         if (r < 77) return 7;
+        // 77–83 → scheduled batch job
         if (r < 84) return 8;
+        // 84–91 → search-driven order
         if (r < 92) return 9;
         return 10;
     }
 
+    /**
+     * Builds the ordered list of log entries for a single trace according to the
+     * selected workflow pattern.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param pattern the workflow pattern index (0–10) selected for this trace
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries that make up the trace
+     */
     private List<Log> buildTrace(Tenant tenant, List<StatusApp> apps, String traceId,
                                  ZonedDateTime base, int pattern, Random rng) {
+        // Dispatch to the builder for the chosen workflow pattern
         return switch (pattern) {
             case 0  -> happyPath(tenant, apps, traceId, base, rng);
             case 1  -> authFailure(tenant, apps, traceId, base, rng);
@@ -245,6 +322,16 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // ── Pattern 0 ──────────────────────────────────────────────────────────────
     // Gateway → Auth → Order → Payment → Notification  (all INFO)
+    /**
+     * Builds the happy-path trace: Gateway → Auth → Order → Inventory → Payment → Notification, all INFO.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> happyPath(Tenant tenant, List<StatusApp> apps, String traceId,
                                 ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -261,6 +348,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // ── Pattern 1 ──────────────────────────────────────────────────────────────
     // Gateway → Auth (token expired → rejected)  — Order/Payment/Notify never reached
+    /**
+     * Builds the auth-failure trace: Gateway → Auth rejects an expired/invalid token, so
+     * downstream Order/Payment/Notify are never reached.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> authFailure(Tenant tenant, List<StatusApp> apps, String traceId,
                                   ZonedDateTime base, Random rng) {
         int userId = rng.nextInt(9000) + 1000;

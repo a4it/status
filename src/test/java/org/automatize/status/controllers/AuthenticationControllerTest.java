@@ -30,11 +30,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"app.registration.enabled=true"})
 class AuthenticationControllerTest extends AbstractApiControllerTest {
 
+    /**
+     * Clears the {@link SecurityContextHolder} after each test so authenticated
+     * state seeded by one test does not leak into the next.
+     */
     @AfterEach
     void clearContext() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Test helper that seeds the {@link SecurityContextHolder} with an
+     * authenticated admin principal, simulating a logged-in user for tests that
+     * exercise the authenticated redirect branches.
+     */
     private void authenticate() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(
@@ -42,6 +51,13 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                         AuthorityUtils.createAuthorityList("ROLE_ADMIN")));
     }
 
+    /**
+     * Verifies that an anonymous {@code GET /login} responds 200 OK, renders the
+     * {@code authentication/login} view, and exposes the application config
+     * attributes.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void login_anonymous_returnsLoginView() throws Exception {
         mockMvc.perform(get("/login"))
@@ -50,6 +66,12 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attributeExists("applicationName", "serverPort"));
     }
 
+    /**
+     * Verifies that an already-authenticated {@code GET /login} redirects to
+     * {@code /admin} rather than showing the login form.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void login_authenticated_redirectsToAdmin() throws Exception {
         authenticate();
@@ -58,6 +80,12 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(redirectedUrl("/admin"));
     }
 
+    /**
+     * Verifies that {@code GET /logout} clears auth cookies and redirects to
+     * {@code /login}.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void logout_get_clearsCookiesAndRedirectsToLogin() throws Exception {
         mockMvc.perform(get("/logout"))
@@ -65,6 +93,11 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(redirectedUrl("/login"));
     }
 
+    /**
+     * Verifies that {@code POST /logout} redirects to {@code /login}.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void logout_post_redirectsToLogin() throws Exception {
         mockMvc.perform(post("/logout"))
@@ -72,6 +105,14 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(redirectedUrl("/login"));
     }
 
+    /**
+     * Verifies that when registration is enabled, an anonymous
+     * {@code GET /register} responds 200 OK, renders the
+     * {@code authentication/register} view, and exposes the application config
+     * attributes.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void register_anonymousAndEnabled_returnsRegisterView() throws Exception {
         mockMvc.perform(get("/register"))
@@ -80,6 +121,12 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attributeExists("applicationName", "serverPort"));
     }
 
+    /**
+     * Verifies that an already-authenticated {@code GET /register} redirects to
+     * {@code /admin} rather than showing the registration form.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void register_authenticated_redirectsToAdmin() throws Exception {
         authenticate();
@@ -88,6 +135,13 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(redirectedUrl("/admin"));
     }
 
+    /**
+     * Verifies that an anonymous {@code GET /forgot-password} responds 200 OK,
+     * renders the {@code authentication/forgot-password} view, and exposes the
+     * application config attributes.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void forgotPassword_anonymous_returnsForgotPasswordView() throws Exception {
         mockMvc.perform(get("/forgot-password"))
@@ -96,6 +150,12 @@ class AuthenticationControllerTest extends AbstractApiControllerTest {
                 .andExpect(model().attributeExists("applicationName", "serverPort"));
     }
 
+    /**
+     * Verifies that an already-authenticated {@code GET /forgot-password}
+     * redirects to {@code /admin} rather than showing the forgot-password form.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void forgotPassword_authenticated_redirectsToAdmin() throws Exception {
         authenticate();

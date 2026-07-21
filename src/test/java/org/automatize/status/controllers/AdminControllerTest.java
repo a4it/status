@@ -21,6 +21,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
 class AdminControllerTest extends AbstractApiControllerTest {
 
+    /**
+     * Verifies that {@code GET /admin/login} responds 200 OK and renders the
+     * {@code admin/login} view.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void login_returnsAdminLoginView() throws Exception {
         mockMvc.perform(get("/admin/login"))
@@ -28,6 +34,13 @@ class AdminControllerTest extends AbstractApiControllerTest {
                 .andExpect(view().name("admin/login"));
     }
 
+    /**
+     * Verifies that {@code GET /admin} responds 200 OK, renders the
+     * {@code admin/dashboard} view, sets {@code activeNav} to {@code "dashboard"},
+     * and exposes the common build/model attributes.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void dashboard_returnsDashboardViewWithCommonAttributes() throws Exception {
         mockMvc.perform(get("/admin"))

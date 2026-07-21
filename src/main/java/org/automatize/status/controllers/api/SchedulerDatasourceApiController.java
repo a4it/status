@@ -43,6 +43,14 @@ public class SchedulerDatasourceApiController {
     // List datasources for the current tenant
     // -------------------------------------------------------------------------
 
+    /**
+     * Lists all scheduler JDBC datasources for the current tenant.
+     * <p>
+     * HTTP GET {@code /api/scheduler/datasources}
+     * </p>
+     *
+     * @return ResponseEntity containing a list of datasource responses for the tenant
+     */
     @GetMapping
     public ResponseEntity<List<SchedulerDatasourceResponse>> listDatasources() {
         UserPrincipal principal = currentPrincipal();
@@ -56,6 +64,15 @@ public class SchedulerDatasourceApiController {
     // Get single datasource
     // -------------------------------------------------------------------------
 
+    /**
+     * Retrieves a single datasource by its identifier, scoped to the current tenant.
+     * <p>
+     * HTTP GET {@code /api/scheduler/datasources/{id}}
+     * </p>
+     *
+     * @param id the UUID of the datasource
+     * @return ResponseEntity containing the datasource response
+     */
     @GetMapping("/{id}")
     public ResponseEntity<SchedulerDatasourceResponse> getDatasource(@PathVariable UUID id) {
         UserPrincipal principal = currentPrincipal();
@@ -67,6 +84,15 @@ public class SchedulerDatasourceApiController {
     // Create datasource
     // -------------------------------------------------------------------------
 
+    /**
+     * Creates a new scheduler JDBC datasource for the current tenant.
+     * <p>
+     * HTTP POST {@code /api/scheduler/datasources}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param request the validated datasource creation request
+     * @return ResponseEntity containing the created datasource with HTTP 201 status
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerDatasourceResponse> createDatasource(
@@ -82,6 +108,16 @@ public class SchedulerDatasourceApiController {
     // Update datasource
     // -------------------------------------------------------------------------
 
+    /**
+     * Updates an existing scheduler JDBC datasource.
+     * <p>
+     * HTTP PUT {@code /api/scheduler/datasources/{id}}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the datasource to update
+     * @param request the validated datasource update request
+     * @return ResponseEntity containing the updated datasource response
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerDatasourceResponse> updateDatasource(
@@ -97,6 +133,15 @@ public class SchedulerDatasourceApiController {
     // Delete datasource
     // -------------------------------------------------------------------------
 
+    /**
+     * Deletes a scheduler JDBC datasource, scoped to the current tenant.
+     * <p>
+     * HTTP DELETE {@code /api/scheduler/datasources/{id}}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the datasource to delete
+     * @return ResponseEntity containing a success message
+     */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<MessageResponse> deleteDatasource(@PathVariable UUID id) {
@@ -109,6 +154,15 @@ public class SchedulerDatasourceApiController {
     // Test connection
     // -------------------------------------------------------------------------
 
+    /**
+     * Tests connectivity to the configured datasource.
+     * <p>
+     * HTTP POST {@code /api/scheduler/datasources/{id}/test}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param id the UUID of the datasource to test
+     * @return ResponseEntity containing a map describing the connection test result
+     */
     @PostMapping("/{id}/test")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Map<String, Object>> testConnection(@PathVariable UUID id) {
@@ -121,10 +175,18 @@ public class SchedulerDatasourceApiController {
     // Helper: build entity from request
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds a {@link SchedulerJdbcDatasource} entity from an incoming request,
+     * applying defaults for optional fields and resolving the owning organization.
+     *
+     * @param req the datasource request to map
+     * @return a populated (unsaved) datasource entity
+     */
     private SchedulerJdbcDatasource buildFromRequest(SchedulerDatasourceRequest req) {
         SchedulerJdbcDatasource ds = new SchedulerJdbcDatasource();
         ds.setName(req.getName());
         ds.setDescription(req.getDescription());
+        // Only set the database type when a value was supplied
         if (req.getDbType() != null) {
             ds.setDbType(DbType.valueOf(req.getDbType().toUpperCase()));
         }

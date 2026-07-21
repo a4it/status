@@ -110,15 +110,19 @@ public class StatusIncidentUpdate {
     @PrePersist
     public void prePersist() {
         ZonedDateTime now = ZonedDateTime.now();
+        // Default the creation timestamp only if it has not been set
         if (createdDate == null) {
             createdDate = now;
         }
+        // Default the modification timestamp only if it has not been set
         if (lastModifiedDate == null) {
             lastModifiedDate = now;
         }
+        // Default the technical creation timestamp only if it has not been set
         if (createdDateTechnical == null) {
             createdDateTechnical = System.currentTimeMillis();
         }
+        // Default the technical modification timestamp only if it has not been set
         if (lastModifiedDateTechnical == null) {
             lastModifiedDateTechnical = System.currentTimeMillis();
         }

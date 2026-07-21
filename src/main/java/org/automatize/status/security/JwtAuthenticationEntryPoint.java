@@ -45,8 +45,17 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
      */
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationEntryPoint.class);
 
+    /**
+     * Jackson object mapper used to serialize the JSON error response body.
+     */
     private final ObjectMapper objectMapper;
 
+    /**
+     * Constructs the entry point with the Jackson object mapper used to write
+     * JSON error responses.
+     *
+     * @param objectMapper the Jackson object mapper for serializing error responses
+     */
     public JwtAuthenticationEntryPoint(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }

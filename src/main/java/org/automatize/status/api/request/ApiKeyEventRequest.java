@@ -41,45 +41,58 @@ public class ApiKeyEventRequest {
 
     private ZonedDateTime eventTime;
 
+    /**
+     * Creates an empty API-key event request for framework/deserialization use.
+     */
     public ApiKeyEventRequest() {
     }
 
+    /** @return the event severity (DEBUG, INFO, WARNING, ERROR, or CRITICAL) */
     public String getSeverity() {
         return severity;
     }
 
+    /** @param severity the event severity to set */
     public void setSeverity(String severity) {
         this.severity = severity;
     }
 
+    /** @return the source system or component that produced the event */
     public String getSource() {
         return source;
     }
 
+    /** @param source the event source to set */
     public void setSource(String source) {
         this.source = source;
     }
 
+    /** @return the human-readable event message */
     public String getMessage() {
         return message;
     }
 
+    /** @param message the event message to set */
     public void setMessage(String message) {
         this.message = message;
     }
 
+    /** @return optional additional detail/context for the event */
     public String getDetails() {
         return details;
     }
 
+    /** @param details the additional event detail to set */
     public void setDetails(String details) {
         this.details = details;
     }
 
+    /** @return the timestamp at which the event occurred */
     public ZonedDateTime getEventTime() {
         return eventTime;
     }
 
+    /** @param eventTime the event occurrence timestamp to set */
     public void setEventTime(ZonedDateTime eventTime) {
         this.eventTime = eventTime;
     }

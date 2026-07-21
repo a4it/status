@@ -154,9 +154,11 @@ public class StatusUptimeHistory {
     @PrePersist
     public void prePersist() {
         ZonedDateTime now = ZonedDateTime.now();
+        // Default the creation timestamp only if it has not been set
         if (createdDate == null) {
             createdDate = now;
         }
+        // Default the modification timestamp only if it has not been set
         if (lastModifiedDate == null) {
             lastModifiedDate = now;
         }

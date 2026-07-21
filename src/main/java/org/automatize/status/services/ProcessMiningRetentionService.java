@@ -21,6 +21,27 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * <p>
+ * Service responsible for managing process mining log retention rules and enforcing them.
+ * </p>
+ *
+ * <p>
+ * Responsibilities:
+ * <ul>
+ *   <li>Provide CRUD operations for retention rules scoped by platform and/or tenant</li>
+ *   <li>Run retention cleanup (manually or on a daily schedule) to purge expired log data</li>
+ *   <li>Track the last run time and deleted record count per rule</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Licensed under the Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0).
+ * You may share and adapt this work for non-commercial purposes, as long as appropriate credit is given.
+ * </p>
+ *
+ * @author Tim De Smedt
+ */
 @Service
 @Transactional
 public class ProcessMiningRetentionService {
@@ -44,18 +65,37 @@ public class ProcessMiningRetentionService {
 
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Retrieves all configured retention rules.
+     *
+     * @return a list of ProcessMiningRetentionResponse objects for all rules
+     */
     public List<ProcessMiningRetentionResponse> findAll() {
         return retentionRuleRepository.findAll().stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a single retention rule by its unique identifier.
+     *
+     * @param id the UUID of the retention rule
+     * @return the ProcessMiningRetentionResponse for the requested rule
+     * @throws NoSuchElementException if the rule is not found
+     */
     public ProcessMiningRetentionResponse findById(UUID id) {
         ProcessMiningRetentionRule rule = retentionRuleRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Retention rule not found: " + id));
         return toResponse(rule);
     }
 
+    /**
+     * Creates a new retention rule from the provided request.
+     *
+     * @param req the retention rule creation request
+     * @return the newly created ProcessMiningRetentionResponse
+     * @throws NoSuchElementException if the referenced tenant or platform is not found
+     */
     public ProcessMiningRetentionResponse create(ProcessMiningRetentionRequest req) {
         ProcessMiningRetentionRule rule = new ProcessMiningRetentionRule();
         applyRequest(rule, req);
@@ -63,6 +103,14 @@ public class ProcessMiningRetentionService {
         return toResponse(rule);
     }
 
+    /**
+     * Updates an existing retention rule with the provided request.
+     *
+     * @param id the UUID of the retention rule to update
+     * @param req the retention rule update request
+     * @return the updated ProcessMiningRetentionResponse
+     * @throws NoSuchElementException if the rule, referenced tenant, or platform is not found
+     */
     public ProcessMiningRetentionResponse update(UUID id, ProcessMiningRetentionRequest req) {
         ProcessMiningRetentionRule rule = retentionRuleRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Retention rule not found: " + id));
@@ -71,7 +119,14 @@ public class ProcessMiningRetentionService {
         return toResponse(rule);
     }
 
+    /**
+     * Deletes a retention rule by its unique identifier.
+     *
+     * @param id the UUID of the retention rule to delete
+     * @throws NoSuchElementException if the rule is not found
+     */
     public void delete(UUID id) {
+        // Guard against deleting a non-existent rule
         if (!retentionRuleRepository.existsById(id)) {
             throw new NoSuchElementException("Retention rule not found: " + id);
         }
@@ -80,6 +135,15 @@ public class ProcessMiningRetentionService {
 
     // ─── Manual / Scheduled run ───────────────────────────────────────────────
 
+    /**
+     * Runs all enabled retention rules immediately, purging log data past each rule's cutoff.
+     * <p>
+     * Updates each rule's last-run timestamp and deleted count, and returns a summary
+     * detailing how many records were removed per rule.
+     * </p>
+     *
+     * @return a map summarising the run: rules processed, total deleted, run timestamp, and per-rule details
+     */
     public Map<String, Object> runRetentionNow() {
         List<ProcessMiningRetentionRule> rules = retentionRuleRepository.findByEnabledTrue();
         List<Map<String, Object>> details = new ArrayList<>();

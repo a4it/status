@@ -213,15 +213,19 @@ public class StatusComponent {
     @PrePersist
     public void prePersist() {
         ZonedDateTime now = ZonedDateTime.now();
+        // Default the creation timestamp only if not already provided.
         if (createdDate == null) {
             createdDate = now;
         }
+        // Default the last-modified timestamp only if not already provided.
         if (lastModifiedDate == null) {
             lastModifiedDate = now;
         }
+        // Default the technical creation timestamp only if not already provided.
         if (createdDateTechnical == null) {
             createdDateTechnical = System.currentTimeMillis();
         }
+        // Default the technical last-modified timestamp only if not already provided.
         if (lastModifiedDateTechnical == null) {
             lastModifiedDateTechnical = System.currentTimeMillis();
         }

@@ -6,6 +6,12 @@ package org.automatize.status.exceptions;
  */
 public class HashingException extends RuntimeException {
 
+    /**
+     * Creates a new exception with the given message and underlying cause.
+     *
+     * @param message the detail message describing the hashing failure
+     * @param cause   the underlying cryptographic failure
+     */
     public HashingException(String message, Throwable cause) {
         super(message, cause);
     }

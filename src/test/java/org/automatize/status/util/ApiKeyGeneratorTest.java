@@ -14,6 +14,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ApiKeyGeneratorTest {
 
+    /**
+     * Verifies that {@link ApiKeyGenerator#generateApiKey()} always returns a
+     * non-null, non-blank key.
+     */
     @Test
     void generateApiKey_always_returnsNonNullNonBlankKey() {
         // Act
@@ -23,6 +27,10 @@ class ApiKeyGeneratorTest {
         assertThat(key).isNotNull().isNotBlank();
     }
 
+    /**
+     * Verifies that a generated key has the expected length of 43 characters,
+     * i.e. 32 random bytes Base64 URL-encoded without padding.
+     */
     @Test
     void generateApiKey_always_hasExpectedLength() {
         // Act
@@ -32,6 +40,10 @@ class ApiKeyGeneratorTest {
         assertThat(key).hasSize(43);
     }
 
+    /**
+     * Verifies that a generated key uses only the URL-safe Base64 alphabet
+     * and contains no '+', '/', or '=' padding characters.
+     */
     @Test
     void generateApiKey_always_isUrlSafeBase64WithoutPadding() {
         // Act
@@ -42,6 +54,10 @@ class ApiKeyGeneratorTest {
         assertThat(key).doesNotContain("=");
     }
 
+    /**
+     * Verifies that generating many keys yields no collisions, exercising the
+     * entropy of the underlying random source.
+     */
     @Test
     void generateApiKey_manyCalls_producesUniqueKeys() {
         // Arrange

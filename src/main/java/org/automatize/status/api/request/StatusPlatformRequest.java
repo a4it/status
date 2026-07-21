@@ -67,82 +67,182 @@ public class StatusPlatformRequest {
     public StatusPlatformRequest() {
     }
 
+    /**
+     * Gets the platform name.
+     *
+     * @return the name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Sets the platform name.
+     *
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * Gets the description.
+     *
+     * @return the description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Sets the description.
+     *
+     * @param description the description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /**
+     * Gets the URL-friendly slug identifier.
+     *
+     * @return the slug
+     */
     public String getSlug() {
         return slug;
     }
 
+    /**
+     * Sets the URL-friendly slug identifier.
+     *
+     * @param slug the slug to set
+     */
     public void setSlug(String slug) {
         this.slug = slug;
     }
 
+    /**
+     * Gets the platform logo image URL.
+     *
+     * @return the logo URL
+     */
     public String getLogoUrl() {
         return logoUrl;
     }
 
+    /**
+     * Sets the platform logo image URL.
+     *
+     * @param logoUrl the logo URL to set
+     */
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
     }
 
+    /**
+     * Gets the external website URL.
+     *
+     * @return the website URL
+     */
     public String getWebsiteUrl() {
         return websiteUrl;
     }
 
+    /**
+     * Sets the external website URL.
+     *
+     * @param websiteUrl the website URL to set
+     */
     public void setWebsiteUrl(String websiteUrl) {
         this.websiteUrl = websiteUrl;
     }
 
+    /**
+     * Gets the operational status.
+     *
+     * @return the status
+     */
     public String getStatus() {
         return status;
     }
 
+    /**
+     * Sets the operational status.
+     *
+     * @param status the status to set
+     */
     public void setStatus(String status) {
         this.status = status;
     }
 
+    /**
+     * Gets the public visibility flag.
+     *
+     * @return true if public, false otherwise
+     */
     public Boolean getIsPublic() {
         return isPublic;
     }
 
+    /**
+     * Sets the public visibility flag.
+     *
+     * @param isPublic the public flag to set
+     */
     public void setIsPublic(Boolean isPublic) {
         this.isPublic = isPublic;
     }
 
+    /**
+     * Gets the display order position.
+     *
+     * @return the position
+     */
     public Integer getPosition() {
         return position;
     }
 
+    /**
+     * Sets the display order position.
+     *
+     * @param position the position to set
+     */
     public void setPosition(Integer position) {
         this.position = position;
     }
 
+    /**
+     * Gets the tenant ID.
+     *
+     * @return the tenant ID
+     */
     public UUID getTenantId() {
         return tenantId;
     }
 
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the tenant ID to set
+     */
     public void setTenantId(UUID tenantId) {
         this.tenantId = tenantId;
     }
 
+    /**
+     * Gets the organization ID.
+     *
+     * @return the organization ID
+     */
     public UUID getOrganizationId() {
         return organizationId;
     }
 
+    /**
+     * Sets the organization ID.
+     *
+     * @param organizationId the organization ID to set
+     */
     public void setOrganizationId(UUID organizationId) {
         this.organizationId = organizationId;
     }

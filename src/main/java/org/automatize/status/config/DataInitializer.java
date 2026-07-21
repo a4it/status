@@ -85,16 +85,19 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
+        // Initializer switched off via configuration — nothing to seed
         if (!enabled) {
             logger.info("Data initializer is disabled (data.initializer.enabled=false)");
             return;
         }
 
+        // Setup wizard not finished yet — defer seeding until the app is configured
         if (!setupCompleted) {
             logger.info("Skipping data initializer: setup wizard not yet complete (app.setup.completed=false)");
             return;
         }
 
+        // No admin user yet — create the default tenant, organization and admin account
         if (!userRepository.existsByUsername(USERNAME_ADMIN)) {
             logger.info("Initializing default admin account...");
 
@@ -137,6 +140,7 @@ public class DataInitializer implements CommandLineRunner {
             logger.info("Admin account created successfully (username: admin)");
         }
 
+        // No superadmin user yet — create the default superadmin account
         if (!userRepository.existsByUsername(USERNAME_SUPERADMIN)) {
             logger.info("Initializing superadmin account...");
 

@@ -21,6 +21,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {"app.registration.enabled=false"})
 class AuthenticationControllerRegistrationDisabledTest extends AbstractApiControllerTest {
 
+    /**
+     * Verifies that when {@code app.registration.enabled=false},
+     * {@code GET /register} issues a 3xx redirect to {@code /login} instead of
+     * rendering the registration form.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     @Test
     void register_disabled_redirectsToLogin() throws Exception {
         mockMvc.perform(get("/register"))

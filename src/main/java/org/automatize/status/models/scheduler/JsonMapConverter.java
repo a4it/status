@@ -19,8 +19,16 @@ public class JsonMapConverter implements AttributeConverter<Map<String, String>,
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<Map<String, String>> TYPE_REF = new TypeReference<>() {};
 
+    /**
+     * Serialises the given map to its JSON string representation for persistence.
+     *
+     * @param attribute the map to serialise; may be {@code null}
+     * @return the JSON string, or {@code null} if the attribute is {@code null}
+     * @throws IllegalArgumentException if the map cannot be serialised to JSON
+     */
     @Override
     public String convertToDatabaseColumn(Map<String, String> attribute) {
+        // Null map serialises to a null column value.
         if (attribute == null) {
             return null;
         }
@@ -31,8 +39,16 @@ public class JsonMapConverter implements AttributeConverter<Map<String, String>,
         }
     }
 
+    /**
+     * Deserialises the stored JSON string back into a map.
+     *
+     * @param dbData the JSON string read from the database; may be {@code null} or blank
+     * @return the reconstructed map, or {@code null} if the input is {@code null} or blank
+     * @throws IllegalArgumentException if the JSON string cannot be parsed into a map
+     */
     @Override
     public Map<String, String> convertToEntityAttribute(String dbData) {
+        // Null or blank column value maps back to a null attribute.
         if (dbData == null || dbData.isBlank()) {
             return null;
         }

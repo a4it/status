@@ -29,6 +29,9 @@ public final class ApiKeyGenerator {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int API_KEY_BYTES = 32;
 
+    /**
+     * Private constructor to prevent instantiation of this static utility class.
+     */
     private ApiKeyGenerator() {
     }
 

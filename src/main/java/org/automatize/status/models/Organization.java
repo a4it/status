@@ -202,15 +202,19 @@ public class Organization {
     @PrePersist
     public void prePersist() {
         ZonedDateTime now = ZonedDateTime.now();
+        // Set the creation timestamp only if it has not already been assigned.
         if (createdDate == null) {
             createdDate = now;
         }
+        // Set the last-modified timestamp only if it has not already been assigned.
         if (lastModifiedDate == null) {
             lastModifiedDate = now;
         }
+        // Set the technical creation timestamp only if it has not already been assigned.
         if (createdDateTechnical == null) {
             createdDateTechnical = System.currentTimeMillis();
         }
+        // Set the technical last-modified timestamp only if it has not already been assigned.
         if (lastModifiedDateTechnical == null) {
             lastModifiedDateTechnical = System.currentTimeMillis();
         }

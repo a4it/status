@@ -63,6 +63,7 @@ public class PlatformEventService {
      */
     @Transactional(readOnly = true)
     public StatusApp validateAppApiKey(String apiKey) {
+        // Reject a missing or blank API key before hitting the repository
         if (apiKey == null || apiKey.isEmpty()) {
             throw new BusinessRuleException("API key is required");
         }
@@ -79,6 +80,7 @@ public class PlatformEventService {
      */
     @Transactional(readOnly = true)
     public StatusComponent validateComponentApiKey(String apiKey) {
+        // Reject a missing or blank API key before hitting the repository
         if (apiKey == null || apiKey.isEmpty()) {
             throw new BusinessRuleException("API key is required");
         }
@@ -104,6 +106,7 @@ public class PlatformEventService {
         StatusApp app = statusAppRepository.findByApiKey(apiKey).orElse(null);
         StatusComponent component = null;
 
+        // The key did not match any app; fall back to resolving it as a component key
         if (app == null) {
             // Try to find by component API key
             component = statusComponentRepository.findByApiKey(apiKey)
@@ -142,10 +145,12 @@ public class PlatformEventService {
                 .orElseThrow(() -> new RuntimeException("Status app not found with id: " + appId));
 
         StatusComponent component = null;
+        // Resolve and validate the optional component only when a component id was supplied
         if (componentId != null) {
             component = statusComponentRepository.findById(componentId)
                     .orElseThrow(() -> new RuntimeException("Component not found with id: " + componentId));
 
+            // Ensure the component actually belongs to the specified app
             if (!component.getApp().getId().equals(appId)) {
                 throw new BusinessRuleException("Component does not belong to the specified app");
             }
@@ -214,6 +219,7 @@ public class PlatformEventService {
                                              String searchText, Pageable pageable) {
         // Strip sort from Pageable since native query handles sorting
         Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        // Use the full-text search query only when a non-blank search term is provided
         if (searchText != null && !searchText.trim().isEmpty()) {
             return platformEventRepository.searchWithFilters(appId, componentId, severity,
                     startDate, endDate, searchText.trim(), unsortedPageable);
