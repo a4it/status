@@ -44,16 +44,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    private static final String ROLE_ADMIN = "ADMIN";
-    private static final String USERNAME_TESTER = "tester";
-    private static final String EMAIL_TESTER = "tester@example.com";
-    private static final String STORED_HASH = "stored-hash";
-    private static final String USERNAME_NEWUSER = "newuser";
-    private static final String EMAIL_NEW = "new@example.com";
-    private static final String USERNAME_TARGET = "target";
-    private static final String USERNAME_TAKEN = "taken";
-    private static final String EMAIL_TAKEN = "taken@example.com";
-    private static final String HASHED_NEW = "hashed-new";
+    private static final String ROLE_ADMIN = ROLE_ADMIN;
+    private static final String USERNAME_TESTER = USERNAME_TESTER;
+    private static final String EMAIL_TESTER = EMAIL_TESTER;
+    private static final String STORED_HASH = STORED_HASH;
+    private static final String USERNAME_NEWUSER = USERNAME_NEWUSER;
+    private static final String EMAIL_NEW = EMAIL_NEW;
+    private static final String USERNAME_TARGET = USERNAME_TARGET;
+    private static final String USERNAME_TAKEN = USERNAME_TAKEN;
+    private static final String EMAIL_TAKEN = EMAIL_TAKEN;
+    private static final String HASHED_NEW = HASHED_NEW;
 
     @Mock
     private UserRepository userRepository;
@@ -76,7 +76,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         currentUserId = UUID.randomUUID();
-        setPrincipal(currentUserId, "ADMIN");
+        setPrincipal(currentUserId, ROLE_ADMIN);
     }
 
     /**
@@ -97,7 +97,7 @@ class UserServiceTest {
      */
     private void setPrincipal(UUID id, String role) {
         UserPrincipal principal = new UserPrincipal(
-                id, "tester", "tester@example.com", "pw",
+                id, USERNAME_TESTER, EMAIL_TESTER, "pw",
                 role, UUID.randomUUID(), true, Collections.emptyList());
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(principal, null, Collections.emptyList()));
@@ -116,7 +116,7 @@ class UserServiceTest {
         user.setId(id);
         user.setUsername(username);
         user.setEmail(username + "@example.com");
-        user.setPassword("stored-hash");
+        user.setPassword(STORED_HASH);
         user.setRole("USER");
         user.setEnabled(true);
         return user;
@@ -146,10 +146,10 @@ class UserServiceTest {
     void getAllUsers_organizationAndRole_filtersByBoth() {
         UUID orgId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 10);
-        when(userRepository.findByOrganizationIdAndRole(orgId, "ADMIN"))
+        when(userRepository.findByOrganizationIdAndRole(orgId, ROLE_ADMIN))
                 .thenReturn(List.of(buildUser(UUID.randomUUID(), "a")));
 
-        Page<User> result = userService.getAllUsers(orgId, "ADMIN", null, null, pageable);
+        Page<User> result = userService.getAllUsers(orgId, ROLE_ADMIN, null, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
     }
@@ -192,10 +192,10 @@ class UserServiceTest {
     @Test
     void getAllUsers_roleOnly_filtersByRole() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(userRepository.findByRole("ADMIN"))
+        when(userRepository.findByRole(ROLE_ADMIN))
                 .thenReturn(List.of(buildUser(UUID.randomUUID(), "a")));
 
-        Page<User> result = userService.getAllUsers(null, "ADMIN", null, null, pageable);
+        Page<User> result = userService.getAllUsers(null, ROLE_ADMIN, null, null, pageable);
 
         assertThat(result.getContent()).hasSize(1);
     }
@@ -291,7 +291,7 @@ class UserServiceTest {
      */
     @Test
     void getCurrentUserProfile_returnsCurrentUser() {
-        User user = buildUser(currentUserId, "tester");
+        User user = buildUser(currentUserId, USERNAME_TESTER);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
 
         assertThat(userService.getCurrentUserProfile()).isSameAs(user);
@@ -305,17 +305,17 @@ class UserServiceTest {
      */
     @Test
     void createUser_uniqueUsernameAndEmail_savesUser() {
-        UserRequest request = buildRequest("newuser", "new@example.com");
+        UserRequest request = buildRequest(USERNAME_NEWUSER, EMAIL_NEW);
         request.setPassword("pw");
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.existsByUsername(USERNAME_NEWUSER)).thenReturn(false);
+        when(userRepository.existsByEmail(EMAIL_NEW)).thenReturn(false);
         when(passwordEncoder.encode("pw")).thenReturn("hashed");
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         User result = userService.createUser(request);
 
-        assertThat(result.getUsername()).isEqualTo("newuser");
+        assertThat(result.getUsername()).isEqualTo(USERNAME_NEWUSER);
         assertThat(result.getPassword()).isEqualTo("hashed");
         verify(userRepository).save(any(User.class));
     }
@@ -326,7 +326,7 @@ class UserServiceTest {
      */
     @Test
     void createUser_duplicateUsername_throwsDuplicateResourceException() {
-        UserRequest request = buildRequest("dup", "new@example.com");
+        UserRequest request = buildRequest("dup", EMAIL_NEW);
         when(userRepository.existsByUsername("dup")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.createUser(request))
@@ -340,8 +340,8 @@ class UserServiceTest {
      */
     @Test
     void createUser_duplicateEmail_throwsDuplicateResourceException() {
-        UserRequest request = buildRequest("newuser", "dup@example.com");
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        UserRequest request = buildRequest(USERNAME_NEWUSER, "dup@example.com");
+        when(userRepository.existsByUsername(USERNAME_NEWUSER)).thenReturn(false);
         when(userRepository.existsByEmail("dup@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.createUser(request))
@@ -359,11 +359,11 @@ class UserServiceTest {
         Organization org = new Organization();
         org.setId(orgId);
 
-        UserRequest request = buildRequest("newuser", "new@example.com");
+        UserRequest request = buildRequest(USERNAME_NEWUSER, EMAIL_NEW);
         request.setOrganizationId(orgId);
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.existsByUsername(USERNAME_NEWUSER)).thenReturn(false);
+        when(userRepository.existsByEmail(EMAIL_NEW)).thenReturn(false);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -379,11 +379,11 @@ class UserServiceTest {
     @Test
     void createUser_organizationNotFound_throwsResourceNotFoundException() {
         UUID orgId = UUID.randomUUID();
-        UserRequest request = buildRequest("newuser", "new@example.com");
+        UserRequest request = buildRequest(USERNAME_NEWUSER, EMAIL_NEW);
         request.setOrganizationId(orgId);
 
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.existsByUsername(USERNAME_NEWUSER)).thenReturn(false);
+        when(userRepository.existsByEmail(EMAIL_NEW)).thenReturn(false);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.createUser(request))
@@ -421,9 +421,9 @@ class UserServiceTest {
     void updateUser_otherUserAsNonAdmin_throwsAccessDeniedException() {
         UUID targetId = UUID.randomUUID();
         setPrincipal(UUID.randomUUID(), "USER");
-        User user = buildUser(targetId, "target");
+        User user = buildUser(targetId, USERNAME_TARGET);
 
-        UserRequest request = buildRequest("target", "target@example.com");
+        UserRequest request = buildRequest(USERNAME_TARGET, "target@example.com");
         when(userRepository.findById(targetId)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> userService.updateUser(targetId, request))
@@ -441,9 +441,9 @@ class UserServiceTest {
         setPrincipal(id, "USER");
         User user = buildUser(id, "self");
 
-        UserRequest request = buildRequest("taken", "self@example.com");
+        UserRequest request = buildRequest(USERNAME_TAKEN, "self@example.com");
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(userRepository.existsByUsername("taken")).thenReturn(true);
+        when(userRepository.existsByUsername(USERNAME_TAKEN)).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateUser(id, request))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -459,9 +459,9 @@ class UserServiceTest {
         setPrincipal(id, "USER");
         User user = buildUser(id, "self");
 
-        UserRequest request = buildRequest("self", "taken@example.com");
+        UserRequest request = buildRequest("self", EMAIL_TAKEN);
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail(EMAIL_TAKEN)).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateUser(id, request))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -475,23 +475,23 @@ class UserServiceTest {
     void updateUser_adminChangesPasswordAndOrganization() {
         UUID targetId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
-        setPrincipal(UUID.randomUUID(), "ADMIN");
-        User user = buildUser(targetId, "target");
+        setPrincipal(UUID.randomUUID(), ROLE_ADMIN);
+        User user = buildUser(targetId, USERNAME_TARGET);
         Organization org = new Organization();
         org.setId(orgId);
 
-        UserRequest request = buildRequest("target", "target@example.com");
+        UserRequest request = buildRequest(USERNAME_TARGET, "target@example.com");
         request.setPassword("newpw");
         request.setOrganizationId(orgId);
 
         when(userRepository.findById(targetId)).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode("newpw")).thenReturn("hashed-new");
+        when(passwordEncoder.encode("newpw")).thenReturn(HASHED_NEW);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         User result = userService.updateUser(targetId, request);
 
-        assertThat(result.getPassword()).isEqualTo("hashed-new");
+        assertThat(result.getPassword()).isEqualTo(HASHED_NEW);
         assertThat(result.getOrganization()).isSameAs(org);
     }
 
@@ -503,9 +503,9 @@ class UserServiceTest {
      */
     @Test
     void updateCurrentUserProfile_validRequest_updatesProfile() {
-        User user = buildUser(currentUserId, "tester");
+        User user = buildUser(currentUserId, USERNAME_TESTER);
 
-        UserRequest request = buildRequest("tester", "tester@example.com");
+        UserRequest request = buildRequest(USERNAME_TESTER, EMAIL_TESTER);
         request.setFullName("Full Name");
         request.setType("STANDARD");
 
@@ -524,11 +524,11 @@ class UserServiceTest {
      */
     @Test
     void updateCurrentUserProfile_duplicateUsername_throwsDuplicateResourceException() {
-        User user = buildUser(currentUserId, "tester");
+        User user = buildUser(currentUserId, USERNAME_TESTER);
 
-        UserRequest request = buildRequest("taken", "tester@example.com");
+        UserRequest request = buildRequest(USERNAME_TAKEN, EMAIL_TESTER);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
-        when(userRepository.existsByUsername("taken")).thenReturn(true);
+        when(userRepository.existsByUsername(USERNAME_TAKEN)).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateCurrentUserProfile(request))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -540,11 +540,11 @@ class UserServiceTest {
      */
     @Test
     void updateCurrentUserProfile_duplicateEmail_throwsDuplicateResourceException() {
-        User user = buildUser(currentUserId, "tester");
+        User user = buildUser(currentUserId, USERNAME_TESTER);
 
-        UserRequest request = buildRequest("tester", "taken@example.com");
+        UserRequest request = buildRequest(USERNAME_TESTER, EMAIL_TAKEN);
         when(userRepository.findById(currentUserId)).thenReturn(Optional.of(user));
-        when(userRepository.existsByEmail("taken@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail(EMAIL_TAKEN)).thenReturn(true);
 
         assertThatThrownBy(() -> userService.updateCurrentUserProfile(request))
                 .isInstanceOf(DuplicateResourceException.class);
@@ -567,13 +567,13 @@ class UserServiceTest {
         request.setNewPassword("new");
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("old", "stored-hash")).thenReturn(true);
-        when(passwordEncoder.encode("new")).thenReturn("hashed-new");
+        when(passwordEncoder.matches("old", STORED_HASH)).thenReturn(true);
+        when(passwordEncoder.encode("new")).thenReturn(HASHED_NEW);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         userService.changePassword(id, request);
 
-        assertThat(user.getPassword()).isEqualTo("hashed-new");
+        assertThat(user.getPassword()).isEqualTo(HASHED_NEW);
         verify(userRepository).save(user);
     }
 
@@ -592,7 +592,7 @@ class UserServiceTest {
         request.setNewPassword("new");
 
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrong", "stored-hash")).thenReturn(false);
+        when(passwordEncoder.matches("wrong", STORED_HASH)).thenReturn(false);
 
         assertThatThrownBy(() -> userService.changePassword(id, request))
                 .isInstanceOf(BusinessRuleException.class);
@@ -607,7 +607,7 @@ class UserServiceTest {
     void changePassword_otherUserAsNonAdmin_throwsAccessDeniedException() {
         UUID targetId = UUID.randomUUID();
         setPrincipal(UUID.randomUUID(), "USER");
-        User user = buildUser(targetId, "target");
+        User user = buildUser(targetId, USERNAME_TARGET);
 
         PasswordChangeRequest request = new PasswordChangeRequest();
         request.setNewPassword("new");
@@ -626,19 +626,19 @@ class UserServiceTest {
     @Test
     void changePassword_adminForOtherUser_skipsCurrentPasswordCheck() {
         UUID targetId = UUID.randomUUID();
-        setPrincipal(UUID.randomUUID(), "ADMIN");
-        User user = buildUser(targetId, "target");
+        setPrincipal(UUID.randomUUID(), ROLE_ADMIN);
+        User user = buildUser(targetId, USERNAME_TARGET);
 
         PasswordChangeRequest request = new PasswordChangeRequest();
         request.setNewPassword("new");
 
         when(userRepository.findById(targetId)).thenReturn(Optional.of(user));
-        when(passwordEncoder.encode("new")).thenReturn("hashed-new");
+        when(passwordEncoder.encode("new")).thenReturn(HASHED_NEW);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         userService.changePassword(targetId, request);
 
-        assertThat(user.getPassword()).isEqualTo("hashed-new");
+        assertThat(user.getPassword()).isEqualTo(HASHED_NEW);
     }
 
     // ---------- enable / disable / role / delete ----------
@@ -689,9 +689,9 @@ class UserServiceTest {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        User result = userService.updateRole(id, "ADMIN");
+        User result = userService.updateRole(id, ROLE_ADMIN);
 
-        assertThat(result.getRole()).isEqualTo("ADMIN");
+        assertThat(result.getRole()).isEqualTo(ROLE_ADMIN);
     }
 
     /**

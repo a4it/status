@@ -35,6 +35,12 @@ class SqlExecutorServiceTest {
     /** A JDBC URL whose scheme is accepted by no registered driver, so getConnection fails fast without any network. */
     private static final String UNROUTABLE_JDBC_URL = "jdbc:nosuchdriverxyz://localhost/db";
 
+    /** Name of the private {@code resolveJdbcUrl} method under reflective test. */
+    private static final String METHOD_RESOLVE_JDBC_URL = "resolveJdbcUrl";
+
+    /** Name of the private {@code resolvePassword} method under reflective test. */
+    private static final String METHOD_RESOLVE_PASSWORD = "resolvePassword";
+
     @Mock
     private SchedulerEncryptionService encryptionService;
 
@@ -138,7 +144,7 @@ class SqlExecutorServiceTest {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
         config.setDatasource(ds);
 
-        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolveJdbcUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_JDBC_URL, config);
 
         assertThat(url).isEqualTo("jdbc:postgresql://db.host:5432/custom");
     }
@@ -157,7 +163,7 @@ class SqlExecutorServiceTest {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
         config.setDatasource(ds);
 
-        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolveJdbcUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_JDBC_URL, config);
 
         assertThat(url).isEqualTo("jdbc:postgresql://myhost:6543/mydb");
     }
@@ -175,7 +181,7 @@ class SqlExecutorServiceTest {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
         config.setDatasource(ds);
 
-        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolveJdbcUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_JDBC_URL, config);
 
         assertThat(url).isEqualTo("jdbc:mysql://myhost:3306/mydb");
     }
@@ -189,7 +195,7 @@ class SqlExecutorServiceTest {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
         config.setInlineJdbcUrl("jdbc:postgresql://inline:5432/db");
 
-        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolveJdbcUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_JDBC_URL, config);
 
         assertThat(url).isEqualTo("jdbc:postgresql://inline:5432/db");
     }
@@ -203,7 +209,7 @@ class SqlExecutorServiceTest {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
         config.setInlineDbType(DbType.POSTGRESQL);
 
-        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolveJdbcUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_JDBC_URL, config);
 
         assertThat(url).isEqualTo("jdbc:postgresql://localhost:5432/");
     }
@@ -254,7 +260,7 @@ class SqlExecutorServiceTest {
         config.setDatasource(ds);
         when(encryptionService.decrypt("enc-pw")).thenReturn("plain-pw");
 
-        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolvePassword", config);
+        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_PASSWORD, config);
 
         assertThat(password).isEqualTo("plain-pw");
     }
@@ -269,7 +275,7 @@ class SqlExecutorServiceTest {
         config.setInlinePasswordEnc("enc-inline");
         when(encryptionService.decrypt("enc-inline")).thenReturn("plain-inline");
 
-        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolvePassword", config);
+        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_PASSWORD, config);
 
         assertThat(password).isEqualTo("plain-inline");
     }
@@ -282,7 +288,7 @@ class SqlExecutorServiceTest {
     void resolvePassword_inlineNoPassword_returnsNull() {
         SchedulerSqlConfig config = new SchedulerSqlConfig();
 
-        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, "resolvePassword", config);
+        String password = ReflectionTestUtils.invokeMethod(sqlExecutorService, METHOD_RESOLVE_PASSWORD, config);
 
         assertThat(password).isNull();
     }

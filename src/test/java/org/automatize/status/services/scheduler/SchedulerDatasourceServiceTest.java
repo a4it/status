@@ -34,6 +34,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SchedulerDatasourceServiceTest {
 
+    private static final String SECRET = "secret";
+
     @Mock private SchedulerJdbcDatasourceRepository datasourceRepository;
     @Mock private TenantRepository tenantRepository;
     @Mock private SchedulerEncryptionService encryptionService;
@@ -100,10 +102,10 @@ class SchedulerDatasourceServiceTest {
     @Test
     void create_withPassword_encryptsAndSaves() {
         SchedulerJdbcDatasource ds = newDs();
-        ds.setPasswordEnc("secret");
+        ds.setPasswordEnc(SECRET);
         Tenant tenant = new Tenant();
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
-        when(encryptionService.encrypt("secret")).thenReturn("ENC(secret)");
+        when(encryptionService.encrypt(SECRET)).thenReturn("ENC(secret)");
         when(datasourceRepository.save(any(SchedulerJdbcDatasource.class))).thenAnswer(inv -> inv.getArgument(0));
 
         SchedulerJdbcDatasource saved = service.create(ds, tenantId, "tim");
@@ -111,7 +113,7 @@ class SchedulerDatasourceServiceTest {
         assertThat(saved.getTenant()).isSameAs(tenant);
         assertThat(saved.getCreatedBy()).isEqualTo("tim");
         assertThat(saved.getPasswordEnc()).isEqualTo("ENC(secret)");
-        verify(encryptionService).encrypt("secret");
+        verify(encryptionService).encrypt(SECRET);
     }
 
     /**

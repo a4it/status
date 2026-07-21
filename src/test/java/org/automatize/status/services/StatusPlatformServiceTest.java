@@ -99,12 +99,12 @@ class StatusPlatformServiceTest {
     @Test
     void getPlatformById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
-        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(newPlatform(id, "cloud", "OPERATIONAL")));
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(newPlatform(id, SLUG_CLOUD, STATUS_OPERATIONAL)));
 
         StatusPlatformResponse response = statusPlatformService.getPlatformById(id);
 
         assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getSlug()).isEqualTo("cloud");
+        assertThat(response.getSlug()).isEqualTo(SLUG_CLOUD);
     }
 
     /**
@@ -124,12 +124,12 @@ class StatusPlatformServiceTest {
      */
     @Test
     void getPlatformBySlug_found_returnsResponse() {
-        when(statusPlatformRepository.findBySlug("cloud"))
-                .thenReturn(Optional.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL")));
+        when(statusPlatformRepository.findBySlug(SLUG_CLOUD))
+                .thenReturn(Optional.of(newPlatform(UUID.randomUUID(), SLUG_CLOUD, STATUS_OPERATIONAL)));
 
-        StatusPlatformResponse response = statusPlatformService.getPlatformBySlug("cloud");
+        StatusPlatformResponse response = statusPlatformService.getPlatformBySlug(SLUG_CLOUD);
 
-        assertThat(response.getSlug()).isEqualTo("cloud");
+        assertThat(response.getSlug()).isEqualTo(SLUG_CLOUD);
     }
 
     /**
@@ -150,7 +150,7 @@ class StatusPlatformServiceTest {
     @Test
     void getAllPlatforms_noFilter_returnsPageFromFindAll() {
         when(statusPlatformRepository.findAll(pageable))
-                .thenReturn(new PageImpl<>(List.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL"))));
+                .thenReturn(new PageImpl<>(List.of(newPlatform(UUID.randomUUID(), SLUG_CLOUD, STATUS_OPERATIONAL))));
 
         var page = statusPlatformService.getAllPlatforms(null, null, null, pageable);
 
@@ -163,7 +163,7 @@ class StatusPlatformServiceTest {
     @Test
     void getAllPlatformsOrdered_returnsOrderedList() {
         when(statusPlatformRepository.findAllByOrderByPosition())
-                .thenReturn(List.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL")));
+                .thenReturn(List.of(newPlatform(UUID.randomUUID(), SLUG_CLOUD, STATUS_OPERATIONAL)));
 
         List<StatusPlatformResponse> result = statusPlatformService.getAllPlatformsOrdered();
 
@@ -175,12 +175,12 @@ class StatusPlatformServiceTest {
      */
     @Test
     void createPlatform_noTenant_saves() {
-        StatusPlatform platform = newPlatform(null, "cloud", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(null, SLUG_CLOUD, STATUS_OPERATIONAL);
         when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
 
         StatusPlatformResponse response = statusPlatformService.createPlatform(platform);
 
-        assertThat(response.getSlug()).isEqualTo("cloud");
+        assertThat(response.getSlug()).isEqualTo(SLUG_CLOUD);
         verify(statusPlatformRepository).save(platform);
     }
 
@@ -193,7 +193,7 @@ class StatusPlatformServiceTest {
         UUID tenantId = UUID.randomUUID();
         Tenant tenant = new Tenant();
         tenant.setId(tenantId);
-        StatusPlatform platform = newPlatform(null, "dup", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(null, "dup", STATUS_OPERATIONAL);
         platform.setTenant(tenant);
         when(statusPlatformRepository.existsByTenantIdAndSlug(tenantId, "dup")).thenReturn(true);
 
@@ -214,16 +214,16 @@ class StatusPlatformServiceTest {
         tenant.setId(tenantId);
         Organization org = new Organization();
         org.setId(orgId);
-        StatusPlatform platform = newPlatform(null, "cloud", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(null, SLUG_CLOUD, STATUS_OPERATIONAL);
 
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
-        when(statusPlatformRepository.existsByTenantIdAndSlug(tenantId, "cloud")).thenReturn(false);
+        when(statusPlatformRepository.existsByTenantIdAndSlug(tenantId, SLUG_CLOUD)).thenReturn(false);
         when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
 
         StatusPlatformResponse response = statusPlatformService.createPlatform(platform, tenantId, orgId);
 
-        assertThat(response.getSlug()).isEqualTo("cloud");
+        assertThat(response.getSlug()).isEqualTo(SLUG_CLOUD);
         assertThat(platform.getTenant()).isEqualTo(tenant);
         assertThat(platform.getOrganization()).isEqualTo(org);
     }
@@ -234,8 +234,8 @@ class StatusPlatformServiceTest {
     @Test
     void updatePlatform_sameSlug_updatesFields() {
         UUID id = UUID.randomUUID();
-        StatusPlatform existing = newPlatform(id, "cloud", "OPERATIONAL");
-        StatusPlatform updated = newPlatform(null, "cloud", "DEGRADED");
+        StatusPlatform existing = newPlatform(id, SLUG_CLOUD, STATUS_OPERATIONAL);
+        StatusPlatform updated = newPlatform(null, SLUG_CLOUD, "DEGRADED");
         updated.setName("Renamed");
 
         when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(existing));
@@ -255,7 +255,7 @@ class StatusPlatformServiceTest {
         UUID id = UUID.randomUUID();
         when(statusPlatformRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> statusPlatformService.updatePlatform(id, newPlatform(null, "x", "OPERATIONAL")))
+        assertThatThrownBy(() -> statusPlatformService.updatePlatform(id, newPlatform(null, "x", STATUS_OPERATIONAL)))
                 .isInstanceOf(RuntimeException.class);
     }
 
@@ -265,7 +265,7 @@ class StatusPlatformServiceTest {
     @Test
     void updateStatus_updatesAndSaves() {
         UUID id = UUID.randomUUID();
-        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(id, SLUG_CLOUD, STATUS_OPERATIONAL);
         when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
         when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -280,7 +280,7 @@ class StatusPlatformServiceTest {
     @Test
     void deletePlatform_noAssociatedApps_deletes() {
         UUID id = UUID.randomUUID();
-        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(id, SLUG_CLOUD, STATUS_OPERATIONAL);
         when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
         when(statusAppRepository.findByPlatformId(id)).thenReturn(List.of());
 
@@ -296,7 +296,7 @@ class StatusPlatformServiceTest {
     @Test
     void deletePlatform_withAssociatedApps_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        StatusPlatform platform = newPlatform(id, SLUG_CLOUD, STATUS_OPERATIONAL);
         when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
         when(statusAppRepository.findByPlatformId(id)).thenReturn(List.of(new StatusApp()));
 

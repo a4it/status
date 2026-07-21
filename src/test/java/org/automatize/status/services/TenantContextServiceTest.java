@@ -173,7 +173,7 @@ class TenantContextServiceTest {
     void switchContext_inactiveTenant_throwsBusinessRuleException() {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, "SUPERADMIN")));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, ROLE_SUPERADMIN)));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(buildTenant(tenantId, false)));
 
         assertThatThrownBy(() -> tenantContextService.switchContext(userId, tenantId, UUID.randomUUID()))
@@ -190,7 +190,7 @@ class TenantContextServiceTest {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
-        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, "SUPERADMIN")));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, ROLE_SUPERADMIN)));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(buildTenant(tenantId, true)));
         when(organizationRepository.findById(orgId)).thenReturn(Optional.empty());
 
@@ -208,7 +208,7 @@ class TenantContextServiceTest {
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         Tenant tenant = buildTenant(tenantId, true);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, "SUPERADMIN")));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, ROLE_SUPERADMIN)));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(buildOrg(orgId, "INACTIVE", tenant)));
 
@@ -229,9 +229,9 @@ class TenantContextServiceTest {
         UUID orgId = UUID.randomUUID();
         Tenant tenant = buildTenant(tenantId, true);
         Tenant otherTenant = buildTenant(UUID.randomUUID(), true);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, "SUPERADMIN")));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(buildUser(userId, ROLE_SUPERADMIN)));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
-        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(buildOrg(orgId, "ACTIVE", otherTenant)));
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(buildOrg(orgId, STATUS_ACTIVE, otherTenant)));
 
         assertThatThrownBy(() -> tenantContextService.switchContext(userId, tenantId, orgId))
                 .isInstanceOf(BusinessRuleException.class)
@@ -247,15 +247,15 @@ class TenantContextServiceTest {
         UUID userId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
-        User user = buildUser(userId, "SUPERADMIN");
+        User user = buildUser(userId, ROLE_SUPERADMIN);
         Tenant tenant = buildTenant(tenantId, true);
-        Organization org = buildOrg(orgId, "ACTIVE", tenant);
+        Organization org = buildOrg(orgId, STATUS_ACTIVE, tenant);
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(jwtUtils.generateJwtTokenWithContext(eq(userId), eq("tester"), eq("tester@example.com"),
-                eq(orgId), eq("SUPERADMIN"), eq(tenantId))).thenReturn("context-token");
+                eq(orgId), eq(ROLE_SUPERADMIN), eq(tenantId))).thenReturn("context-token");
 
         ContextResponse response = tenantContextService.switchContext(userId, tenantId, orgId);
 
@@ -276,11 +276,11 @@ class TenantContextServiceTest {
     void getCurrentContext_withSelectedContext_populatesNames() {
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
-        User user = buildUser(UUID.randomUUID(), "SUPERADMIN");
+        User user = buildUser(UUID.randomUUID(), ROLE_SUPERADMIN);
         UserPrincipal principal = UserPrincipal.createWithContext(user, tenantId, orgId);
 
         Tenant tenant = buildTenant(tenantId, true);
-        Organization org = buildOrg(orgId, "ACTIVE", tenant);
+        Organization org = buildOrg(orgId, STATUS_ACTIVE, tenant);
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
 

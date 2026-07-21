@@ -28,6 +28,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ExtendWith(MockitoExtension.class)
 class ProgramExecutorServiceTest {
 
+    private static final String BUILD_COMMAND = "buildCommand";
+    private static final String TWO_LINE_STREAM = "line1\nline2\n";
+
     @InjectMocks
     private ProgramExecutorService programExecutorService;
 
@@ -65,7 +68,7 @@ class ProgramExecutorServiceTest {
         config.setArguments(List.of("-l", "/tmp"));
 
         List<String> command = ReflectionTestUtils.invokeMethod(
-                programExecutorService, "buildCommand", config);
+                programExecutorService, BUILD_COMMAND, config);
 
         assertThat(command).containsExactly("/usr/bin/ls", "-l", "/tmp");
     }
@@ -81,7 +84,7 @@ class ProgramExecutorServiceTest {
         config.setCommand("/usr/bin/uptime");
 
         List<String> command = ReflectionTestUtils.invokeMethod(
-                programExecutorService, "buildCommand", config);
+                programExecutorService, BUILD_COMMAND, config);
 
         assertThat(command).containsExactly("/usr/bin/uptime");
     }
@@ -98,7 +101,7 @@ class ProgramExecutorServiceTest {
         config.setArguments(List.of("world"));
 
         List<String> command = ReflectionTestUtils.invokeMethod(
-                programExecutorService, "buildCommand", config);
+                programExecutorService, BUILD_COMMAND, config);
 
         assertThat(command).containsExactly("/bin/bash", "-c", "echo hi world");
     }
@@ -115,7 +118,7 @@ class ProgramExecutorServiceTest {
         config.setCommand("printf test");
 
         List<String> command = ReflectionTestUtils.invokeMethod(
-                programExecutorService, "buildCommand", config);
+                programExecutorService, BUILD_COMMAND, config);
 
         assertThat(command).containsExactly("/bin/sh", "-c", "printf test");
     }
@@ -130,12 +133,12 @@ class ProgramExecutorServiceTest {
      */
     @Test
     void readStream_belowLimit_capturesAllLines() {
-        InputStream in = new ByteArrayInputStream("line1\nline2\n".getBytes(StandardCharsets.UTF_8));
+        InputStream in = new ByteArrayInputStream(TWO_LINE_STREAM.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
 
         ReflectionTestUtils.invokeMethod(programExecutorService, "readStream", in, sb, 1000);
 
-        assertThat(sb.toString()).isEqualTo("line1\nline2\n");
+        assertThat(sb.toString()).isEqualTo(TWO_LINE_STREAM);
     }
 
     /**
@@ -144,7 +147,7 @@ class ProgramExecutorServiceTest {
      */
     @Test
     void readStream_aboveLimit_stopsAppending() {
-        InputStream in = new ByteArrayInputStream("line1\nline2\n".getBytes(StandardCharsets.UTF_8));
+        InputStream in = new ByteArrayInputStream(TWO_LINE_STREAM.getBytes(StandardCharsets.UTF_8));
         StringBuilder sb = new StringBuilder();
 
         // maxBytes 3: after first line sb.length() (6) is no longer < 3, so line2 is dropped.

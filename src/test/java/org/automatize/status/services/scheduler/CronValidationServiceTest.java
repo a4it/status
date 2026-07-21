@@ -15,6 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CronValidationServiceTest {
 
+    private static final String HOURLY_CRON = "0 0 * * * *";
+    private static final String INVALID_CRON = "bogus";
+
     private final CronValidationService service = new CronValidationService();
 
     // ---- isValid -------------------------------------------------------
@@ -25,7 +28,7 @@ class CronValidationServiceTest {
      */
     @Test
     void isValid_valid6FieldExpression_returnsTrue() {
-        assertThat(service.isValid("0 0 * * * *")).isTrue();
+        assertThat(service.isValid(HOURLY_CRON)).isTrue();
     }
 
     /**
@@ -110,7 +113,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getValidationError_validExpression_returnsNull() {
-        assertThat(service.getValidationError("0 0 * * * *")).isNull();
+        assertThat(service.getValidationError(HOURLY_CRON)).isNull();
     }
 
     /**
@@ -119,7 +122,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getValidationError_invalidExpression_returnsMessage() {
-        assertThat(service.getValidationError("bogus")).isNotNull();
+        assertThat(service.getValidationError(INVALID_CRON)).isNotNull();
     }
 
     /**
@@ -140,7 +143,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_validExpression_returnsRequestedCount() {
-        List<ZonedDateTime> next = service.getNextExecutions("0 0 * * * *", "UTC", 3);
+        List<ZonedDateTime> next = service.getNextExecutions(HOURLY_CRON, "UTC", 3);
 
         assertThat(next).hasSize(3);
         // Results are strictly ordered ascending.
@@ -154,7 +157,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_nullTimezone_defaultsToUtc() {
-        List<ZonedDateTime> next = service.getNextExecutions("0 0 * * * *", null, 1);
+        List<ZonedDateTime> next = service.getNextExecutions(HOURLY_CRON, null, 1);
 
         assertThat(next).hasSize(1);
         assertThat(next.get(0).getZone().getId()).isEqualTo("UTC");
@@ -166,7 +169,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_explicitTimezone_usesThatZone() {
-        List<ZonedDateTime> next = service.getNextExecutions("0 0 * * * *", "America/New_York", 1);
+        List<ZonedDateTime> next = service.getNextExecutions(HOURLY_CRON, "America/New_York", 1);
 
         assertThat(next).hasSize(1);
         assertThat(next.get(0).getZone().getId()).isEqualTo("America/New_York");
@@ -178,7 +181,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_invalidExpression_returnsEmptyList() {
-        assertThat(service.getNextExecutions("bogus", "UTC", 3)).isEmpty();
+        assertThat(service.getNextExecutions(INVALID_CRON, "UTC", 3)).isEmpty();
     }
 
     /**
@@ -187,7 +190,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_invalidTimezone_returnsEmptyList() {
-        assertThat(service.getNextExecutions("0 0 * * * *", "Not/AZone", 3)).isEmpty();
+        assertThat(service.getNextExecutions(HOURLY_CRON, "Not/AZone", 3)).isEmpty();
     }
 
     /**
@@ -196,7 +199,7 @@ class CronValidationServiceTest {
      */
     @Test
     void getNextExecutions_zeroCount_returnsEmptyList() {
-        assertThat(service.getNextExecutions("0 0 * * * *", "UTC", 0)).isEmpty();
+        assertThat(service.getNextExecutions(HOURLY_CRON, "UTC", 0)).isEmpty();
     }
 
     // ---- calculateNextRun ---------------------------------------------
@@ -207,7 +210,7 @@ class CronValidationServiceTest {
      */
     @Test
     void calculateNextRun_validExpression_returnsFutureTime() {
-        ZonedDateTime next = service.calculateNextRun("0 0 * * * *", "UTC");
+        ZonedDateTime next = service.calculateNextRun(HOURLY_CRON, "UTC");
 
         assertThat(next).isNotNull();
         assertThat(next).isAfter(ZonedDateTime.now(java.time.ZoneOffset.UTC).minusMinutes(1));
@@ -219,7 +222,7 @@ class CronValidationServiceTest {
      */
     @Test
     void calculateNextRun_invalidExpression_returnsNull() {
-        assertThat(service.calculateNextRun("bogus", "UTC")).isNull();
+        assertThat(service.calculateNextRun(INVALID_CRON, "UTC")).isNull();
     }
 
     /**
@@ -228,7 +231,7 @@ class CronValidationServiceTest {
      */
     @Test
     void calculateNextRun_nullTimezone_returnsUtcTime() {
-        ZonedDateTime next = service.calculateNextRun("0 0 * * * *", null);
+        ZonedDateTime next = service.calculateNextRun(HOURLY_CRON, null);
 
         assertThat(next).isNotNull();
         assertThat(next.getZone().getId()).isEqualTo("UTC");
@@ -269,7 +272,7 @@ class CronValidationServiceTest {
      */
     @Test
     void toHumanReadable_everyHour_returnsDescription() {
-        assertThat(service.toHumanReadable("0 0 * * * *")).isEqualTo("Every hour");
+        assertThat(service.toHumanReadable(HOURLY_CRON)).isEqualTo("Every hour");
     }
 
     /**

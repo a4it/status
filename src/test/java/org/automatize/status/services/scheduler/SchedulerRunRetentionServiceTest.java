@@ -34,6 +34,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SchedulerRunRetentionServiceTest {
 
+    private static final String RETENTION_DAYS_FIELD = "retentionDays";
+
     @Mock private SchedulerJobRepository jobRepository;
     @Mock private SchedulerJobRunRepository runRepository;
 
@@ -57,7 +59,7 @@ class SchedulerRunRetentionServiceTest {
      */
     @Test
     void cleanOldRuns_deletesRunsForEachJobWithCorrectCutoff() {
-        ReflectionTestUtils.setField(service, "retentionDays", 30);
+        ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
         when(jobRepository.findAll()).thenReturn(List.of(jobWithId(id1), jobWithId(id2)));
@@ -80,7 +82,7 @@ class SchedulerRunRetentionServiceTest {
      */
     @Test
     void cleanOldRuns_customRetentionDays_appliesConfiguredCutoff() {
-        ReflectionTestUtils.setField(service, "retentionDays", 7);
+        ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 7);
         UUID id = UUID.randomUUID();
         when(jobRepository.findAll()).thenReturn(List.of(jobWithId(id)));
 
@@ -99,7 +101,7 @@ class SchedulerRunRetentionServiceTest {
      */
     @Test
     void cleanOldRuns_oneJobFails_stillProcessesRemainingJobs() {
-        ReflectionTestUtils.setField(service, "retentionDays", 30);
+        ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
         UUID failing = UUID.randomUUID();
         UUID ok = UUID.randomUUID();
         when(jobRepository.findAll()).thenReturn(List.of(jobWithId(failing), jobWithId(ok)));
@@ -118,7 +120,7 @@ class SchedulerRunRetentionServiceTest {
      */
     @Test
     void cleanOldRuns_noJobs_doesNothing() {
-        ReflectionTestUtils.setField(service, "retentionDays", 30);
+        ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
         when(jobRepository.findAll()).thenReturn(List.of());
 
         service.cleanOldRuns();

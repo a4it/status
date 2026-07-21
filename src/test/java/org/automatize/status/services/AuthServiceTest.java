@@ -52,6 +52,20 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
 
+    private static final String USERNAME = "tester";
+    private static final String SECRET = "secret";
+    private static final String ACCESS_JWT = "access-jwt";
+    private static final String REFRESH_PLAIN = "refresh-plain";
+    private static final String USER_NOT_FOUND = "User not found";
+    private static final String NEW_USERNAME = "newuser";
+    private static final String NEW_EMAIL = "new@b.com";
+    private static final String HASHED_PASSWORD = "hashed";
+    private static final String TOKEN = "token";
+    private static final String NEW_REFRESH = "new-refresh";
+    private static final String INVALID_AUTH_HEADER = "Invalid authorization header";
+    private static final String JWT_VALUE = "jwt-value";
+    private static final String BEARER_JWT_VALUE = "Bearer jwt-value";
+
     @Mock
     private AuthenticationManager authenticationManager;
 
@@ -191,7 +205,7 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.authenticateUser(request))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .hasMessage(USER_NOT_FOUND);
     }
 
     /**
@@ -340,15 +354,15 @@ class AuthServiceTest {
     @Test
     void refreshToken_userNotFound_throwsRuntimeException() {
         RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken("token");
+        request.setRefreshToken(TOKEN);
 
-        when(jwtUtils.validateJwtToken("token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn("ghost");
+        when(jwtUtils.validateJwtToken(TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken(TOKEN)).thenReturn("ghost");
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refreshToken(request))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .hasMessage(USER_NOT_FOUND);
     }
 
     /**
@@ -362,10 +376,10 @@ class AuthServiceTest {
         user.setRefreshToken("some-other-hash");
 
         RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken("token");
+        request.setRefreshToken(TOKEN);
 
-        when(jwtUtils.validateJwtToken("token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn(USERNAME);
+        when(jwtUtils.validateJwtToken(TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken(TOKEN)).thenReturn(USERNAME);
         when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.refreshToken(request))
@@ -383,25 +397,25 @@ class AuthServiceTest {
     void refreshToken_validMatchingToken_returnsNewTokensAndRotatesRefresh() throws Exception {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, USERNAME, "USER");
-        user.setRefreshToken(sha256Hex("token"));
+        user.setRefreshToken(sha256Hex(TOKEN));
 
         RefreshTokenRequest request = new RefreshTokenRequest();
-        request.setRefreshToken("token");
+        request.setRefreshToken(TOKEN);
 
-        when(jwtUtils.validateJwtToken("token")).thenReturn(true);
-        when(jwtUtils.getUserNameFromJwtToken("token")).thenReturn(USERNAME);
+        when(jwtUtils.validateJwtToken(TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserNameFromJwtToken(TOKEN)).thenReturn(USERNAME);
         when(userRepository.findByUsername(USERNAME)).thenReturn(Optional.of(user));
         when(jwtUtils.generateJwtTokenFromUserId(any(), anyString(), anyString(), any(), anyString()))
                 .thenReturn("new-access");
-        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn("new-refresh");
+        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn(NEW_REFRESH);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         AuthResponse response = authService.refreshToken(request);
 
         assertThat(response.getAccessToken()).isEqualTo("new-access");
-        assertThat(response.getRefreshToken()).isEqualTo("new-refresh");
+        assertThat(response.getRefreshToken()).isEqualTo(NEW_REFRESH);
         // stored hash rotated to hash of the new refresh token
-        assertThat(user.getRefreshToken()).isEqualTo(sha256Hex("new-refresh"));
+        assertThat(user.getRefreshToken()).isEqualTo(sha256Hex(NEW_REFRESH));
         verify(userRepository).save(user);
     }
 
@@ -414,7 +428,7 @@ class AuthServiceTest {
         MessageResponse response = authService.logout(null);
 
         assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getMessage()).isEqualTo("Invalid authorization header");
+        assertThat(response.getMessage()).isEqualTo(INVALID_AUTH_HEADER);
     }
 
     /**
@@ -426,7 +440,7 @@ class AuthServiceTest {
         MessageResponse response = authService.logout("Basic xyz");
 
         assertThat(response.isSuccess()).isFalse();
-        assertThat(response.getMessage()).isEqualTo("Invalid authorization header");
+        assertThat(response.getMessage()).isEqualTo(INVALID_AUTH_HEADER);
     }
 
     /**
@@ -439,11 +453,11 @@ class AuthServiceTest {
         User user = buildUser(userId, USERNAME, "USER");
         user.setRefreshToken("stored");
 
-        when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
+        when(jwtUtils.getUserIdFromJwtToken(JWT_VALUE)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        MessageResponse response = authService.logout("Bearer jwt-value");
+        MessageResponse response = authService.logout(BEARER_JWT_VALUE);
 
         assertThat(response.isSuccess()).isTrue();
         assertThat(response.getMessage()).isEqualTo("Logged out successfully");
@@ -459,10 +473,10 @@ class AuthServiceTest {
     void logout_userNotFound_returnsErrorResponse() {
         UUID userId = UUID.randomUUID();
 
-        when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
+        when(jwtUtils.getUserIdFromJwtToken(JWT_VALUE)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        MessageResponse response = authService.logout("Bearer jwt-value");
+        MessageResponse response = authService.logout(BEARER_JWT_VALUE);
 
         assertThat(response.isSuccess()).isFalse();
         assertThat(response.getMessage()).isEqualTo("Error during logout");
@@ -476,7 +490,7 @@ class AuthServiceTest {
     void getCurrentUser_nullToken_throwsUnauthorizedException() {
         assertThatThrownBy(() -> authService.getCurrentUser(null))
                 .isInstanceOf(UnauthorizedException.class)
-                .hasMessage("Invalid authorization header");
+                .hasMessage(INVALID_AUTH_HEADER);
     }
 
     /**
@@ -488,10 +502,10 @@ class AuthServiceTest {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, USERNAME, "ADMIN");
 
-        when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
+        when(jwtUtils.getUserIdFromJwtToken(JWT_VALUE)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        AuthResponse response = authService.getCurrentUser("Bearer jwt-value");
+        AuthResponse response = authService.getCurrentUser(BEARER_JWT_VALUE);
 
         assertThat(response.getUserId()).isEqualTo(userId);
         assertThat(response.getUsername()).isEqualTo(USERNAME);
@@ -506,11 +520,11 @@ class AuthServiceTest {
     void getCurrentUser_userNotFound_throwsRuntimeException() {
         UUID userId = UUID.randomUUID();
 
-        when(jwtUtils.getUserIdFromJwtToken("jwt-value")).thenReturn(userId);
+        when(jwtUtils.getUserIdFromJwtToken(JWT_VALUE)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> authService.getCurrentUser("Bearer jwt-value"))
+        assertThatThrownBy(() -> authService.getCurrentUser(BEARER_JWT_VALUE))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessage("User not found");
+                .hasMessage(USER_NOT_FOUND);
     }
 }

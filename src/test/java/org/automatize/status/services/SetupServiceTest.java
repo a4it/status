@@ -59,10 +59,10 @@ class SetupServiceTest {
 
     private static final String SETUP_COMPLETED_FIELD = "setupCompleted";
     private static final String FLYWAY_FIELD = "flyway";
-    private static final String ADMIN_USERNAME = ADMIN_USERNAME;
-    private static final String ADMIN_EMAIL = ADMIN_EMAIL;
-    private static final String ENCODED_PASSWORD = ENCODED_PASSWORD;
-    private static final String RAW_PASSWORD = RAW_PASSWORD;
+    private static final String ADMIN_USERNAME = "admin";
+    private static final String ADMIN_EMAIL = "admin@acme.test";
+    private static final String ENCODED_PASSWORD = "ENC(supersecret)";
+    private static final String RAW_PASSWORD = "supersecret";
 
     @Mock
     private TenantService tenantService;

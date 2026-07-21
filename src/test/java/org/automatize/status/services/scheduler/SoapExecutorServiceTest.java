@@ -40,6 +40,13 @@ class SoapExecutorServiceTest {
     @InjectMocks
     private SoapExecutorService soapExecutorService;
 
+    private static final String RESOLVE_CONTENT_TYPE = "resolveContentType";
+    private static final String CONTAINS_SOAP_FAULT = "containsSoapFault";
+    private static final String HTTP_LOCALHOST = "http://localhost";
+    private static final String APPLY_AUTH = "applyAuth";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String EVALUATE_RESPONSE = "evaluateResponse";
+
     // -------------------------------------------------------------------------
     // execute() - null config guard
     // -------------------------------------------------------------------------
@@ -72,7 +79,7 @@ class SoapExecutorServiceTest {
         config.setSoapVersion(SoapVersion.V1_1);
 
         String contentType = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "resolveContentType", config);
+                soapExecutorService, RESOLVE_CONTENT_TYPE, config);
 
         assertThat(contentType).isEqualTo("text/xml; charset=utf-8");
     }
@@ -87,7 +94,7 @@ class SoapExecutorServiceTest {
         config.setSoapVersion(SoapVersion.V1_2);
 
         String contentType = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "resolveContentType", config);
+                soapExecutorService, RESOLVE_CONTENT_TYPE, config);
 
         assertThat(contentType).isEqualTo("application/soap+xml; charset=utf-8");
     }
@@ -103,7 +110,7 @@ class SoapExecutorServiceTest {
         config.setSoapAction("urn:doStuff");
 
         String contentType = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "resolveContentType", config);
+                soapExecutorService, RESOLVE_CONTENT_TYPE, config);
 
         assertThat(contentType).isEqualTo("application/soap+xml; charset=utf-8; action=\"urn:doStuff\"");
     }
@@ -119,7 +126,7 @@ class SoapExecutorServiceTest {
     @Test
     void containsSoapFault_soapPrefixedFault_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "containsSoapFault", "<soap:Fault>error</soap:Fault>");
+                soapExecutorService, CONTAINS_SOAP_FAULT, "<soap:Fault>error</soap:Fault>");
 
         assertThat(result).isTrue();
     }
@@ -131,7 +138,7 @@ class SoapExecutorServiceTest {
     @Test
     void containsSoapFault_soapEnvFault_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "containsSoapFault", "<SOAP-ENV:Fault>error</SOAP-ENV:Fault>");
+                soapExecutorService, CONTAINS_SOAP_FAULT, "<SOAP-ENV:Fault>error</SOAP-ENV:Fault>");
 
         assertThat(result).isTrue();
     }
@@ -143,7 +150,7 @@ class SoapExecutorServiceTest {
     @Test
     void containsSoapFault_faultcodeElement_returnsTrue() {
         Boolean result = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "containsSoapFault", "<faultcode>Server</faultcode>");
+                soapExecutorService, CONTAINS_SOAP_FAULT, "<faultcode>Server</faultcode>");
 
         assertThat(result).isTrue();
     }

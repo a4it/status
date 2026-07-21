@@ -50,6 +50,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SchedulerJobServiceTest {
 
+    private static final String CRON_EXPRESSION = "0 0 3 * * *";
+    private static final String PLAIN_PASSWORD = "plainpw";
+    private static final String BAD_CRON = "bad cron";
+
     @Mock private SchedulerJobRepository jobRepository;
     @Mock private SchedulerJobRunRepository runRepository;
     @Mock private SchedulerJdbcDatasourceRepository datasourceRepository;
@@ -74,7 +78,7 @@ class SchedulerJobServiceTest {
         job.setId(jobId);
         job.setName("nightly");
         job.setJobType(JobType.REST);
-        job.setCronExpression("0 0 3 * * *");
+        job.setCronExpression(CRON_EXPRESSION);
         job.setTimeZone("UTC");
         job.setEnabled(true);
         job.setStatus(JobStatus.ACTIVE);
@@ -178,8 +182,8 @@ class SchedulerJobServiceTest {
     void createJob_validEnabledActive_savesAndRegisters() {
         SchedulerJob job = newJob();
         Tenant tenant = new Tenant();
-        when(cronValidationService.isValid("0 0 3 * * *")).thenReturn(true);
-        when(cronValidationService.calculateNextRun("0 0 3 * * *", "UTC")).thenReturn(ZonedDateTime.now());
+        when(cronValidationService.isValid(CRON_EXPRESSION)).thenReturn(true);
+        when(cronValidationService.calculateNextRun(CRON_EXPRESSION, "UTC")).thenReturn(ZonedDateTime.now());
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(jobRepository.save(any(SchedulerJob.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -200,8 +204,8 @@ class SchedulerJobServiceTest {
     void createJob_disabled_doesNotRegister() {
         SchedulerJob job = newJob();
         job.setEnabled(false);
-        when(cronValidationService.isValid("0 0 3 * * *")).thenReturn(true);
-        when(cronValidationService.calculateNextRun("0 0 3 * * *", "UTC")).thenReturn(ZonedDateTime.now());
+        when(cronValidationService.isValid(CRON_EXPRESSION)).thenReturn(true);
+        when(cronValidationService.calculateNextRun(CRON_EXPRESSION, "UTC")).thenReturn(ZonedDateTime.now());
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(new Tenant()));
         when(jobRepository.save(any(SchedulerJob.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -217,8 +221,8 @@ class SchedulerJobServiceTest {
     @Test
     void createJob_invalidCron_throwsIllegalArgument() {
         SchedulerJob job = newJob();
-        when(cronValidationService.isValid("0 0 3 * * *")).thenReturn(false);
-        when(cronValidationService.getValidationError("0 0 3 * * *")).thenReturn("bad");
+        when(cronValidationService.isValid(CRON_EXPRESSION)).thenReturn(false);
+        when(cronValidationService.getValidationError(CRON_EXPRESSION)).thenReturn("bad");
 
         assertThatThrownBy(() -> service.createJob(job, tenantId, "tim"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -233,7 +237,7 @@ class SchedulerJobServiceTest {
     @Test
     void createJob_tenantNotFound_throwsResourceNotFound() {
         SchedulerJob job = newJob();
-        when(cronValidationService.isValid("0 0 3 * * *")).thenReturn(true);
+        when(cronValidationService.isValid(CRON_EXPRESSION)).thenReturn(true);
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.createJob(job, tenantId, "tim"))
@@ -249,19 +253,19 @@ class SchedulerJobServiceTest {
     void createJob_plaintextRestSecret_getsEncrypted() {
         SchedulerJob job = newJob();
         SchedulerRestConfig rc = new SchedulerRestConfig();
-        rc.setAuthPasswordEnc("plainpw");
+        rc.setAuthPasswordEnc(PLAIN_PASSWORD);
         job.setRestConfig(rc);
-        when(cronValidationService.isValid("0 0 3 * * *")).thenReturn(true);
-        when(cronValidationService.calculateNextRun("0 0 3 * * *", "UTC")).thenReturn(ZonedDateTime.now());
+        when(cronValidationService.isValid(CRON_EXPRESSION)).thenReturn(true);
+        when(cronValidationService.calculateNextRun(CRON_EXPRESSION, "UTC")).thenReturn(ZonedDateTime.now());
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(new Tenant()));
-        when(encryptionService.decrypt("plainpw")).thenThrow(new RuntimeException("not ciphertext"));
-        when(encryptionService.encrypt("plainpw")).thenReturn("ENC(plainpw)");
+        when(encryptionService.decrypt(PLAIN_PASSWORD)).thenThrow(new RuntimeException("not ciphertext"));
+        when(encryptionService.encrypt(PLAIN_PASSWORD)).thenReturn("ENC(plainpw)");
         when(jobRepository.save(any(SchedulerJob.class))).thenAnswer(inv -> inv.getArgument(0));
 
         SchedulerJob saved = service.createJob(job, tenantId, "tim");
 
         assertThat(saved.getRestConfig().getAuthPasswordEnc()).isEqualTo("ENC(plainpw)");
-        verify(encryptionService).encrypt("plainpw");
+        verify(encryptionService).encrypt(PLAIN_PASSWORD);
     }
 
     // ---------------------------------------------------------------------
@@ -309,10 +313,10 @@ class SchedulerJobServiceTest {
     void updateJob_changedCronInvalid_throwsIllegalArgument() {
         SchedulerJob existing = newJob();
         SchedulerJob data = newJob();
-        data.setCronExpression("bad cron");
+        data.setCronExpression(BAD_CRON);
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.of(existing));
-        when(cronValidationService.isValid("bad cron")).thenReturn(false);
-        when(cronValidationService.getValidationError("bad cron")).thenReturn("nope");
+        when(cronValidationService.isValid(BAD_CRON)).thenReturn(false);
+        when(cronValidationService.getValidationError(BAD_CRON)).thenReturn("nope");
 
         assertThatThrownBy(() -> service.updateJob(jobId, data, tenantId, "tim"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -379,7 +383,7 @@ class SchedulerJobServiceTest {
         job.setStatus(JobStatus.PAUSED);
         ZonedDateTime next = ZonedDateTime.now().plusHours(1);
         when(jobRepository.findByIdAndTenantId(jobId, tenantId)).thenReturn(Optional.of(job));
-        when(cronValidationService.calculateNextRun("0 0 3 * * *", "UTC")).thenReturn(next);
+        when(cronValidationService.calculateNextRun(CRON_EXPRESSION, "UTC")).thenReturn(next);
         when(jobRepository.save(any(SchedulerJob.class))).thenAnswer(inv -> inv.getArgument(0));
 
         SchedulerJob result = service.resumeJob(jobId, tenantId, "tim");

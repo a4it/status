@@ -22,6 +22,15 @@ class SchedulerEncryptionServiceTest {
     /** Base64 encoding of a deterministic 32-byte (256-bit) AES key. */
     private static final String KEY_BASE64 = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
 
+    /** Name of the {@code @Value} field holding the Base64 AES key. */
+    private static final String ENCRYPTION_KEY_FIELD = "encryptionKeyBase64";
+
+    /** Plaintext reused to assert IV randomness across encryptions. */
+    private static final String REPEAT_PLAINTEXT = "repeat";
+
+    /** Plaintext used to exercise the built-in default-key path. */
+    private static final String DEV_SECRET = "dev-secret";
+
     private SchedulerEncryptionService service;
 
     /**
@@ -30,7 +39,7 @@ class SchedulerEncryptionServiceTest {
     @BeforeEach
     void setUp() {
         service = new SchedulerEncryptionService();
-        ReflectionTestUtils.setField(service, "encryptionKeyBase64", KEY_BASE64);
+        ReflectionTestUtils.setField(service, ENCRYPTION_KEY_FIELD, KEY_BASE64);
     }
 
     // ---- encrypt / decrypt round-trip ---------------------------------
@@ -78,12 +87,12 @@ class SchedulerEncryptionServiceTest {
     @Test
     void encrypt_sameInputTwice_producesDifferentCiphertext() {
         // A random IV is generated per call, so ciphertexts must differ.
-        String a = service.encrypt("repeat");
-        String b = service.encrypt("repeat");
+        String a = service.encrypt(REPEAT_PLAINTEXT);
+        String b = service.encrypt(REPEAT_PLAINTEXT);
 
         assertThat(a).isNotEqualTo(b);
-        assertThat(service.decrypt(a)).isEqualTo("repeat");
-        assertThat(service.decrypt(b)).isEqualTo("repeat");
+        assertThat(service.decrypt(a)).isEqualTo(REPEAT_PLAINTEXT);
+        assertThat(service.decrypt(b)).isEqualTo(REPEAT_PLAINTEXT);
     }
 
     /**
@@ -127,11 +136,11 @@ class SchedulerEncryptionServiceTest {
     @Test
     void encryptThenDecrypt_withDefaultKey_returnsOriginal() {
         SchedulerEncryptionService defaultKeyService = new SchedulerEncryptionService();
-        ReflectionTestUtils.setField(defaultKeyService, "encryptionKeyBase64", "");
+        ReflectionTestUtils.setField(defaultKeyService, ENCRYPTION_KEY_FIELD, "");
 
-        String encrypted = defaultKeyService.encrypt("dev-secret");
+        String encrypted = defaultKeyService.encrypt(DEV_SECRET);
 
-        assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo("dev-secret");
+        assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo(DEV_SECRET);
     }
 
     /**
@@ -141,11 +150,11 @@ class SchedulerEncryptionServiceTest {
     @Test
     void encryptThenDecrypt_withNullKeyProperty_usesDefaultKey() {
         SchedulerEncryptionService defaultKeyService = new SchedulerEncryptionService();
-        ReflectionTestUtils.setField(defaultKeyService, "encryptionKeyBase64", null);
+        ReflectionTestUtils.setField(defaultKeyService, ENCRYPTION_KEY_FIELD, null);
 
-        String encrypted = defaultKeyService.encrypt("dev-secret");
+        String encrypted = defaultKeyService.encrypt(DEV_SECRET);
 
-        assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo("dev-secret");
+        assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo(DEV_SECRET);
     }
 
     /**
@@ -155,7 +164,7 @@ class SchedulerEncryptionServiceTest {
     @Test
     void decrypt_valueEncryptedWithDifferentKey_throwsEncryptionException() {
         SchedulerEncryptionService other = new SchedulerEncryptionService();
-        ReflectionTestUtils.setField(other, "encryptionKeyBase64", "");
+        ReflectionTestUtils.setField(other, ENCRYPTION_KEY_FIELD, "");
         String encryptedWithDefaultKey = other.encrypt("secret");
 
         // Decrypting with the configured (different) key fails GCM authentication.

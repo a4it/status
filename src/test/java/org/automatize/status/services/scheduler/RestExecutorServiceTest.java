@@ -43,6 +43,18 @@ class RestExecutorServiceTest {
     @InjectMocks
     private RestExecutorService restExecutorService;
 
+    private static final String STATUS_URL = STATUS_URL;
+    private static final String LOCALHOST_URL = LOCALHOST_URL;
+    private static final String METHOD_BUILD_URL = METHOD_BUILD_URL;
+    private static final String METHOD_CHECK_ASSERTIONS = METHOD_CHECK_ASSERTIONS;
+    private static final String METHOD_APPLY_AUTH = METHOD_APPLY_AUTH;
+    private static final String METHOD_RECORD_RESPONSE = METHOD_RECORD_RESPONSE;
+    private static final String HEADER_AUTHORIZATION = HEADER_AUTHORIZATION;
+    private static final String HEADER_X_CUSTOM_KEY = HEADER_X_CUSTOM_KEY;
+    private static final String BODY_HEALTHY = "healthy";
+    private static final String ENC_KEY = ENC_KEY;
+    private static final String KEY_VALUE = KEY_VALUE;
+
     // -------------------------------------------------------------------------
     // execute() - null config guard
     // -------------------------------------------------------------------------
@@ -72,11 +84,11 @@ class RestExecutorServiceTest {
     @Test
     void buildUrl_noQueryParams_returnsUrlUnchanged() {
         SchedulerRestConfig config = new SchedulerRestConfig();
-        config.setUrl("https://api.example.com/status");
+        config.setUrl(STATUS_URL);
 
-        String url = ReflectionTestUtils.invokeMethod(restExecutorService, "buildUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_BUILD_URL, config);
 
-        assertThat(url).isEqualTo("https://api.example.com/status");
+        assertThat(url).isEqualTo(STATUS_URL);
     }
 
     /**
@@ -86,12 +98,12 @@ class RestExecutorServiceTest {
     @Test
     void buildUrl_withQueryParams_appendsEncodedParams() {
         SchedulerRestConfig config = new SchedulerRestConfig();
-        config.setUrl("https://api.example.com/status");
+        config.setUrl(STATUS_URL);
         Map<String, String> params = new LinkedHashMap<>();
         params.put("q", "a b");
         config.setQueryParams(params);
 
-        String url = ReflectionTestUtils.invokeMethod(restExecutorService, "buildUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_BUILD_URL, config);
 
         assertThat(url).isEqualTo("https://api.example.com/status?q=a+b");
     }
@@ -108,7 +120,7 @@ class RestExecutorServiceTest {
         params.put("q", "v");
         config.setQueryParams(params);
 
-        String url = ReflectionTestUtils.invokeMethod(restExecutorService, "buildUrl", config);
+        String url = ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_BUILD_URL, config);
 
         assertThat(url).isEqualTo("https://api.example.com/status?existing=1&q=v");
     }
@@ -126,7 +138,7 @@ class RestExecutorServiceTest {
         SchedulerRestConfig config = new SchedulerRestConfig();
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 200, "body");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 200, "body");
 
         assertThat(result).isTrue();
     }
@@ -140,7 +152,7 @@ class RestExecutorServiceTest {
         SchedulerRestConfig config = new SchedulerRestConfig();
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 500, "body");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 500, "body");
 
         assertThat(result).isFalse();
     }
@@ -155,7 +167,7 @@ class RestExecutorServiceTest {
         config.setAssertStatusCode(404);
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 404, "not found");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 404, "not found");
 
         assertThat(result).isTrue();
     }
@@ -170,7 +182,7 @@ class RestExecutorServiceTest {
         config.setAssertStatusCode(200);
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 201, "created");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 201, "created");
 
         assertThat(result).isFalse();
     }
@@ -182,10 +194,10 @@ class RestExecutorServiceTest {
     @Test
     void checkAssertions_bodyContainsMatches_returnsTrue() {
         SchedulerRestConfig config = new SchedulerRestConfig();
-        config.setAssertBodyContains("healthy");
+        config.setAssertBodyContains(BODY_HEALTHY);
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 200, "{\"state\":\"healthy\"}");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 200, "{\"state\":\"healthy\"}");
 
         assertThat(result).isTrue();
     }
@@ -197,10 +209,10 @@ class RestExecutorServiceTest {
     @Test
     void checkAssertions_bodyDoesNotContainExpected_returnsFalse() {
         SchedulerRestConfig config = new SchedulerRestConfig();
-        config.setAssertBodyContains("healthy");
+        config.setAssertBodyContains(BODY_HEALTHY);
 
         Boolean result = ReflectionTestUtils.invokeMethod(
-                restExecutorService, "checkAssertions", config, 200, "{\"state\":\"down\"}");
+                restExecutorService, METHOD_CHECK_ASSERTIONS, config, 200, "{\"state\":\"down\"}");
 
         assertThat(result).isFalse();
     }
@@ -217,12 +229,12 @@ class RestExecutorServiceTest {
     void applyAuth_none_addsNoAuthorizationHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
         config.setAuthType(AuthType.NONE);
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL)).GET();
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_APPLY_AUTH, config, builder);
 
         HttpRequest request = builder.build();
-        assertThat(request.headers().firstValue("Authorization")).isEmpty();
+        assertThat(request.headers().firstValue(HEADER_AUTHORIZATION)).isEmpty();
     }
 
     /**
@@ -236,13 +248,13 @@ class RestExecutorServiceTest {
         config.setAuthUsername("user");
         config.setAuthPasswordEnc("enc-pass");
         when(encryptionService.decrypt("enc-pass")).thenReturn("secret");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL)).GET();
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_APPLY_AUTH, config, builder);
 
         String expected = "Basic " + Base64.getEncoder()
                 .encodeToString("user:secret".getBytes(StandardCharsets.UTF_8));
-        assertThat(builder.build().headers().firstValue("Authorization")).hasValue(expected);
+        assertThat(builder.build().headers().firstValue(HEADER_AUTHORIZATION)).hasValue(expected);
     }
 
     /**
@@ -255,11 +267,11 @@ class RestExecutorServiceTest {
         config.setAuthType(AuthType.BEARER);
         config.setAuthTokenEnc("enc-token");
         when(encryptionService.decrypt("enc-token")).thenReturn("tok123");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL)).GET();
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_APPLY_AUTH, config, builder);
 
-        assertThat(builder.build().headers().firstValue("Authorization")).hasValue("Bearer tok123");
+        assertThat(builder.build().headers().firstValue(HEADER_AUTHORIZATION)).hasValue("Bearer tok123");
     }
 
     /**
@@ -270,15 +282,15 @@ class RestExecutorServiceTest {
     void applyAuth_apiKeyHeaderLocation_addsCustomHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
         config.setAuthType(AuthType.API_KEY);
-        config.setAuthApiKeyName("X-Custom-Key");
-        config.setAuthApiKeyValueEnc("enc-key");
+        config.setAuthApiKeyName(HEADER_X_CUSTOM_KEY);
+        config.setAuthApiKeyValueEnc(ENC_KEY);
         config.setAuthApiKeyLocation(ApiKeyLocation.HEADER);
-        when(encryptionService.decrypt("enc-key")).thenReturn("keyval");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        when(encryptionService.decrypt(ENC_KEY)).thenReturn(KEY_VALUE);
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL)).GET();
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_APPLY_AUTH, config, builder);
 
-        assertThat(builder.build().headers().firstValue("X-Custom-Key")).hasValue("keyval");
+        assertThat(builder.build().headers().firstValue(HEADER_X_CUSTOM_KEY)).hasValue(KEY_VALUE);
     }
 
     /**
@@ -289,16 +301,16 @@ class RestExecutorServiceTest {
     void applyAuth_apiKeyQueryParamLocation_addsNoHeader() {
         SchedulerRestConfig config = new SchedulerRestConfig();
         config.setAuthType(AuthType.API_KEY);
-        config.setAuthApiKeyName("X-Custom-Key");
-        config.setAuthApiKeyValueEnc("enc-key");
+        config.setAuthApiKeyName(HEADER_X_CUSTOM_KEY);
+        config.setAuthApiKeyValueEnc(ENC_KEY);
         config.setAuthApiKeyLocation(ApiKeyLocation.QUERY_PARAM);
         // decrypt is still invoked to resolve the value before the location check
-        lenient().when(encryptionService.decrypt("enc-key")).thenReturn("keyval");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        lenient().when(encryptionService.decrypt(ENC_KEY)).thenReturn(KEY_VALUE);
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL)).GET();
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_APPLY_AUTH, config, builder);
 
-        assertThat(builder.build().headers().firstValue("X-Custom-Key")).isEmpty();
+        assertThat(builder.build().headers().firstValue(HEADER_X_CUSTOM_KEY)).isEmpty();
     }
 
     // -------------------------------------------------------------------------
@@ -318,7 +330,7 @@ class RestExecutorServiceTest {
         when(response.statusCode()).thenReturn(200);
         when(response.body()).thenReturn("OK");
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "recordResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_RECORD_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.SUCCESS);
         assertThat(run.getHttpStatusCode()).isEqualTo(200);
@@ -339,7 +351,7 @@ class RestExecutorServiceTest {
         when(response.statusCode()).thenReturn(503);
         when(response.body()).thenReturn("unavailable");
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "recordResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_RECORD_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.FAILURE);
         assertThat(run.getHttpStatusCode()).isEqualTo(503);
@@ -360,7 +372,7 @@ class RestExecutorServiceTest {
         when(response.statusCode()).thenReturn(200);
         when(response.body()).thenReturn("0123456789ABCDEF");
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "recordResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_RECORD_RESPONSE, config, run, response);
 
         assertThat(run.getResponseBody()).isEqualTo("0123456789\n... [TRUNCATED]");
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.SUCCESS);
@@ -374,13 +386,13 @@ class RestExecutorServiceTest {
     @SuppressWarnings("unchecked")
     void recordResponse_bodyContainsAssertionFails_setsFailure() {
         SchedulerRestConfig config = new SchedulerRestConfig();
-        config.setAssertBodyContains("healthy");
+        config.setAssertBodyContains(BODY_HEALTHY);
         SchedulerJobRun run = new SchedulerJobRun();
         HttpResponse<String> response = org.mockito.Mockito.mock(HttpResponse.class);
         when(response.statusCode()).thenReturn(200);
         when(response.body()).thenReturn("service is down");
 
-        ReflectionTestUtils.invokeMethod(restExecutorService, "recordResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(restExecutorService, METHOD_RECORD_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.FAILURE);
         assertThat(run.getErrorMessage()).isEqualTo("Assertion failed for HTTP 200");
@@ -400,7 +412,7 @@ class RestExecutorServiceTest {
         config.setHttpMethod(HttpMethod.POST);
         config.setRequestBody("{\"a\":1}");
         config.setContentType("application/json");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost"));
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(LOCALHOST_URL));
 
         ReflectionTestUtils.invokeMethod(restExecutorService, "applyMethodAndBody", config, builder);
 
