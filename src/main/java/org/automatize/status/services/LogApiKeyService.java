@@ -1,5 +1,6 @@
 package org.automatize.status.services;
 
+import org.automatize.status.exceptions.HashingException;
 import org.automatize.status.models.LogApiKey;
 import org.automatize.status.repositories.LogApiKeyRepository;
 import org.automatize.status.repositories.TenantRepository;
@@ -63,7 +64,7 @@ public class LogApiKeyService {
             byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+            throw new HashingException("SHA-256 not available", e);
         }
     }
 

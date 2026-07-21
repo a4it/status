@@ -37,6 +37,8 @@ public class IncidentNotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(IncidentNotificationService.class);
 
+    private static final String NULL_INCIDENT_WARNING = "Cannot notify subscribers: incident or app is null";
+
     @Autowired
     private NotificationSubscriberService subscriberService;
 
@@ -57,7 +59,7 @@ public class IncidentNotificationService {
     @Transactional(readOnly = true)
     public void notifySubscribersOfNewIncident(StatusIncident incident) {
         if (incident == null || incident.getApp() == null) {
-            logger.warn("Cannot notify subscribers: incident or app is null");
+            logger.warn(NULL_INCIDENT_WARNING);
             return;
         }
 
@@ -114,7 +116,7 @@ public class IncidentNotificationService {
     @Transactional(readOnly = true)
     public void notifySubscribersOfIncidentUpdate(StatusIncident incident, String updateMessage) {
         if (incident == null || incident.getApp() == null) {
-            logger.warn("Cannot notify subscribers: incident or app is null");
+            logger.warn(NULL_INCIDENT_WARNING);
             return;
         }
 
@@ -162,7 +164,7 @@ public class IncidentNotificationService {
     @Transactional(readOnly = true)
     public void notifySubscribersOfIncidentResolution(StatusIncident incident, String resolutionMessage) {
         if (incident == null || incident.getApp() == null) {
-            logger.warn("Cannot notify subscribers: incident or app is null");
+            logger.warn(NULL_INCIDENT_WARNING);
             return;
         }
 

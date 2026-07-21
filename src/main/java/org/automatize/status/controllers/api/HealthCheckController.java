@@ -102,90 +102,107 @@ public class HealthCheckController {
 
         List<HealthCheckStatusResponse> responses = new ArrayList<>();
 
-        // Get all apps
-        List<StatusApp> apps = statusAppRepository.findAll();
-        for (StatusApp app : apps) {
-            // Apply filters
-            if (platformId != null && (app.getPlatform() == null || !platformId.equals(app.getPlatform().getId()))) {
-                continue;
+        for (StatusApp app : statusAppRepository.findAll()) {
+            if (appMatchesFilters(app, platformId, status, checkEnabled)) {
+                responses.add(buildAppResponse(app));
             }
-            if (status != null && !status.equals(app.getStatus())) {
-                continue;
-            }
-            if (checkEnabled != null && !checkEnabled.equals(app.getCheckEnabled())) {
-                continue;
-            }
-
-            HealthCheckStatusResponse response = new HealthCheckStatusResponse();
-            response.setEntityId(app.getId());
-            response.setEntityType("APP");
-            response.setName(app.getName());
-            if (app.getPlatform() != null) {
-                response.setPlatformId(app.getPlatform().getId().toString());
-                response.setPlatformName(app.getPlatform().getName());
-            }
-            response.setCheckEnabled(app.getCheckEnabled());
-            response.setCheckType(app.getCheckType());
-            response.setCheckUrl(app.getCheckUrl());
-            response.setCheckIntervalSeconds(app.getCheckIntervalSeconds());
-            response.setCheckTimeoutSeconds(app.getCheckTimeoutSeconds());
-            response.setCheckExpectedStatus(app.getCheckExpectedStatus());
-            response.setCheckFailureThreshold(app.getCheckFailureThreshold());
-            response.setLastCheckAt(app.getLastCheckAt());
-            response.setLastCheckSuccess(app.getLastCheckSuccess());
-            response.setLastCheckMessage(app.getLastCheckMessage());
-            response.setConsecutiveFailures(app.getConsecutiveFailures());
-            response.setStatus(app.getStatus());
-            responses.add(response);
         }
 
-        // Get all components (excluding those that inherit from app)
-        List<StatusComponent> components = statusComponentRepository.findAll();
-        for (StatusComponent component : components) {
-            // Skip components that inherit check from app
-            if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
-                continue;
+        for (StatusComponent component : statusComponentRepository.findAll()) {
+            if (componentMatchesFilters(component, platformId, status, checkEnabled)) {
+                responses.add(buildComponentResponse(component));
             }
-
-            // Apply filters
-            if (platformId != null) {
-                StatusApp componentApp = component.getApp();
-                if (componentApp == null || componentApp.getPlatform() == null ||
-                    !platformId.equals(componentApp.getPlatform().getId())) {
-                    continue;
-                }
-            }
-            if (status != null && !status.equals(component.getStatus())) {
-                continue;
-            }
-            if (checkEnabled != null && !checkEnabled.equals(component.getCheckEnabled())) {
-                continue;
-            }
-
-            HealthCheckStatusResponse response = new HealthCheckStatusResponse();
-            response.setEntityId(component.getId());
-            response.setEntityType("COMPONENT");
-            response.setName(component.getName());
-            if (component.getApp() != null && component.getApp().getPlatform() != null) {
-                response.setPlatformId(component.getApp().getPlatform().getId().toString());
-                response.setPlatformName(component.getApp().getPlatform().getName());
-            }
-            response.setCheckEnabled(component.getCheckEnabled());
-            response.setCheckType(component.getCheckType());
-            response.setCheckUrl(component.getCheckUrl());
-            response.setCheckIntervalSeconds(component.getCheckIntervalSeconds());
-            response.setCheckTimeoutSeconds(component.getCheckTimeoutSeconds());
-            response.setCheckExpectedStatus(component.getCheckExpectedStatus());
-            response.setCheckFailureThreshold(component.getCheckFailureThreshold());
-            response.setLastCheckAt(component.getLastCheckAt());
-            response.setLastCheckSuccess(component.getLastCheckSuccess());
-            response.setLastCheckMessage(component.getLastCheckMessage());
-            response.setConsecutiveFailures(component.getConsecutiveFailures());
-            response.setStatus(component.getStatus());
-            responses.add(response);
         }
 
         return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * Evaluates whether an app passes the supplied status filters.
+     */
+    private boolean appMatchesFilters(StatusApp app, UUID platformId, String status, Boolean checkEnabled) {
+        if (platformId != null && (app.getPlatform() == null || !platformId.equals(app.getPlatform().getId()))) {
+            return false;
+        }
+        if (status != null && !status.equals(app.getStatus())) {
+            return false;
+        }
+        return checkEnabled == null || checkEnabled.equals(app.getCheckEnabled());
+    }
+
+    /**
+     * Evaluates whether a component passes the supplied status filters.
+     * Components inheriting their check from the parent app are always excluded.
+     */
+    private boolean componentMatchesFilters(StatusComponent component, UUID platformId, String status, Boolean checkEnabled) {
+        if (Boolean.TRUE.equals(component.getCheckInheritFromApp())) {
+            return false;
+        }
+        if (platformId != null) {
+            StatusApp componentApp = component.getApp();
+            if (componentApp == null || componentApp.getPlatform() == null
+                    || !platformId.equals(componentApp.getPlatform().getId())) {
+                return false;
+            }
+        }
+        if (status != null && !status.equals(component.getStatus())) {
+            return false;
+        }
+        return checkEnabled == null || checkEnabled.equals(component.getCheckEnabled());
+    }
+
+    /**
+     * Maps an app to its health check status response.
+     */
+    private HealthCheckStatusResponse buildAppResponse(StatusApp app) {
+        HealthCheckStatusResponse response = new HealthCheckStatusResponse();
+        response.setEntityId(app.getId());
+        response.setEntityType("APP");
+        response.setName(app.getName());
+        if (app.getPlatform() != null) {
+            response.setPlatformId(app.getPlatform().getId().toString());
+            response.setPlatformName(app.getPlatform().getName());
+        }
+        response.setCheckEnabled(app.getCheckEnabled());
+        response.setCheckType(app.getCheckType());
+        response.setCheckUrl(app.getCheckUrl());
+        response.setCheckIntervalSeconds(app.getCheckIntervalSeconds());
+        response.setCheckTimeoutSeconds(app.getCheckTimeoutSeconds());
+        response.setCheckExpectedStatus(app.getCheckExpectedStatus());
+        response.setCheckFailureThreshold(app.getCheckFailureThreshold());
+        response.setLastCheckAt(app.getLastCheckAt());
+        response.setLastCheckSuccess(app.getLastCheckSuccess());
+        response.setLastCheckMessage(app.getLastCheckMessage());
+        response.setConsecutiveFailures(app.getConsecutiveFailures());
+        response.setStatus(app.getStatus());
+        return response;
+    }
+
+    /**
+     * Maps a component to its health check status response.
+     */
+    private HealthCheckStatusResponse buildComponentResponse(StatusComponent component) {
+        HealthCheckStatusResponse response = new HealthCheckStatusResponse();
+        response.setEntityId(component.getId());
+        response.setEntityType("COMPONENT");
+        response.setName(component.getName());
+        if (component.getApp() != null && component.getApp().getPlatform() != null) {
+            response.setPlatformId(component.getApp().getPlatform().getId().toString());
+            response.setPlatformName(component.getApp().getPlatform().getName());
+        }
+        response.setCheckEnabled(component.getCheckEnabled());
+        response.setCheckType(component.getCheckType());
+        response.setCheckUrl(component.getCheckUrl());
+        response.setCheckIntervalSeconds(component.getCheckIntervalSeconds());
+        response.setCheckTimeoutSeconds(component.getCheckTimeoutSeconds());
+        response.setCheckExpectedStatus(component.getCheckExpectedStatus());
+        response.setCheckFailureThreshold(component.getCheckFailureThreshold());
+        response.setLastCheckAt(component.getLastCheckAt());
+        response.setLastCheckSuccess(component.getLastCheckSuccess());
+        response.setLastCheckMessage(component.getLastCheckMessage());
+        response.setConsecutiveFailures(component.getConsecutiveFailures());
+        response.setStatus(component.getStatus());
+        return response;
     }
 
     /**

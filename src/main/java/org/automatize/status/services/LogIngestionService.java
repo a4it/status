@@ -74,7 +74,7 @@ public class LogIngestionService {
             byte[] hash = digest.digest(input.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return java.util.HexFormat.of().formatHex(hash);
         } catch (java.security.NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
+            throw new org.automatize.status.exceptions.HashingException("SHA-256 not available", e);
         }
     }
 
