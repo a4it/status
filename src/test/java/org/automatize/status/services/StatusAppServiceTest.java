@@ -66,17 +66,33 @@ class StatusAppServiceTest {
 
     private final Pageable pageable = PageRequest.of(0, 10);
 
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal succeed.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication
+     * state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a public {@link StatusApp} fixture.
+     *
+     * @param id     the application id
+     * @param slug   the URL slug
+     * @param status the current status (e.g. OPERATIONAL)
+     * @return a populated {@link StatusApp} instance
+     */
     private StatusApp newApp(UUID id, String slug, String status) {
         StatusApp app = new StatusApp();
         app.setId(id);
@@ -87,6 +103,10 @@ class StatusAppServiceTest {
         return app;
     }
 
+    /**
+     * Verifies that looking up an existing app by id returns a response with the
+     * matching id and status.
+     */
     @Test
     void getStatusAppById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -98,6 +118,10 @@ class StatusAppServiceTest {
         assertThat(response.getStatus()).isEqualTo("OPERATIONAL");
     }
 
+    /**
+     * Verifies that looking up a missing app by id raises
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void getStatusAppById_notFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -107,6 +131,10 @@ class StatusAppServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that with no filters the service returns a page sourced from the
+     * repository's paged {@code findAll}.
+     */
     @Test
     void getAllStatusApps_noFilters_returnsPageFromFindAll() {
         StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL");
@@ -117,6 +145,10 @@ class StatusAppServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that filtering by tenant returns a page mapped from the tenant-scoped
+     * repository lookup.
+     */
     @Test
     void getAllStatusApps_byTenant_returnsMappedList() {
         UUID tenantId = UUID.randomUUID();
@@ -128,6 +160,10 @@ class StatusAppServiceTest {
         assertThat(page.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that creating an app with a unique slug persists it and returns a
+     * response carrying the slug and a generated API key.
+     */
     @Test
     void createStatusApp_uniqueSlug_savesAndReturns() {
         UUID tenantId = UUID.randomUUID();
@@ -150,6 +186,10 @@ class StatusAppServiceTest {
         verify(statusAppRepository).save(any(StatusApp.class));
     }
 
+    /**
+     * Verifies that creating an app with a slug already used within the tenant raises
+     * {@link DuplicateResourceException} and never persists.
+     */
     @Test
     void createStatusApp_duplicateSlug_throwsDuplicateResource() {
         UUID tenantId = UUID.randomUUID();
@@ -163,6 +203,10 @@ class StatusAppServiceTest {
         verify(statusAppRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that creating an app referencing a non-existent tenant raises
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void createStatusApp_tenantNotFound_throwsResourceNotFound() {
         UUID tenantId = UUID.randomUUID();
@@ -177,6 +221,9 @@ class StatusAppServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that updating a missing app raises {@link ResourceNotFoundException}.
+     */
     @Test
     void updateStatusApp_notFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -187,6 +234,10 @@ class StatusAppServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that updating an app while keeping its slug applies the new fields and
+     * persists the existing entity.
+     */
     @Test
     void updateStatusApp_sameSlug_updatesAndSaves() {
         UUID id = UUID.randomUUID();

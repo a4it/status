@@ -36,7 +36,7 @@ import java.util.UUID;
  */
 public class SchedulerJobResponse {
 
-    private static final String MASKED = "••••••••";
+    private static final String MASKED = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
     private UUID id;
     private String name;

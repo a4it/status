@@ -288,6 +288,10 @@ class UserServiceTest {
 
     // ---------- createUser ----------
 
+    /**
+     * Verifies that {@code createUser} persists a new user with an encoded password when
+     * both the username and email are unique.
+     */
     @Test
     void createUser_uniqueUsernameAndEmail_savesUser() {
         UserRequest request = buildRequest("newuser", "new@example.com");
@@ -305,6 +309,10 @@ class UserServiceTest {
         verify(userRepository).save(any(User.class));
     }
 
+    /**
+     * Verifies that {@code createUser} throws {@link DuplicateResourceException} and saves
+     * nothing when the username is already taken.
+     */
     @Test
     void createUser_duplicateUsername_throwsDuplicateResourceException() {
         UserRequest request = buildRequest("dup", "new@example.com");
@@ -315,6 +323,10 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code createUser} throws {@link DuplicateResourceException} and saves
+     * nothing when the email is already taken.
+     */
     @Test
     void createUser_duplicateEmail_throwsDuplicateResourceException() {
         UserRequest request = buildRequest("newuser", "dup@example.com");
@@ -326,6 +338,10 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code createUser} associates the resolved organization with the new
+     * user when an organization id is supplied.
+     */
     @Test
     void createUser_withOrganization_associatesOrganization() {
         UUID orgId = UUID.randomUUID();
@@ -345,6 +361,10 @@ class UserServiceTest {
         assertThat(result.getOrganization()).isSameAs(org);
     }
 
+    /**
+     * Verifies that {@code createUser} throws {@link ResourceNotFoundException} when the
+     * supplied organization id cannot be resolved.
+     */
     @Test
     void createUser_organizationNotFound_throwsResourceNotFoundException() {
         UUID orgId = UUID.randomUUID();
@@ -361,6 +381,10 @@ class UserServiceTest {
 
     // ---------- updateUser ----------
 
+    /**
+     * Verifies that {@code updateUser} allows a non-admin user to update their own basic
+     * profile fields.
+     */
     @Test
     void updateUser_selfUpdate_updatesBasicFields() {
         UUID id = UUID.randomUUID();
@@ -378,6 +402,10 @@ class UserServiceTest {
         assertThat(result.getFullName()).isEqualTo("New Name");
     }
 
+    /**
+     * Verifies that {@code updateUser} throws {@link AccessDeniedException} and saves
+     * nothing when a non-admin attempts to update another user.
+     */
     @Test
     void updateUser_otherUserAsNonAdmin_throwsAccessDeniedException() {
         UUID targetId = UUID.randomUUID();
@@ -392,6 +420,10 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
+    /**
+     * Verifies that {@code updateUser} throws {@link DuplicateResourceException} when the
+     * requested username is already taken by another user.
+     */
     @Test
     void updateUser_duplicateUsername_throwsDuplicateResourceException() {
         UUID id = UUID.randomUUID();
@@ -406,6 +438,10 @@ class UserServiceTest {
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
+    /**
+     * Verifies that {@code updateUser} throws {@link DuplicateResourceException} when the
+     * requested email is already taken by another user.
+     */
     @Test
     void updateUser_duplicateEmail_throwsDuplicateResourceException() {
         UUID id = UUID.randomUUID();
@@ -420,6 +456,10 @@ class UserServiceTest {
                 .isInstanceOf(DuplicateResourceException.class);
     }
 
+    /**
+     * Verifies that {@code updateUser} lets an admin change another user's password
+     * (re-encoding it) and reassign their organization.
+     */
     @Test
     void updateUser_adminChangesPasswordAndOrganization() {
         UUID targetId = UUID.randomUUID();
@@ -446,6 +486,10 @@ class UserServiceTest {
 
     // ---------- updateCurrentUserProfile ----------
 
+    /**
+     * Verifies that {@code updateCurrentUserProfile} updates the current user's profile
+     * fields for a valid request.
+     */
     @Test
     void updateCurrentUserProfile_validRequest_updatesProfile() {
         User user = buildUser(currentUserId, "tester");
@@ -463,6 +507,10 @@ class UserServiceTest {
         assertThat(result.getType()).isEqualTo("STANDARD");
     }
 
+    /**
+     * Verifies that {@code updateCurrentUserProfile} throws {@link DuplicateResourceException}
+     * when the requested username is already taken.
+     */
     @Test
     void updateCurrentUserProfile_duplicateUsername_throwsDuplicateResourceException() {
         User user = buildUser(currentUserId, "tester");

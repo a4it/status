@@ -193,6 +193,9 @@ class OrganizationServiceTest {
         assertThat(result.getContent()).hasSize(1);
     }
 
+    /**
+     * Verifies that fetching an existing organization by id returns that organization instance.
+     */
     @Test
     void getOrganizationById_existing_returnsOrganization() {
         UUID id = UUID.randomUUID();
@@ -202,6 +205,10 @@ class OrganizationServiceTest {
         assertThat(organizationService.getOrganizationById(id)).isSameAs(org);
     }
 
+    /**
+     * Verifies that fetching a non-existent organization by id throws
+     * {@link ResourceNotFoundException}.
+     */
     @Test
     void getOrganizationById_missing_throwsResourceNotFoundException() {
         UUID id = UUID.randomUUID();
@@ -211,6 +218,10 @@ class OrganizationServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that {@code getOrganizationsByTenant} returns the repository's list for the tenant id
+     * unchanged.
+     */
     @Test
     void getOrganizationsByTenant_delegatesToRepository() {
         UUID tenantId = UUID.randomUUID();
@@ -220,6 +231,10 @@ class OrganizationServiceTest {
         assertThat(organizationService.getOrganizationsByTenant(tenantId)).isEqualTo(orgs);
     }
 
+    /**
+     * Verifies that when the current principal has an organization id, the corresponding
+     * organization is looked up and returned.
+     */
     @Test
     void getCurrentUserOrganization_withOrganization_returnsIt() {
         UUID orgId = UUID.randomUUID();

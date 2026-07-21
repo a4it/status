@@ -233,16 +233,38 @@ public class SchedulerJobService {
     // Statistics helpers (for dashboard)
     // -------------------------------------------------------------------------
 
+    /**
+     * Counts jobs of a given type for the tenant.
+     *
+     * @param tenantId the tenant scope
+     * @param type     the job type to count
+     * @return the number of matching jobs
+     */
     @Transactional(readOnly = true)
     public long countByType(UUID tenantId, JobType type) {
         return jobRepository.countByTenantIdAndJobType(tenantId, type);
     }
 
+    /**
+     * Counts jobs whose most recent run ended with the given status.
+     *
+     * @param tenantId the tenant scope
+     * @param status   the last-run status to count
+     * @return the number of matching jobs
+     */
     @Transactional(readOnly = true)
     public long countByLastRunStatus(UUID tenantId, JobRunStatus status) {
         return jobRepository.countByTenantIdAndLastRunStatus(tenantId, status);
     }
 
+    /**
+     * Counts runs with the given status that started after the supplied timestamp.
+     *
+     * @param tenantId the tenant scope
+     * @param status   the run status to count
+     * @param since    the lower bound (exclusive) on the run start time
+     * @return the number of matching runs
+     */
     @Transactional(readOnly = true)
     public long countRunsSince(UUID tenantId, JobRunStatus status, ZonedDateTime since) {
         return runRepository.countByTenantIdAndStatusAndStartedAtAfter(tenantId, status, since);
@@ -258,16 +280,19 @@ public class SchedulerJobService {
      * double-encryption.
      */
     private void encryptConfigSensitiveFields(SchedulerJob job) {
+        // Encrypt REST auth secrets when a REST config is present
         if (job.getRestConfig() != null) {
             SchedulerRestConfig rc = job.getRestConfig();
             rc.setAuthPasswordEnc(encryptIfPlaintext(rc.getAuthPasswordEnc()));
             rc.setAuthTokenEnc(encryptIfPlaintext(rc.getAuthTokenEnc()));
             rc.setAuthApiKeyValueEnc(encryptIfPlaintext(rc.getAuthApiKeyValueEnc()));
         }
+        // Encrypt inline SQL password when a SQL config is present
         if (job.getSqlConfig() != null) {
             SchedulerSqlConfig sc = job.getSqlConfig();
             sc.setInlinePasswordEnc(encryptIfPlaintext(sc.getInlinePasswordEnc()));
         }
+        // Encrypt SOAP auth secrets when a SOAP config is present
         if (job.getSoapConfig() != null) {
             SchedulerSoapConfig sc = job.getSoapConfig();
             sc.setAuthPasswordEnc(encryptIfPlaintext(sc.getAuthPasswordEnc()));
@@ -281,6 +306,7 @@ public class SchedulerJobService {
      * already encrypted, and returns {@code null} for blank/null input.
      */
     private String encryptIfPlaintext(String value) {
+        // Blank or null values are returned unchanged
         if (value == null || value.isBlank()) return value;
         try {
             encryptionService.decrypt(value);

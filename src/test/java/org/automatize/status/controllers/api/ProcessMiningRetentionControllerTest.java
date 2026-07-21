@@ -34,6 +34,12 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private ProcessMiningRetentionService service;
 
+    /**
+     * Builds a fully-populated {@link ProcessMiningRetentionResponse} fixture for stubbing service calls.
+     *
+     * @param id the identifier to assign to the response
+     * @return a sample retention response with 30-day retention, enabled, for "All Platforms"
+     */
     private ProcessMiningRetentionResponse sampleResponse(UUID id) {
         ProcessMiningRetentionResponse r = new ProcessMiningRetentionResponse();
         r.setId(id);
@@ -43,6 +49,12 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies GET /api/process-mining/retention returns 200 with the JSON list of retention rules
+     * supplied by the service.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void findAll_returnsOk() throws Exception {
         when(service.findAll()).thenReturn(List.of(sampleResponse(UUID.randomUUID())));
@@ -53,6 +65,11 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].enabled").value(true));
     }
 
+    /**
+     * Verifies GET /api/process-mining/retention/{id} returns 200 with the matching rule when found.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void findById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -63,6 +80,11 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.platformName").value("All Platforms"));
     }
 
+    /**
+     * Verifies that when the service throws {@code NoSuchElementException} (which carries no
+     * {@code @ResponseStatus}), the exception propagates out of {@code mockMvc.perform} rather than
+     * being mapped to a status code.
+     */
     @Test
     void findById_notFound_propagates() {
         UUID id = UUID.randomUUID();
@@ -74,6 +96,11 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
                 () -> mockMvc.perform(get("/api/process-mining/retention/{id}", id)));
     }
 
+    /**
+     * Verifies POST /api/process-mining/retention creates a rule and returns 201 with the created body.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void create_returns201() throws Exception {
         when(service.create(any())).thenReturn(sampleResponse(UUID.randomUUID()));
@@ -85,6 +112,11 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.retentionDays").value(30));
     }
 
+    /**
+     * Verifies PUT /api/process-mining/retention/{id} updates a rule and returns 200 with the updated body.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void update_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
@@ -97,6 +129,11 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
 
+    /**
+     * Verifies DELETE /api/process-mining/retention/{id} returns 204 and delegates to the service.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void delete_returnsNoContent() throws Exception {
         UUID id = UUID.randomUUID();
@@ -107,6 +144,12 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
         verify(service).delete(id);
     }
 
+    /**
+     * Verifies POST /api/process-mining/retention/run triggers a manual retention run and returns 200
+     * with the aggregate result map (rules processed and total deleted).
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void runNow_returnsOk() throws Exception {
         when(service.runRetentionNow())

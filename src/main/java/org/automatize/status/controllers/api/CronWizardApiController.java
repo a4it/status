@@ -31,6 +31,16 @@ public class CronWizardApiController {
     // Validate a cron expression
     // -------------------------------------------------------------------------
 
+    /**
+     * Validates a cron expression and, when valid, returns a human-readable description
+     * and a preview of upcoming executions.
+     * <p>
+     * Handles {@code POST /api/scheduler/cron/validate}.
+     * </p>
+     *
+     * @param request request body containing the {@code expression} to validate
+     * @return ResponseEntity containing validity, a human-readable form, the next runs, and any error
+     */
     @PostMapping("/validate")
     public ResponseEntity<Map<String, Object>> validate(@RequestBody Map<String, String> request) {
         String expression = request.get(EXPRESSION);
@@ -39,6 +49,7 @@ public class CronWizardApiController {
 
         List<String> nextRuns = Collections.emptyList();
         String humanReadable = null;
+        // Only compute human-readable text and next runs when the expression is valid
         if (valid) {
             humanReadable = cronValidationService.toHumanReadable(expression);
             nextRuns = cronValidationService.getNextExecutions(expression, "UTC", 5)
@@ -57,12 +68,23 @@ public class CronWizardApiController {
     // Preview next N executions with timezone
     // -------------------------------------------------------------------------
 
+    /**
+     * Previews the next executions of a cron expression in a given timezone.
+     * <p>
+     * Handles {@code POST /api/scheduler/cron/preview}.
+     * </p>
+     *
+     * @param request request body containing {@code expression}, optional {@code timezone}
+     *                (default {@code UTC}) and optional {@code count} (default 5)
+     * @return ResponseEntity containing the formatted list of upcoming execution times
+     */
     @PostMapping("/preview")
     public ResponseEntity<List<String>> preview(@RequestBody Map<String, Object> request) {
         String expression = (String) request.getOrDefault(EXPRESSION, "");
         String timezone = (String) request.getOrDefault("timezone", "UTC");
         int count = 5;
         Object countObj = request.get("count");
+        // Use the supplied count only when it is a numeric value
         if (countObj instanceof Number n) {
             count = n.intValue();
         }

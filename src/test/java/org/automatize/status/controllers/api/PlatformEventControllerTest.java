@@ -288,6 +288,13 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    /**
+     * Verifies {@code POST /api/events/regenerate-key/component/{componentId}}
+     * maps a service {@link RuntimeException} to HTTP 400 with
+     * {@code success=false}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void regenerateComponentApiKey_serviceFails_returns400() throws Exception {
         UUID componentId = UUID.randomUUID();
@@ -299,6 +306,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(false));
     }
 
+    /**
+     * Verifies {@code POST /api/events/regenerate-key/app/{appId}} returns 200 with
+     * the new {@code apiKey} and {@code success=true}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void regenerateAppApiKey_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
@@ -310,6 +323,12 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    /**
+     * Verifies {@code POST /api/events/regenerate-key/app/{appId}} maps a service
+     * {@link RuntimeException} to HTTP 400 with {@code success=false}.
+     *
+     * @throws Exception if the MockMvc request fails
+     */
     @Test
     void regenerateAppApiKey_serviceFails_returns400() throws Exception {
         UUID appId = UUID.randomUUID();

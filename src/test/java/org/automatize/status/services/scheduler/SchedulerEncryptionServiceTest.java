@@ -191,6 +191,10 @@ class SchedulerEncryptionServiceTest {
                 .isInstanceOf(EncryptionException.class);
     }
 
+    /**
+     * Verifies input shorter than the 12-byte IV length is rejected.
+     * Expected outcome: an {@link EncryptionException} is thrown.
+     */
     @Test
     void decrypt_tooShortForIv_throwsEncryptionException() {
         // Fewer bytes than the 12-byte IV length triggers a negative array size.
@@ -202,16 +206,28 @@ class SchedulerEncryptionServiceTest {
 
     // ---- maskValue -----------------------------------------------------
 
+    /**
+     * Verifies a non-null value is replaced by the fixed mask string.
+     * Expected outcome: {@code maskValue} returns the bullet mask.
+     */
     @Test
     void maskValue_nonNull_returnsMask() {
         assertThat(service.maskValue("secret")).isEqualTo("••••••••");
     }
 
+    /**
+     * Verifies masking {@code null} returns {@code null}.
+     * Expected outcome: {@code maskValue(null)} is {@code null}.
+     */
     @Test
     void maskValue_null_returnsNull() {
         assertThat(service.maskValue(null)).isNull();
     }
 
+    /**
+     * Verifies an empty (but non-null) string is masked.
+     * Expected outcome: {@code maskValue} returns the bullet mask.
+     */
     @Test
     void maskValue_emptyString_returnsMask() {
         // Empty string is non-null, so it is masked.

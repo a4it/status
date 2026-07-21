@@ -91,6 +91,10 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getSetting("missing", "fallback")).isEqualTo("fallback");
     }
 
+    /**
+     * Verifies that updating an existing setting mutates the stored row's value in place and
+     * saves it.
+     */
     @Test
     void updateSetting_whenExisting_updatesValueAndSaves() {
         HealthCheckSettings existing = setting("enabled", "true");
@@ -102,6 +106,10 @@ class HealthCheckSettingsServiceTest {
         verify(repository).save(existing);
     }
 
+    /**
+     * Verifies that updating a missing setting creates a new row with the given key/value
+     * and saves it (asserted via a captured argument).
+     */
     @Test
     void updateSetting_whenMissing_createsNewAndSaves() {
         when(repository.findBySettingKey("enabled")).thenReturn(Optional.empty());

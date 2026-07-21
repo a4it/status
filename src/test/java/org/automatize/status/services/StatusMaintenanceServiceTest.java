@@ -243,6 +243,9 @@ class StatusMaintenanceServiceTest {
         verify(statusMaintenanceComponentRepository).save(any(StatusMaintenanceComponent.class));
     }
 
+    /**
+     * Verifies that updating a SCHEDULED maintenance applies the new field values (e.g. title).
+     */
     @Test
     void updateMaintenance_scheduled_updates() {
         UUID id = UUID.randomUUID();
@@ -259,6 +262,9 @@ class StatusMaintenanceServiceTest {
         assertThat(response.getTitle()).isEqualTo("Updated");
     }
 
+    /**
+     * Verifies that attempting to update a COMPLETED maintenance throws a {@link RuntimeException}.
+     */
     @Test
     void updateMaintenance_completed_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -269,6 +275,9 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that updating a maintenance to a window whose start is after its end throws a {@link RuntimeException}.
+     */
     @Test
     void updateMaintenance_startAfterEnd_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -283,6 +292,9 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that updating a maintenance whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void updateMaintenance_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -292,6 +304,9 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that changing a maintenance status (e.g. to CANCELLED) updates and saves the maintenance.
+     */
     @Test
     void updateStatus_updatesAndSaves() {
         UUID id = UUID.randomUUID();
@@ -304,6 +319,10 @@ class StatusMaintenanceServiceTest {
         assertThat(response.getStatus()).isEqualTo("CANCELLED");
     }
 
+    /**
+     * Verifies that starting a SCHEDULED maintenance sets it to IN_PROGRESS and moves affected components
+     * and their app to the UNDER_MAINTENANCE status.
+     */
     @Test
     void startMaintenance_scheduled_setsInProgressAndUpdatesComponents() {
         UUID id = UUID.randomUUID();
@@ -333,6 +352,9 @@ class StatusMaintenanceServiceTest {
         assertThat(app.getStatus()).isEqualTo("UNDER_MAINTENANCE");
     }
 
+    /**
+     * Verifies that attempting to start a maintenance that is not in the SCHEDULED status throws a {@link RuntimeException}.
+     */
     @Test
     void startMaintenance_notScheduled_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -343,6 +365,10 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that completing an IN_PROGRESS maintenance sets it to COMPLETED and resets affected
+     * components and their app back to the OPERATIONAL status.
+     */
     @Test
     void completeMaintenance_inProgress_setsCompletedAndResetsComponents() {
         UUID id = UUID.randomUUID();
@@ -373,6 +399,9 @@ class StatusMaintenanceServiceTest {
         assertThat(app.getStatus()).isEqualTo("OPERATIONAL");
     }
 
+    /**
+     * Verifies that attempting to complete a maintenance that is not in the IN_PROGRESS status throws a {@link RuntimeException}.
+     */
     @Test
     void completeMaintenance_notInProgress_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -383,6 +412,9 @@ class StatusMaintenanceServiceTest {
                 .isInstanceOf(RuntimeException.class);
     }
 
+    /**
+     * Verifies that a SCHEDULED maintenance can be deleted.
+     */
     @Test
     void deleteMaintenance_scheduled_deletes() {
         UUID id = UUID.randomUUID();
@@ -394,6 +426,10 @@ class StatusMaintenanceServiceTest {
         verify(statusMaintenanceRepository).delete(maintenance);
     }
 
+    /**
+     * Verifies that attempting to delete an IN_PROGRESS maintenance throws a {@link RuntimeException}
+     * and never deletes it.
+     */
     @Test
     void deleteMaintenance_inProgress_throwsRuntime() {
         UUID id = UUID.randomUUID();
@@ -405,6 +441,9 @@ class StatusMaintenanceServiceTest {
         verify(statusMaintenanceRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that fetching upcoming maintenance for an app returns only entries in the SCHEDULED status.
+     */
     @Test
     void getUpcomingMaintenance_byApp_returnsOnlyScheduled() {
         UUID appId = UUID.randomUUID();
