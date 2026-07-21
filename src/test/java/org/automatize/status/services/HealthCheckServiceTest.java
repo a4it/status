@@ -328,6 +328,10 @@ class HealthCheckServiceTest {
         assertThat(component.getStatus()).isEqualTo("MAJOR_OUTAGE");
     }
 
+    /**
+     * Verifies that a failed check keeping the component's failure count below the threshold
+     * increments the counter, leaves the status unchanged, and saves it.
+     */
     @Test
     void updateComponentCheckResult_failureBelowThreshold_noStatusChange() {
         StatusComponent component = componentWith("OPERATIONAL", 0, 3);

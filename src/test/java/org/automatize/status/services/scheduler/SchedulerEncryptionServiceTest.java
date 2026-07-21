@@ -24,6 +24,9 @@ class SchedulerEncryptionServiceTest {
 
     private SchedulerEncryptionService service;
 
+    /**
+     * Creates a fresh service and injects the deterministic Base64 AES key via reflection before each test.
+     */
     @BeforeEach
     void setUp() {
         service = new SchedulerEncryptionService();
@@ -32,6 +35,10 @@ class SchedulerEncryptionServiceTest {
 
     // ---- encrypt / decrypt round-trip ---------------------------------
 
+    /**
+     * Verifies a plaintext survives an encrypt-then-decrypt round-trip.
+     * Expected outcome: the decrypted value equals the original plaintext.
+     */
     @Test
     void encryptThenDecrypt_plaintext_returnsOriginal() {
         String plaintext = "super-secret-password";
@@ -42,6 +49,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(decrypted).isEqualTo(plaintext);
     }
 
+    /**
+     * Verifies an empty string survives the encrypt-then-decrypt round-trip.
+     * Expected outcome: the decrypted value is empty.
+     */
     @Test
     void encryptThenDecrypt_emptyString_returnsOriginal() {
         String encrypted = service.encrypt("");
@@ -49,6 +60,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(service.decrypt(encrypted)).isEmpty();
     }
 
+    /**
+     * Verifies a Unicode string survives the encrypt-then-decrypt round-trip.
+     * Expected outcome: the decrypted value equals the original Unicode plaintext.
+     */
     @Test
     void encryptThenDecrypt_unicode_returnsOriginal() {
         String plaintext = "pä$$wörd-✓-码";
@@ -56,6 +71,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(service.decrypt(service.encrypt(plaintext))).isEqualTo(plaintext);
     }
 
+    /**
+     * Verifies encrypting the same input twice yields different ciphertexts due to a random IV.
+     * Expected outcome: the two ciphertexts differ but both decrypt to the original.
+     */
     @Test
     void encrypt_sameInputTwice_producesDifferentCiphertext() {
         // A random IV is generated per call, so ciphertexts must differ.
@@ -67,6 +86,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(service.decrypt(b)).isEqualTo("repeat");
     }
 
+    /**
+     * Verifies the ciphertext output is valid Base64.
+     * Expected outcome: the output decodes to a non-empty byte array.
+     */
     @Test
     void encrypt_producesValidBase64() {
         String encrypted = service.encrypt("value");
@@ -77,11 +100,19 @@ class SchedulerEncryptionServiceTest {
 
     // ---- null handling -------------------------------------------------
 
+    /**
+     * Verifies encrypting {@code null} returns {@code null}.
+     * Expected outcome: {@code encrypt(null)} is {@code null}.
+     */
     @Test
     void encrypt_null_returnsNull() {
         assertThat(service.encrypt(null)).isNull();
     }
 
+    /**
+     * Verifies decrypting {@code null} returns {@code null}.
+     * Expected outcome: {@code decrypt(null)} is {@code null}.
+     */
     @Test
     void decrypt_null_returnsNull() {
         assertThat(service.decrypt(null)).isNull();
@@ -89,6 +120,10 @@ class SchedulerEncryptionServiceTest {
 
     // ---- default key (no property configured) -------------------------
 
+    /**
+     * Verifies the round-trip works with the built-in default key (empty key property).
+     * Expected outcome: the decrypted value equals the original.
+     */
     @Test
     void encryptThenDecrypt_withDefaultKey_returnsOriginal() {
         SchedulerEncryptionService defaultKeyService = new SchedulerEncryptionService();
@@ -99,6 +134,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo("dev-secret");
     }
 
+    /**
+     * Verifies a {@code null} key property falls back to the default key for the round-trip.
+     * Expected outcome: the decrypted value equals the original.
+     */
     @Test
     void encryptThenDecrypt_withNullKeyProperty_usesDefaultKey() {
         SchedulerEncryptionService defaultKeyService = new SchedulerEncryptionService();
@@ -109,6 +148,10 @@ class SchedulerEncryptionServiceTest {
         assertThat(defaultKeyService.decrypt(encrypted)).isEqualTo("dev-secret");
     }
 
+    /**
+     * Verifies decrypting a value encrypted under a different key fails GCM authentication.
+     * Expected outcome: an {@link EncryptionException} is thrown.
+     */
     @Test
     void decrypt_valueEncryptedWithDifferentKey_throwsEncryptionException() {
         SchedulerEncryptionService other = new SchedulerEncryptionService();
@@ -122,12 +165,20 @@ class SchedulerEncryptionServiceTest {
 
     // ---- decrypt failure paths ----------------------------------------
 
+    /**
+     * Verifies decrypting non-Base64 garbage input fails.
+     * Expected outcome: an {@link EncryptionException} is thrown.
+     */
     @Test
     void decrypt_garbageBase64_throwsEncryptionException() {
         assertThatThrownBy(() -> service.decrypt("!!!not-base64!!!"))
                 .isInstanceOf(EncryptionException.class);
     }
 
+    /**
+     * Verifies a single flipped bit in the ciphertext breaks GCM authentication.
+     * Expected outcome: an {@link EncryptionException} is thrown.
+     */
     @Test
     void decrypt_tamperedCiphertext_throwsEncryptionException() {
         String encrypted = service.encrypt("payload");

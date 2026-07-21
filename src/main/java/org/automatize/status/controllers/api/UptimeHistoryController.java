@@ -37,6 +37,11 @@ public class UptimeHistoryController {
 
     private final UptimeHistoryService uptimeHistoryService;
 
+    /**
+     * Constructs the controller with its required uptime history service.
+     *
+     * @param uptimeHistoryService the service performing uptime history calculations
+     */
     public UptimeHistoryController(UptimeHistoryService uptimeHistoryService) {
         this.uptimeHistoryService = uptimeHistoryService;
     }
@@ -57,6 +62,7 @@ public class UptimeHistoryController {
     public ResponseEntity<Map<String, Object>> backfillUptimeHistory(
             @RequestParam(defaultValue = "90") int days) {
 
+        // Reject requests for fewer than one day
         if (days < 1) {
             Map<String, Object> error = new HashMap<>();
             error.put(KEY_SUCCESS,false);
@@ -64,6 +70,7 @@ public class UptimeHistoryController {
             return ResponseEntity.badRequest().body(error);
         }
 
+        // Reject requests exceeding the maximum backfill window of 365 days
         if (days > 365) {
             Map<String, Object> error = new HashMap<>();
             error.put(KEY_SUCCESS,false);
@@ -110,6 +117,7 @@ public class UptimeHistoryController {
             return ResponseEntity.badRequest().body(error);
         }
 
+        // Reject today or any future date; only past days can be recalculated
         if (targetDate.isAfter(LocalDate.now().minusDays(1))) {
             Map<String, Object> error = new HashMap<>();
             error.put(KEY_SUCCESS,false);

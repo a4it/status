@@ -157,11 +157,23 @@ public class HelpController {
         return results;
     }
 
+    /**
+     * Renders markdown source to HTML.
+     *
+     * @param markdown the markdown source
+     * @return the rendered HTML
+     */
     private String markdownToHtml(String markdown) {
         Node document = parser.parse(markdown);
         return renderer.render(document);
     }
 
+    /**
+     * Extracts the document title from the first level-one heading.
+     *
+     * @param markdown the markdown source
+     * @return the heading text, or {@code "Documentation"} when no heading is present
+     */
     private String extractTitle(String markdown) {
         return Arrays.stream(markdown.split("\n"))
                 .filter(line -> line.startsWith("# "))
@@ -170,6 +182,13 @@ public class HelpController {
                 .orElse("Documentation");
     }
 
+    /**
+     * Counts the non-overlapping occurrences of a term within a text.
+     *
+     * @param text the text to search
+     * @param term the term to count
+     * @return the number of occurrences
+     */
     private int countOccurrences(String text, String term) {
         int count = 0;
         int idx = 0;
@@ -180,15 +199,26 @@ public class HelpController {
         return count;
     }
 
+    /**
+     * Builds a short excerpt of content centred on the first occurrence of a query.
+     *
+     * @param content the full content to excerpt from
+     * @param query the query whose match anchors the excerpt
+     * @param maxLength the fallback length used when the query is not found
+     * @return the trimmed excerpt, with leading/trailing ellipses where truncated
+     */
     private String buildExcerpt(String content, String query, int maxLength) {
         String lower = content.toLowerCase();
         int pos = lower.indexOf(query.toLowerCase());
+        // Query not present: fall back to the leading slice of the content
         if (pos == -1) return content.substring(0, Math.min(maxLength, content.length()));
 
         int start = Math.max(0, pos - 60);
         int end = Math.min(content.length(), pos + query.length() + 140);
         String excerpt = content.substring(start, end).replaceAll("[#*`>]", "").trim();
+        // Prepend an ellipsis when the excerpt does not start at the beginning of the content
         if (start > 0) excerpt = "..." + excerpt;
+        // Append an ellipsis when the excerpt does not reach the end of the content
         if (end < content.length()) excerpt = excerpt + "...";
         return excerpt;
     }

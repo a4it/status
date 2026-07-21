@@ -21,6 +21,12 @@ import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link HealthCheckSettingsService}.
+ *
+ * <p>Testing approach: the {@link HealthCheckSettingsRepository} is a Mockito mock and the
+ * service under test is created via {@link InjectMocks}. Tests stub repository lookups to
+ * return persisted {@link HealthCheckSettings} rows (or empties) and assert on the mapped
+ * results, the create-vs-update save behaviour (captured with {@link ArgumentCaptor}), and
+ * the typed getters' parsing and default-fallback logic for malformed values.</p>
  */
 @ExtendWith(MockitoExtension.class)
 class HealthCheckSettingsServiceTest {
@@ -31,6 +37,14 @@ class HealthCheckSettingsServiceTest {
     @InjectMocks
     private HealthCheckSettingsService service;
 
+    /**
+     * Builds a {@link HealthCheckSettings} row with the given key and value for stubbing
+     * repository responses.
+     *
+     * @param key   the setting key
+     * @param value the setting value
+     * @return a populated {@link HealthCheckSettings} test fixture
+     */
     private HealthCheckSettings setting(String key, String value) {
         HealthCheckSettings s = new HealthCheckSettings();
         s.setSettingKey(key);
@@ -38,6 +52,10 @@ class HealthCheckSettingsServiceTest {
         return s;
     }
 
+    /**
+     * Verifies that all settings rows are collapsed into a key-to-value map preserving each
+     * entry.
+     */
     @Test
     void getAllSettings_mapsEntitiesToKeyValueMap() {
         when(repository.findAll()).thenReturn(List.of(
@@ -52,6 +70,10 @@ class HealthCheckSettingsServiceTest {
                 .hasSize(2);
     }
 
+    /**
+     * Verifies that a present setting returns its stored value rather than the supplied
+     * default.
+     */
     @Test
     void getSetting_whenFound_returnsValue() {
         when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "false")));
@@ -59,6 +81,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.getSetting("enabled", "true")).isEqualTo("false");
     }
 
+    /**
+     * Verifies that a missing setting returns the supplied default value.
+     */
     @Test
     void getSetting_whenMissing_returnsDefault() {
         when(repository.findBySettingKey("missing")).thenReturn(Optional.empty());

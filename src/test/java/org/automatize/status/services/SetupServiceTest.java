@@ -445,6 +445,10 @@ class SetupServiceTest {
         assertThat(captor.getValue().getOrganization()).isNull();
     }
 
+    /**
+     * Verifies that when the supplied organization id does not resolve the admin is
+     * still saved, but with a null organization.
+     */
     @Test
     void createAdmin_whenOrganizationNotFound_savesAdminWithNullOrganization() {
         UUID orgId = UUID.randomUUID();
@@ -464,6 +468,13 @@ class SetupServiceTest {
         assertThat(captor.getValue().getOrganization()).isNull();
     }
 
+    /**
+     * Builds a {@link SetupAdminRequest} fixture with fixed credentials and the given
+     * organization id.
+     *
+     * @param organizationId the organization id to associate (may be {@code null})
+     * @return a populated {@link SetupAdminRequest} instance
+     */
     private SetupAdminRequest adminRequest(UUID organizationId) {
         SetupAdminRequest request = new SetupAdminRequest();
         request.setUsername("admin");

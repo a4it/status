@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZonedDateTime;
+import java.util.UUID;
 
 /**
  * Housekeeping service that purges old {@link org.automatize.status.models.SchedulerJobRun}
@@ -51,14 +52,21 @@ public class SchedulerRunRetentionService {
         logger.info("Starting scheduler run retention cleanup (retention: {} days)...", retentionDays);
         ZonedDateTime cutoff = ZonedDateTime.now().minusDays(retentionDays);
 
-        jobRepository.findAll().forEach(job -> {
-            try {
-                runRepository.deleteByJobIdAndStartedAtBefore(job.getId(), cutoff);
-            } catch (Exception e) {
-                logger.error("Error cleaning runs for job " + job.getId(), e);
-            }
-        });
+        jobRepository.findAll().forEach(job -> cleanRunsForJob(job.getId(), cutoff));
 
         logger.info("Scheduler run retention cleanup completed");
+    }
+
+    /**
+     * Purges expired runs for a single job. Failures are logged and swallowed on
+     * purpose so that one problematic job cannot abort the nightly batch for the
+     * rest. The exception is logged and deliberately not rethrown (satisfies S2139).
+     */
+    private void cleanRunsForJob(UUID jobId, ZonedDateTime cutoff) {
+        try {
+            runRepository.deleteByJobIdAndStartedAtBefore(jobId, cutoff);
+        } catch (RuntimeException e) {
+            logger.error("Error cleaning runs for job {}", jobId, e);
+        }
     }
 }
