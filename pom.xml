@@ -19,7 +19,7 @@
     <description>Status Monitoring Solution</description>
 
     <properties>
-        <revision>0.0.135-SNAPSHOT</revision>
+        <revision>0.0.143-SNAPSHOT</revision>
         <java.version>25</java.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
@@ -147,6 +147,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Spring Boot 4 extracted the @WebMvcTest slice into its own module -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -251,6 +251,9 @@ public class JwtUtils {
             logger.debug("JWT token is expired: {}", e.getMessage(), e);
         } catch (UnsupportedJwtException e) {
             logger.warn("JWT token is unsupported: {}", e.getMessage(), e);
+        } catch (JwtException e) {
+            // Catches SignatureException (tampered token) and any other JWT failure.
+            logger.warn("JWT token is invalid: {}", e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             logger.warn("JWT claims string is empty: {}", e.getMessage(), e);
         }

@@ -68,6 +68,7 @@ class HealthCheckSchedulerTest {
     private StatusComponent checkableComponent() {
         StatusComponent component = new StatusComponent();
         component.setName("component");
+        component.setCheckInheritFromApp(false);
         component.setCheckEnabled(true);
         component.setCheckType("HTTP_GET");
         component.setCheckUrl("http://8.8.8.8");
