@@ -1,0 +1,252 @@
+package org.automatize.status.services;
+
+import org.automatize.status.api.response.StatusPlatformResponse;
+import org.automatize.status.models.Organization;
+import org.automatize.status.models.StatusApp;
+import org.automatize.status.models.StatusPlatform;
+import org.automatize.status.models.Tenant;
+import org.automatize.status.repositories.OrganizationRepository;
+import org.automatize.status.repositories.StatusAppRepository;
+import org.automatize.status.repositories.StatusPlatformRepository;
+import org.automatize.status.repositories.TenantRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Unit tests for {@link StatusPlatformService}.
+ */
+@ExtendWith(MockitoExtension.class)
+class StatusPlatformServiceTest {
+
+    @Mock
+    private StatusPlatformRepository statusPlatformRepository;
+    @Mock
+    private StatusAppRepository statusAppRepository;
+    @Mock
+    private TenantRepository tenantRepository;
+    @Mock
+    private OrganizationRepository organizationRepository;
+
+    @InjectMocks
+    private StatusPlatformService statusPlatformService;
+
+    private final Pageable pageable = PageRequest.of(0, 10);
+
+    @BeforeEach
+    void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("tester", null, List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private StatusPlatform newPlatform(UUID id, String slug, String status) {
+        StatusPlatform platform = new StatusPlatform();
+        platform.setId(id);
+        platform.setName("Platform " + slug);
+        platform.setSlug(slug);
+        platform.setStatus(status);
+        platform.setIsPublic(true);
+        platform.setPosition(0);
+        return platform;
+    }
+
+    @Test
+    void getPlatformById_existingId_returnsResponse() {
+        UUID id = UUID.randomUUID();
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(newPlatform(id, "cloud", "OPERATIONAL")));
+
+        StatusPlatformResponse response = statusPlatformService.getPlatformById(id);
+
+        assertThat(response.getId()).isEqualTo(id);
+        assertThat(response.getSlug()).isEqualTo("cloud");
+    }
+
+    @Test
+    void getPlatformById_notFound_throwsRuntime() {
+        UUID id = UUID.randomUUID();
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> statusPlatformService.getPlatformById(id))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void getPlatformBySlug_found_returnsResponse() {
+        when(statusPlatformRepository.findBySlug("cloud"))
+                .thenReturn(Optional.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL")));
+
+        StatusPlatformResponse response = statusPlatformService.getPlatformBySlug("cloud");
+
+        assertThat(response.getSlug()).isEqualTo("cloud");
+    }
+
+    @Test
+    void getPlatformBySlug_notFound_throwsRuntime() {
+        when(statusPlatformRepository.findBySlug("x")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> statusPlatformService.getPlatformBySlug("x"))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void getAllPlatforms_noFilter_returnsPageFromFindAll() {
+        when(statusPlatformRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL"))));
+
+        var page = statusPlatformService.getAllPlatforms(null, null, null, pageable);
+
+        assertThat(page.getContent()).hasSize(1);
+    }
+
+    @Test
+    void getAllPlatformsOrdered_returnsOrderedList() {
+        when(statusPlatformRepository.findAllByOrderByPosition())
+                .thenReturn(List.of(newPlatform(UUID.randomUUID(), "cloud", "OPERATIONAL")));
+
+        List<StatusPlatformResponse> result = statusPlatformService.getAllPlatformsOrdered();
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void createPlatform_noTenant_saves() {
+        StatusPlatform platform = newPlatform(null, "cloud", "OPERATIONAL");
+        when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StatusPlatformResponse response = statusPlatformService.createPlatform(platform);
+
+        assertThat(response.getSlug()).isEqualTo("cloud");
+        verify(statusPlatformRepository).save(platform);
+    }
+
+    @Test
+    void createPlatform_duplicateSlugInTenant_throwsRuntime() {
+        UUID tenantId = UUID.randomUUID();
+        Tenant tenant = new Tenant();
+        tenant.setId(tenantId);
+        StatusPlatform platform = newPlatform(null, "dup", "OPERATIONAL");
+        platform.setTenant(tenant);
+        when(statusPlatformRepository.existsByTenantIdAndSlug(tenantId, "dup")).thenReturn(true);
+
+        assertThatThrownBy(() -> statusPlatformService.createPlatform(platform))
+                .isInstanceOf(RuntimeException.class);
+        verify(statusPlatformRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlatform_withTenantAndOrganizationIds_resolvesAndSaves() {
+        UUID tenantId = UUID.randomUUID();
+        UUID orgId = UUID.randomUUID();
+        Tenant tenant = new Tenant();
+        tenant.setId(tenantId);
+        Organization org = new Organization();
+        org.setId(orgId);
+        StatusPlatform platform = newPlatform(null, "cloud", "OPERATIONAL");
+
+        when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
+        when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
+        when(statusPlatformRepository.existsByTenantIdAndSlug(tenantId, "cloud")).thenReturn(false);
+        when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StatusPlatformResponse response = statusPlatformService.createPlatform(platform, tenantId, orgId);
+
+        assertThat(response.getSlug()).isEqualTo("cloud");
+        assertThat(platform.getTenant()).isEqualTo(tenant);
+        assertThat(platform.getOrganization()).isEqualTo(org);
+    }
+
+    @Test
+    void updatePlatform_sameSlug_updatesFields() {
+        UUID id = UUID.randomUUID();
+        StatusPlatform existing = newPlatform(id, "cloud", "OPERATIONAL");
+        StatusPlatform updated = newPlatform(null, "cloud", "DEGRADED");
+        updated.setName("Renamed");
+
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(existing));
+        when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StatusPlatformResponse response = statusPlatformService.updatePlatform(id, updated);
+
+        assertThat(response.getName()).isEqualTo("Renamed");
+        assertThat(response.getStatus()).isEqualTo("DEGRADED");
+    }
+
+    @Test
+    void updatePlatform_notFound_throwsRuntime() {
+        UUID id = UUID.randomUUID();
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> statusPlatformService.updatePlatform(id, newPlatform(null, "x", "OPERATIONAL")))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void updateStatus_updatesAndSaves() {
+        UUID id = UUID.randomUUID();
+        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
+        when(statusPlatformRepository.save(any(StatusPlatform.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        StatusPlatformResponse response = statusPlatformService.updateStatus(id, "MAJOR_OUTAGE");
+
+        assertThat(response.getStatus()).isEqualTo("MAJOR_OUTAGE");
+    }
+
+    @Test
+    void deletePlatform_noAssociatedApps_deletes() {
+        UUID id = UUID.randomUUID();
+        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
+        when(statusAppRepository.findByPlatformId(id)).thenReturn(List.of());
+
+        statusPlatformService.deletePlatform(id);
+
+        verify(statusPlatformRepository).delete(platform);
+    }
+
+    @Test
+    void deletePlatform_withAssociatedApps_throwsRuntime() {
+        UUID id = UUID.randomUUID();
+        StatusPlatform platform = newPlatform(id, "cloud", "OPERATIONAL");
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.of(platform));
+        when(statusAppRepository.findByPlatformId(id)).thenReturn(List.of(new StatusApp()));
+
+        assertThatThrownBy(() -> statusPlatformService.deletePlatform(id))
+                .isInstanceOf(RuntimeException.class);
+        verify(statusPlatformRepository, never()).delete(any());
+    }
+
+    @Test
+    void deletePlatform_notFound_throwsRuntime() {
+        UUID id = UUID.randomUUID();
+        when(statusPlatformRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> statusPlatformService.deletePlatform(id))
+                .isInstanceOf(RuntimeException.class);
+    }
+}
