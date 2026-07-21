@@ -35,6 +35,20 @@ class StatusIncidentRepositoryTest {
     @Autowired
     private StatusIncidentRepository repository;
 
+    private static final String SEVERITY_MAJOR = "MAJOR";
+    private static final String SEVERITY_MINOR = "MINOR";
+    private static final String STATUS_INVESTIGATING = "INVESTIGATING";
+    private static final String STATUS_RESOLVED = "RESOLVED";
+    private static final String APP_B_NAME = "App B";
+    private static final String APP_B_SLUG = "app-b";
+    private static final String ORG_B_NAME = "Org B";
+    private static final String TITLE_PRIVATE = "Private";
+    private static final String TITLE_PUBLIC = "Public";
+    private static final String TITLE_ONGOING = "Ongoing";
+    private static final String TITLE_CLOSED = "Closed";
+    private static final String TITLE_DATABASE_OUTAGE = "Database outage";
+    private static final String CREATED_BY_SYSTEM = "system";
+
     private Tenant tenant;
     private Organization organization;
     private StatusApp app;
@@ -92,9 +106,9 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByAppId_returnsIncidentsOfApp() {
-        persistIncident("Outage", "INVESTIGATING", "MAJOR", now, app);
-        StatusApp other = persistApp("App B", "app-b", tenant, organization);
-        persistIncident("Other", "INVESTIGATING", "MINOR", now, other);
+        persistIncident("Outage", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        StatusApp other = persistApp(APP_B_NAME, APP_B_SLUG, tenant, organization);
+        persistIncident("Other", STATUS_INVESTIGATING, SEVERITY_MINOR, now, other);
 
         assertThat(repository.findByAppId(app.getId()))
                 .extracting(StatusIncident::getTitle).containsExactly("Outage");
@@ -102,17 +116,17 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByStatus_filtersByStatus() {
-        persistIncident("Open", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Done", "RESOLVED", "MAJOR", now, app);
+        persistIncident("Open", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Done", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
 
-        assertThat(repository.findByStatus("RESOLVED"))
+        assertThat(repository.findByStatus(STATUS_RESOLVED))
                 .extracting(StatusIncident::getTitle).containsExactly("Done");
     }
 
     @Test
     void findBySeverity_filtersBySeverity() {
-        persistIncident("Critical", "INVESTIGATING", "CRITICAL", now, app);
-        persistIncident("Minor", "INVESTIGATING", "MINOR", now, app);
+        persistIncident("Critical", STATUS_INVESTIGATING, "CRITICAL", now, app);
+        persistIncident("Minor", STATUS_INVESTIGATING, SEVERITY_MINOR, now, app);
 
         assertThat(repository.findBySeverity("CRITICAL"))
                 .extracting(StatusIncident::getTitle).containsExactly("Critical");
@@ -120,38 +134,38 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByIsPublic_filtersByVisibility() {
-        StatusIncident priv = persistIncident("Private", "INVESTIGATING", "MAJOR", now, app);
+        StatusIncident priv = persistIncident(TITLE_PRIVATE, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         priv.setIsPublic(false);
         em.persistAndFlush(priv);
-        persistIncident("Public", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident(TITLE_PUBLIC, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
 
         assertThat(repository.findByIsPublic(false))
-                .extracting(StatusIncident::getTitle).containsExactly("Private");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_PRIVATE);
     }
 
     @Test
     void findByAppIdAndStatus_combinesAppAndStatus() {
-        persistIncident("Open", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Done", "RESOLVED", "MAJOR", now, app);
+        persistIncident("Open", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Done", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
 
-        assertThat(repository.findByAppIdAndStatus(app.getId(), "INVESTIGATING"))
+        assertThat(repository.findByAppIdAndStatus(app.getId(), STATUS_INVESTIGATING))
                 .extracting(StatusIncident::getTitle).containsExactly("Open");
     }
 
     @Test
     void findByAppIdAndStatusNot_excludesGivenStatus() {
-        persistIncident("Open", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Done", "RESOLVED", "MAJOR", now, app);
+        persistIncident("Open", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Done", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
 
-        assertThat(repository.findByAppIdAndStatusNot(app.getId(), "RESOLVED"))
+        assertThat(repository.findByAppIdAndStatusNot(app.getId(), STATUS_RESOLVED))
                 .extracting(StatusIncident::getTitle).containsExactly("Open");
     }
 
     @Test
     void findActivePublicIncidentsByAppIdIn_returnsOnlyActivePublic() {
-        persistIncident("ActivePublic", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Resolved", "RESOLVED", "MAJOR", now, app);
-        StatusIncident priv = persistIncident("ActivePrivate", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident("ActivePublic", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Resolved", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
+        StatusIncident priv = persistIncident("ActivePrivate", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         priv.setIsPublic(false);
         em.persistAndFlush(priv);
 
@@ -161,19 +175,19 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByAppIdAndIsPublic_combinesAppAndVisibility() {
-        persistIncident("Public", "INVESTIGATING", "MAJOR", now, app);
-        StatusIncident priv = persistIncident("Private", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident(TITLE_PUBLIC, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        StatusIncident priv = persistIncident(TITLE_PRIVATE, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         priv.setIsPublic(false);
         em.persistAndFlush(priv);
 
         assertThat(repository.findByAppIdAndIsPublic(app.getId(), true))
-                .extracting(StatusIncident::getTitle).containsExactly("Public");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_PUBLIC);
     }
 
     @Test
     void findByStartedAtBetween_returnsIncidentsInRange() {
-        persistIncident("InRange", "INVESTIGATING", "MAJOR", now.minusHours(1), app);
-        persistIncident("OutOfRange", "INVESTIGATING", "MAJOR", now.minusDays(10), app);
+        persistIncident("InRange", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusHours(1), app);
+        persistIncident("OutOfRange", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusDays(10), app);
 
         List<StatusIncident> result =
                 repository.findByStartedAtBetween(now.minusHours(2), now.plusHours(1));
@@ -183,33 +197,33 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByResolvedAtIsNull_returnsUnresolvedIncidents() {
-        persistIncident("Ongoing", "INVESTIGATING", "MAJOR", now, app);
-        StatusIncident resolved = persistIncident("Closed", "RESOLVED", "MAJOR", now, app);
+        persistIncident(TITLE_ONGOING, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        StatusIncident resolved = persistIncident(TITLE_CLOSED, STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
         resolved.setResolvedAt(now);
         em.persistAndFlush(resolved);
 
         assertThat(repository.findByResolvedAtIsNull())
-                .extracting(StatusIncident::getTitle).containsExactly("Ongoing");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_ONGOING);
     }
 
     @Test
     void findByResolvedAtIsNotNull_returnsResolvedIncidents() {
-        persistIncident("Ongoing", "INVESTIGATING", "MAJOR", now, app);
-        StatusIncident resolved = persistIncident("Closed", "RESOLVED", "MAJOR", now, app);
+        persistIncident(TITLE_ONGOING, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        StatusIncident resolved = persistIncident(TITLE_CLOSED, STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
         resolved.setResolvedAt(now);
         em.persistAndFlush(resolved);
 
         assertThat(repository.findByResolvedAtIsNotNull())
-                .extracting(StatusIncident::getTitle).containsExactly("Closed");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_CLOSED);
     }
 
     @Test
     void findByTenantId_scopesByAppTenant() {
-        persistIncident("Mine", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident("Mine", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
-        StatusApp otherApp = persistApp("App B", "app-b", other, otherOrg);
-        persistIncident("Theirs", "INVESTIGATING", "MAJOR", now, otherApp);
+        Organization otherOrg = persistOrganization(ORG_B_NAME, other);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, other, otherOrg);
+        persistIncident("Theirs", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, otherApp);
 
         assertThat(repository.findByTenantId(tenant.getId()))
                 .extracting(StatusIncident::getTitle).containsExactly("Mine");
@@ -217,10 +231,10 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByOrganizationId_scopesByAppOrganization() {
-        persistIncident("Mine", "INVESTIGATING", "MAJOR", now, app);
-        Organization otherOrg = persistOrganization("Org B", tenant);
-        StatusApp otherApp = persistApp("App B", "app-b", tenant, otherOrg);
-        persistIncident("Theirs", "INVESTIGATING", "MAJOR", now, otherApp);
+        persistIncident("Mine", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        Organization otherOrg = persistOrganization(ORG_B_NAME, tenant);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, tenant, otherOrg);
+        persistIncident("Theirs", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, otherApp);
 
         assertThat(repository.findByOrganizationId(organization.getId()))
                 .extracting(StatusIncident::getTitle).containsExactly("Mine");
@@ -228,9 +242,9 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findByAppIdOrderByStartedAtDesc_ordersMostRecentFirst() {
-        persistIncident("Old", "INVESTIGATING", "MAJOR", now.minusDays(2), app);
-        persistIncident("New", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Mid", "INVESTIGATING", "MAJOR", now.minusDays(1), app);
+        persistIncident("Old", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusDays(2), app);
+        persistIncident("New", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Mid", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusDays(1), app);
 
         assertThat(repository.findByAppIdOrderByStartedAtDesc(app.getId()))
                 .extracting(StatusIncident::getTitle).containsExactly("New", "Mid", "Old");
@@ -238,8 +252,8 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void findRecentIncidentsByAppId_returnsThoseOnOrAfterDate() {
-        persistIncident("Recent", "INVESTIGATING", "MAJOR", now.minusHours(1), app);
-        persistIncident("Ancient", "INVESTIGATING", "MAJOR", now.minusDays(30), app);
+        persistIncident("Recent", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusHours(1), app);
+        persistIncident("Ancient", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusDays(30), app);
 
         assertThat(repository.findRecentIncidentsByAppId(app.getId(), now.minusDays(7)))
                 .extracting(StatusIncident::getTitle).containsExactly("Recent");
@@ -247,68 +261,68 @@ class StatusIncidentRepositoryTest {
 
     @Test
     void search_matchesTitleOrDescription() {
-        StatusIncident i = persistIncident("Database outage", "INVESTIGATING", "MAJOR", now, app);
+        StatusIncident i = persistIncident(TITLE_DATABASE_OUTAGE, STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         i.setDescription("replica lag detected");
         em.persistAndFlush(i);
-        persistIncident("Network blip", "INVESTIGATING", "MINOR", now, app);
+        persistIncident("Network blip", STATUS_INVESTIGATING, SEVERITY_MINOR, now, app);
 
         assertThat(repository.search("outage"))
-                .extracting(StatusIncident::getTitle).containsExactly("Database outage");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_DATABASE_OUTAGE);
         assertThat(repository.search("replica"))
-                .extracting(StatusIncident::getTitle).containsExactly("Database outage");
+                .extracting(StatusIncident::getTitle).containsExactly(TITLE_DATABASE_OUTAGE);
     }
 
     @Test
     void countByAppId_countsIncidents() {
-        persistIncident("A", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("B", "RESOLVED", "MAJOR", now, app);
+        persistIncident("A", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("B", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
 
         assertThat(repository.countByAppId(app.getId())).isEqualTo(2L);
     }
 
     @Test
     void countByTenantId_countsScopedIncidents() {
-        persistIncident("A", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident("A", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
         Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
-        StatusApp otherApp = persistApp("App B", "app-b", other, otherOrg);
-        persistIncident("B", "INVESTIGATING", "MAJOR", now, otherApp);
+        Organization otherOrg = persistOrganization(ORG_B_NAME, other);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, other, otherOrg);
+        persistIncident("B", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, otherApp);
 
         assertThat(repository.countByTenantId(tenant.getId())).isEqualTo(1L);
     }
 
     @Test
     void countActiveIncidentsByAppId_excludesResolved() {
-        persistIncident("Open", "INVESTIGATING", "MAJOR", now, app);
-        persistIncident("Done", "RESOLVED", "MAJOR", now, app);
+        persistIncident("Open", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        persistIncident("Done", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
 
         assertThat(repository.countActiveIncidentsByAppId(app.getId())).isEqualTo(1L);
     }
 
     @Test
     void findActiveAutomatedIncidents_filtersByCreatorAndActiveStatus() {
-        StatusIncident systemActive = persistIncident("Auto", "INVESTIGATING", "MAJOR", now, app);
-        systemActive.setCreatedBy("system");
+        StatusIncident systemActive = persistIncident("Auto", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
+        systemActive.setCreatedBy(CREATED_BY_SYSTEM);
         em.persistAndFlush(systemActive);
 
-        StatusIncident systemResolved = persistIncident("AutoDone", "RESOLVED", "MAJOR", now, app);
-        systemResolved.setCreatedBy("system");
+        StatusIncident systemResolved = persistIncident("AutoDone", STATUS_RESOLVED, SEVERITY_MAJOR, now, app);
+        systemResolved.setCreatedBy(CREATED_BY_SYSTEM);
         em.persistAndFlush(systemResolved);
 
         // Human-created active incident should be excluded.
-        persistIncident("Manual", "INVESTIGATING", "MAJOR", now, app);
+        persistIncident("Manual", STATUS_INVESTIGATING, SEVERITY_MAJOR, now, app);
 
-        assertThat(repository.findActiveAutomatedIncidents(app.getId(), "system"))
+        assertThat(repository.findActiveAutomatedIncidents(app.getId(), CREATED_BY_SYSTEM))
                 .extracting(StatusIncident::getTitle).containsExactly("Auto");
     }
 
     @Test
     void findRecentPublicIncidentsByAppId_returnsRecentPublicOnly() {
-        persistIncident("RecentPublic", "INVESTIGATING", "MAJOR", now.minusHours(1), app);
-        StatusIncident priv = persistIncident("RecentPrivate", "INVESTIGATING", "MAJOR", now.minusHours(1), app);
+        persistIncident("RecentPublic", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusHours(1), app);
+        StatusIncident priv = persistIncident("RecentPrivate", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusHours(1), app);
         priv.setIsPublic(false);
         em.persistAndFlush(priv);
-        persistIncident("OldPublic", "INVESTIGATING", "MAJOR", now.minusDays(30), app);
+        persistIncident("OldPublic", STATUS_INVESTIGATING, SEVERITY_MAJOR, now.minusDays(30), app);
 
         assertThat(repository.findRecentPublicIncidentsByAppId(app.getId(), now.minusDays(7)))
                 .extracting(StatusIncident::getTitle).containsExactly("RecentPublic");
@@ -320,11 +334,11 @@ class StatusIncidentRepositoryTest {
         ZonedDateTime dayEnd = dayStart.plusDays(1).minusSeconds(1);
 
         // Started on the day.
-        persistIncident("StartedToday", "INVESTIGATING", "MAJOR", dayStart.plusHours(2), app);
+        persistIncident("StartedToday", STATUS_INVESTIGATING, SEVERITY_MAJOR, dayStart.plusHours(2), app);
         // Started before, still unresolved -> ongoing.
-        persistIncident("OngoingFromBefore", "INVESTIGATING", "MAJOR", dayStart.minusDays(2), app);
+        persistIncident("OngoingFromBefore", STATUS_INVESTIGATING, SEVERITY_MAJOR, dayStart.minusDays(2), app);
         // Started before and resolved before the day -> excluded.
-        StatusIncident old = persistIncident("ResolvedBefore", "RESOLVED", "MAJOR", dayStart.minusDays(3), app);
+        StatusIncident old = persistIncident("ResolvedBefore", STATUS_RESOLVED, SEVERITY_MAJOR, dayStart.minusDays(3), app);
         old.setResolvedAt(dayStart.minusDays(2));
         em.persistAndFlush(old);
 

@@ -25,6 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class OrganizationRepositoryTest {
 
+    private static final String STATUS_ACTIVE = "ACTIVE";
+    private static final String TYPE_BUSINESS = "BUSINESS";
+    private static final String EMAIL_A = "a@x.com";
+    private static final String EMAIL_B = "b@x.com";
+    private static final String EMAIL_C = "c@x.com";
+
     @Autowired
     private TestEntityManager em;
 
@@ -58,7 +64,7 @@ class OrganizationRepositoryTest {
     @Test
     void findByName_existingOrganization_returnsOrganization() {
         Tenant t = persistTenant("T1");
-        persistOrg("Acme", t, "ACTIVE", "BUSINESS", "BE", "info@acme.com", "d", 1L);
+        persistOrg("Acme", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "info@acme.com", "d", 1L);
 
         assertThat(repository.findByName("Acme")).isPresent().get()
                 .extracting(Organization::getName).isEqualTo("Acme");
@@ -68,8 +74,8 @@ class OrganizationRepositoryTest {
     void findByTenantId_scopesToTenant() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistOrg("In1", t1, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1L);
-        persistOrg("In2", t2, "ACTIVE", "BUSINESS", "BE", "b@x.com", "d", 1L);
+        persistOrg("In1", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1L);
+        persistOrg("In2", t2, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_B, "d", 1L);
 
         assertThat(repository.findByTenantId(t1.getId())).extracting(Organization::getName).containsExactly("In1");
     }
@@ -77,8 +83,8 @@ class OrganizationRepositoryTest {
     @Test
     void findByStatus_filtersByStatus() {
         Tenant t = persistTenant("T1");
-        persistOrg("ActiveOrg", t, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1L);
-        persistOrg("SuspendedOrg", t, "SUSPENDED", "BUSINESS", "BE", "b@x.com", "d", 1L);
+        persistOrg("ActiveOrg", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1L);
+        persistOrg("SuspendedOrg", t, "SUSPENDED", TYPE_BUSINESS, "BE", EMAIL_B, "d", 1L);
 
         assertThat(repository.findByStatus("SUSPENDED")).extracting(Organization::getName).containsExactly("SuspendedOrg");
     }
@@ -87,19 +93,19 @@ class OrganizationRepositoryTest {
     void findByTenantIdAndStatus_appliesBothFilters() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistOrg("Keep", t1, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1L);
-        persistOrg("WrongStatus", t1, "INACTIVE", "BUSINESS", "BE", "b@x.com", "d", 1L);
-        persistOrg("WrongTenant", t2, "ACTIVE", "BUSINESS", "BE", "c@x.com", "d", 1L);
+        persistOrg("Keep", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1L);
+        persistOrg("WrongStatus", t1, "INACTIVE", TYPE_BUSINESS, "BE", EMAIL_B, "d", 1L);
+        persistOrg("WrongTenant", t2, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_C, "d", 1L);
 
-        assertThat(repository.findByTenantIdAndStatus(t1.getId(), "ACTIVE"))
+        assertThat(repository.findByTenantIdAndStatus(t1.getId(), STATUS_ACTIVE))
                 .extracting(Organization::getName).containsExactly("Keep");
     }
 
     @Test
     void findByOrganizationType_filtersByType() {
         Tenant t = persistTenant("T1");
-        persistOrg("Ent", t, "ACTIVE", "ENTERPRISE", "BE", "a@x.com", "d", 1L);
-        persistOrg("Small", t, "ACTIVE", "SMALL", "BE", "b@x.com", "d", 1L);
+        persistOrg("Ent", t, STATUS_ACTIVE, "ENTERPRISE", "BE", EMAIL_A, "d", 1L);
+        persistOrg("Small", t, STATUS_ACTIVE, "SMALL", "BE", EMAIL_B, "d", 1L);
 
         assertThat(repository.findByOrganizationType("ENTERPRISE")).extracting(Organization::getName).containsExactly("Ent");
     }
@@ -107,8 +113,8 @@ class OrganizationRepositoryTest {
     @Test
     void findByCountry_filtersByCountry() {
         Tenant t = persistTenant("T1");
-        persistOrg("BelgianOrg", t, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1L);
-        persistOrg("DutchOrg", t, "ACTIVE", "BUSINESS", "NL", "b@x.com", "d", 1L);
+        persistOrg("BelgianOrg", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1L);
+        persistOrg("DutchOrg", t, STATUS_ACTIVE, TYPE_BUSINESS, "NL", EMAIL_B, "d", 1L);
 
         assertThat(repository.findByCountry("NL")).extracting(Organization::getName).containsExactly("DutchOrg");
     }
@@ -117,9 +123,9 @@ class OrganizationRepositoryTest {
     void searchByTenantId_matchesNameOrEmailWithinTenant() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistOrg("Payment Systems", t1, "ACTIVE", "BUSINESS", "BE", "pay@x.com", "d", 1L);
-        persistOrg("Logistics", t1, "ACTIVE", "BUSINESS", "BE", "log@x.com", "d", 1L);
-        persistOrg("Payment Other", t2, "ACTIVE", "BUSINESS", "BE", "pay2@x.com", "d", 1L);
+        persistOrg("Payment Systems", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "pay@x.com", "d", 1L);
+        persistOrg("Logistics", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "log@x.com", "d", 1L);
+        persistOrg("Payment Other", t2, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "pay2@x.com", "d", 1L);
 
         assertThat(repository.searchByTenantId(t1.getId(), "Payment"))
                 .extracting(Organization::getName).containsExactly("Payment Systems");
@@ -128,8 +134,8 @@ class OrganizationRepositoryTest {
     @Test
     void search_matchesNameEmailOrDescriptionGlobally() {
         Tenant t = persistTenant("T1");
-        persistOrg("Alpha", t, "ACTIVE", "BUSINESS", "BE", "alpha@x.com", "special description", 1L);
-        persistOrg("Beta", t, "ACTIVE", "BUSINESS", "BE", "beta@x.com", "ordinary", 1L);
+        persistOrg("Alpha", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "alpha@x.com", "special description", 1L);
+        persistOrg("Beta", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "beta@x.com", "ordinary", 1L);
 
         assertThat(repository.search("special")).extracting(Organization::getName).containsExactly("Alpha");
     }
@@ -137,9 +143,9 @@ class OrganizationRepositoryTest {
     @Test
     void findByTenantIdOrderByCreatedDateDesc_ordersNewestFirst() {
         Tenant t = persistTenant("T1");
-        persistOrg("Old", t, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1000L);
-        persistOrg("New", t, "ACTIVE", "BUSINESS", "BE", "b@x.com", "d", 3000L);
-        persistOrg("Mid", t, "ACTIVE", "BUSINESS", "BE", "c@x.com", "d", 2000L);
+        persistOrg("Old", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1000L);
+        persistOrg("New", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_B, "d", 3000L);
+        persistOrg("Mid", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_C, "d", 2000L);
 
         List<Organization> result = repository.findByTenantIdOrderByCreatedDateDesc(t.getId());
 
@@ -150,9 +156,9 @@ class OrganizationRepositoryTest {
     void countByTenantId_countsScopedOrganizations() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistOrg("C1", t1, "ACTIVE", "BUSINESS", "BE", "a@x.com", "d", 1L);
-        persistOrg("C2", t1, "ACTIVE", "BUSINESS", "BE", "b@x.com", "d", 1L);
-        persistOrg("C3", t2, "ACTIVE", "BUSINESS", "BE", "c@x.com", "d", 1L);
+        persistOrg("C1", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_A, "d", 1L);
+        persistOrg("C2", t1, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_B, "d", 1L);
+        persistOrg("C3", t2, STATUS_ACTIVE, TYPE_BUSINESS, "BE", EMAIL_C, "d", 1L);
 
         assertThat(repository.countByTenantId(t1.getId())).isEqualTo(2L);
     }
@@ -160,7 +166,7 @@ class OrganizationRepositoryTest {
     @Test
     void existsByName_reflectsPresence() {
         Tenant t = persistTenant("T1");
-        persistOrg("Exists", t, "ACTIVE", "BUSINESS", "BE", "e@x.com", "d", 1L);
+        persistOrg("Exists", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "e@x.com", "d", 1L);
 
         assertThat(repository.existsByName("Exists")).isTrue();
         assertThat(repository.existsByName("Missing")).isFalse();
@@ -169,7 +175,7 @@ class OrganizationRepositoryTest {
     @Test
     void existsByEmail_reflectsPresence() {
         Tenant t = persistTenant("T1");
-        persistOrg("Emailer", t, "ACTIVE", "BUSINESS", "BE", "emailer@x.com", "d", 1L);
+        persistOrg("Emailer", t, STATUS_ACTIVE, TYPE_BUSINESS, "BE", "emailer@x.com", "d", 1L);
 
         assertThat(repository.existsByEmail("emailer@x.com")).isTrue();
         assertThat(repository.existsByEmail("no@x.com")).isFalse();

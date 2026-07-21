@@ -31,6 +31,11 @@ import static org.assertj.core.api.Assertions.within;
 @ActiveProfiles("test")
 class StatusUptimeHistoryRepositoryTest {
 
+    private static final String UPTIME_99 = "99.000";
+    private static final String UPTIME_100 = "100.000";
+    private static final String UPTIME_98 = "98.000";
+    private static final String UPTIME_50 = "50.000";
+
     @Autowired
     private TestEntityManager em;
 
@@ -115,11 +120,11 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void findAppUptimeHistory_returnsAppLevelRecordsInRangeOrdered() {
-        persistAppRecord(day3, "99.000", 0);
-        persistAppRecord(day1, "100.000", 0);
-        persistAppRecord(day2, "98.000", 0);
+        persistAppRecord(day3, UPTIME_99, 0);
+        persistAppRecord(day1, UPTIME_100, 0);
+        persistAppRecord(day2, UPTIME_98, 0);
         // Component-level record must be excluded.
-        persistComponentRecord(day1, "50.000", 5);
+        persistComponentRecord(day1, UPTIME_50, 5);
 
         assertThat(repository.findAppUptimeHistory(app.getId(), day1, day3))
                 .extracting(StatusUptimeHistory::getRecordDate)
@@ -128,8 +133,8 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void findAppUptimeHistory_excludesRecordsOutsideRange() {
-        persistAppRecord(day1, "100.000", 0);
-        persistAppRecord(day3, "100.000", 0);
+        persistAppRecord(day1, UPTIME_100, 0);
+        persistAppRecord(day3, UPTIME_100, 0);
 
         assertThat(repository.findAppUptimeHistory(app.getId(), day1, day2))
                 .extracting(StatusUptimeHistory::getRecordDate)
@@ -139,9 +144,9 @@ class StatusUptimeHistoryRepositoryTest {
     @Test
     void findComponentUptimeHistory_returnsComponentRecordsInRangeOrdered() {
         persistComponentRecord(day2, "97.000", 1);
-        persistComponentRecord(day1, "99.000", 0);
+        persistComponentRecord(day1, UPTIME_99, 0);
         // App-level record must be excluded.
-        persistAppRecord(day1, "100.000", 0);
+        persistAppRecord(day1, UPTIME_100, 0);
 
         assertThat(repository.findComponentUptimeHistory(component.getId(), day1, day3))
                 .extracting(StatusUptimeHistory::getRecordDate)
@@ -150,8 +155,8 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void findAppUptimeByDate_returnsAppLevelRecordForDate() {
-        persistAppRecord(day1, "100.000", 0);
-        persistComponentRecord(day1, "50.000", 5);
+        persistAppRecord(day1, UPTIME_100, 0);
+        persistComponentRecord(day1, UPTIME_50, 5);
 
         assertThat(repository.findAppUptimeByDate(app.getId(), day1))
                 .isPresent()
@@ -161,7 +166,7 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void findComponentUptimeByDate_returnsComponentRecordForDate() {
-        persistComponentRecord(day1, "99.000", 0);
+        persistComponentRecord(day1, UPTIME_99, 0);
 
         assertThat(repository.findComponentUptimeByDate(component.getId(), day1))
                 .isPresent()
@@ -171,8 +176,8 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void calculateAverageAppUptime_averagesAppLevelRecords() {
-        persistAppRecord(day1, "100.000", 0);
-        persistAppRecord(day2, "98.000", 0);
+        persistAppRecord(day1, UPTIME_100, 0);
+        persistAppRecord(day2, UPTIME_98, 0);
         // Component-level record must not affect the app-level average.
         persistComponentRecord(day1, "10.000", 0);
 
@@ -188,7 +193,7 @@ class StatusUptimeHistoryRepositoryTest {
     @Test
     void calculateAverageComponentUptime_averagesComponentRecords() {
         persistComponentRecord(day1, "96.000", 0);
-        persistComponentRecord(day2, "98.000", 0);
+        persistComponentRecord(day2, UPTIME_98, 0);
 
         assertThat(repository.calculateAverageComponentUptime(component.getId(), day1, day3))
                 .isCloseTo(97.0, within(0.001));
@@ -196,27 +201,27 @@ class StatusUptimeHistoryRepositoryTest {
 
     @Test
     void countAppIncidents_sumsAppLevelIncidentCounts() {
-        persistAppRecord(day1, "100.000", 2);
-        persistAppRecord(day2, "100.000", 3);
+        persistAppRecord(day1, UPTIME_100, 2);
+        persistAppRecord(day2, UPTIME_100, 3);
         // Component-level incidents must be excluded.
-        persistComponentRecord(day1, "100.000", 10);
+        persistComponentRecord(day1, UPTIME_100, 10);
 
         assertThat(repository.countAppIncidents(app.getId(), day1, day3)).isEqualTo(5L);
     }
 
     @Test
     void countComponentIncidents_sumsComponentIncidentCounts() {
-        persistComponentRecord(day1, "100.000", 4);
-        persistComponentRecord(day2, "100.000", 1);
+        persistComponentRecord(day1, UPTIME_100, 4);
+        persistComponentRecord(day2, UPTIME_100, 1);
 
         assertThat(repository.countComponentIncidents(component.getId(), day1, day3)).isEqualTo(5L);
     }
 
     @Test
     void findByAppIdAndComponentIsNullOrderByRecordDateAsc_returnsAppLevelOrdered() {
-        persistAppRecord(day2, "99.000", 0);
-        persistAppRecord(day1, "100.000", 0);
-        persistComponentRecord(day1, "50.000", 0);
+        persistAppRecord(day2, UPTIME_99, 0);
+        persistAppRecord(day1, UPTIME_100, 0);
+        persistComponentRecord(day1, UPTIME_50, 0);
 
         assertThat(repository.findByAppIdAndComponentIsNullOrderByRecordDateAsc(app.getId()))
                 .extracting(StatusUptimeHistory::getRecordDate)
@@ -226,8 +231,8 @@ class StatusUptimeHistoryRepositoryTest {
     @Test
     void findByComponentIdOrderByRecordDateAsc_returnsComponentRecordsOrdered() {
         persistComponentRecord(day3, "97.000", 0);
-        persistComponentRecord(day1, "99.000", 0);
-        persistComponentRecord(day2, "98.000", 0);
+        persistComponentRecord(day1, UPTIME_99, 0);
+        persistComponentRecord(day2, UPTIME_98, 0);
 
         assertThat(repository.findByComponentIdOrderByRecordDateAsc(component.getId()))
                 .extracting(StatusUptimeHistory::getRecordDate)

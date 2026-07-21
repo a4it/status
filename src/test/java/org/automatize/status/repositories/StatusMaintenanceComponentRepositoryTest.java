@@ -30,6 +30,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class StatusMaintenanceComponentRepositoryTest {
 
+    private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String TITLE_OTHER = "Other";
+    private static final String APP_B_NAME = "App B";
+    private static final String APP_B_SLUG = "app-b";
+    private static final String OTHER_COMP = "OtherComp";
+    private static final String OTHER_M = "OtherM";
+
     @Autowired
     private TestEntityManager em;
 
@@ -50,7 +57,7 @@ class StatusMaintenanceComponentRepositoryTest {
         organization = persistOrganization("Org A", tenant);
         app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
-        maintenance = persistMaintenance("Patch", "SCHEDULED", app);
+        maintenance = persistMaintenance("Patch", STATUS_SCHEDULED, app);
     }
 
     private Tenant persistTenant(String name) {
@@ -113,7 +120,7 @@ class StatusMaintenanceComponentRepositoryTest {
     @Test
     void findByMaintenanceId_returnsLinksForMaintenance() {
         persistLink(maintenance, component);
-        StatusMaintenance other = persistMaintenance("Other", "SCHEDULED", app);
+        StatusMaintenance other = persistMaintenance(TITLE_OTHER, STATUS_SCHEDULED, app);
         StatusComponent otherComp = persistComponent("Web", app);
         persistLink(other, otherComp);
 
@@ -124,7 +131,7 @@ class StatusMaintenanceComponentRepositoryTest {
     @Test
     void findByComponentId_returnsLinksForComponent() {
         persistLink(maintenance, component);
-        StatusMaintenance other = persistMaintenance("Other", "SCHEDULED", app);
+        StatusMaintenance other = persistMaintenance(TITLE_OTHER, STATUS_SCHEDULED, app);
         persistLink(other, component);
 
         assertThat(repository.findByComponentId(component.getId())).hasSize(2);
@@ -144,9 +151,9 @@ class StatusMaintenanceComponentRepositoryTest {
         persistLink(maintenance, component);
         Tenant other = persistTenant("Tenant B");
         Organization otherOrg = persistOrganization("Org B", other);
-        StatusApp otherApp = persistApp("App B", "app-b", other, otherOrg);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusMaintenance otherM = persistMaintenance("OtherM", "SCHEDULED", otherApp);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, other, otherOrg);
+        StatusComponent otherComp = persistComponent(OTHER_COMP, otherApp);
+        StatusMaintenance otherM = persistMaintenance(OTHER_M, STATUS_SCHEDULED, otherApp);
         persistLink(otherM, otherComp);
 
         assertThat(repository.findByTenantId(tenant.getId()))
@@ -157,9 +164,9 @@ class StatusMaintenanceComponentRepositoryTest {
     void findByOrganizationId_scopesByMaintenanceAppOrganization() {
         persistLink(maintenance, component);
         Organization otherOrg = persistOrganization("Org B", tenant);
-        StatusApp otherApp = persistApp("App B", "app-b", tenant, otherOrg);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusMaintenance otherM = persistMaintenance("OtherM", "SCHEDULED", otherApp);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, tenant, otherOrg);
+        StatusComponent otherComp = persistComponent(OTHER_COMP, otherApp);
+        StatusMaintenance otherM = persistMaintenance(OTHER_M, STATUS_SCHEDULED, otherApp);
         persistLink(otherM, otherComp);
 
         assertThat(repository.findByOrganizationId(organization.getId()))
@@ -169,9 +176,9 @@ class StatusMaintenanceComponentRepositoryTest {
     @Test
     void findByAppId_scopesByMaintenanceApp() {
         persistLink(maintenance, component);
-        StatusApp otherApp = persistApp("App B", "app-b", tenant, organization);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusMaintenance otherM = persistMaintenance("OtherM", "SCHEDULED", otherApp);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, tenant, organization);
+        StatusComponent otherComp = persistComponent(OTHER_COMP, otherApp);
+        StatusMaintenance otherM = persistMaintenance(OTHER_M, STATUS_SCHEDULED, otherApp);
         persistLink(otherM, otherComp);
 
         assertThat(repository.findByAppId(app.getId()))
@@ -190,7 +197,7 @@ class StatusMaintenanceComponentRepositoryTest {
     @Test
     void countByComponentId_countsAffectingMaintenance() {
         persistLink(maintenance, component);
-        StatusMaintenance other = persistMaintenance("Other", "SCHEDULED", app);
+        StatusMaintenance other = persistMaintenance(TITLE_OTHER, STATUS_SCHEDULED, app);
         persistLink(other, component);
 
         assertThat(repository.countByComponentId(component.getId())).isEqualTo(2L);

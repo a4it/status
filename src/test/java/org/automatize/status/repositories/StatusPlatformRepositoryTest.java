@@ -26,6 +26,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class StatusPlatformRepositoryTest {
 
+    private static final String TENANT_B = "Tenant B";
+    private static final String ORG_B = "Org B";
+    private static final String THIRD = "Third";
+    private static final String THIRD_SLUG = "third";
+    private static final String FIRST = "First";
+    private static final String SECOND = "Second";
+    private static final String CORE_PLATFORM = "Core Platform";
+
     @Autowired
     private TestEntityManager em;
 
@@ -93,8 +101,8 @@ class StatusPlatformRepositoryTest {
     @Test
     void findByTenantId_returnsPlatformsOfTenantOnly() {
         persistPlatform("A", "a", 0, tenant, organization);
-        Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
+        Tenant other = persistTenant(TENANT_B);
+        Organization otherOrg = persistOrganization(ORG_B, other);
         persistPlatform("B", "b", 0, other, otherOrg);
 
         assertThat(repository.findByTenantId(tenant.getId()))
@@ -103,19 +111,19 @@ class StatusPlatformRepositoryTest {
 
     @Test
     void findByTenantIdOrderByPosition_ordersAscending() {
-        persistPlatform("Third", "third", 3, tenant, organization);
-        persistPlatform("First", "first", 1, tenant, organization);
-        persistPlatform("Second", "second", 2, tenant, organization);
+        persistPlatform(THIRD, THIRD_SLUG, 3, tenant, organization);
+        persistPlatform(FIRST, "first", 1, tenant, organization);
+        persistPlatform(SECOND, "second", 2, tenant, organization);
 
         assertThat(repository.findByTenantIdOrderByPosition(tenant.getId()))
                 .extracting(StatusPlatform::getName)
-                .containsExactly("First", "Second", "Third");
+                .containsExactly(FIRST, SECOND, THIRD);
     }
 
     @Test
     void findByOrganizationId_returnsPlatformsOfOrganizationOnly() {
         persistPlatform("A", "a", 0, tenant, organization);
-        Organization otherOrg = persistOrganization("Org B", tenant);
+        Organization otherOrg = persistOrganization(ORG_B, tenant);
         persistPlatform("B", "b", 0, tenant, otherOrg);
 
         assertThat(repository.findByOrganizationId(organization.getId()))
@@ -157,43 +165,43 @@ class StatusPlatformRepositoryTest {
 
     @Test
     void findByIsPublicTrueOrderByPosition_returnsPublicOrdered() {
-        persistPlatform("Third", "third", 3, tenant, organization);
+        persistPlatform(THIRD, THIRD_SLUG, 3, tenant, organization);
         StatusPlatform priv = persistPlatform("Private", "private", 1, tenant, organization);
         priv.setIsPublic(false);
         em.persistAndFlush(priv);
-        persistPlatform("Second", "second", 2, tenant, organization);
+        persistPlatform(SECOND, "second", 2, tenant, organization);
 
         assertThat(repository.findByIsPublicTrueOrderByPosition())
                 .extracting(StatusPlatform::getName)
-                .containsExactly("Second", "Third");
+                .containsExactly(SECOND, THIRD);
     }
 
     @Test
     void findAllByOrderByPosition_ordersAscending() {
-        persistPlatform("Third", "third", 3, tenant, organization);
-        persistPlatform("First", "first", 1, tenant, organization);
+        persistPlatform(THIRD, THIRD_SLUG, 3, tenant, organization);
+        persistPlatform(FIRST, "first", 1, tenant, organization);
 
         assertThat(repository.findAllByOrderByPosition())
                 .extracting(StatusPlatform::getName)
-                .containsExactly("First", "Third");
+                .containsExactly(FIRST, THIRD);
     }
 
     @Test
     void searchByTenantId_matchesNameDescriptionOrSlug() {
-        StatusPlatform p = persistPlatform("Core Platform", "core-plat", 0, tenant, organization);
+        StatusPlatform p = persistPlatform(CORE_PLATFORM, "core-plat", 0, tenant, organization);
         p.setDescription("primary infra");
         em.persistAndFlush(p);
         persistPlatform("Web", "web", 0, tenant, organization);
 
         assertThat(repository.searchByTenantId(tenant.getId(), "Core"))
-                .extracting(StatusPlatform::getName).containsExactly("Core Platform");
+                .extracting(StatusPlatform::getName).containsExactly(CORE_PLATFORM);
         assertThat(repository.searchByTenantId(tenant.getId(), "infra"))
-                .extracting(StatusPlatform::getName).containsExactly("Core Platform");
+                .extracting(StatusPlatform::getName).containsExactly(CORE_PLATFORM);
     }
 
     @Test
     void search_matchesGloballyBySlug() {
-        persistPlatform("Core Platform", "core-plat", 0, tenant, organization);
+        persistPlatform(CORE_PLATFORM, "core-plat", 0, tenant, organization);
         persistPlatform("Web", "web", 0, tenant, organization);
 
         assertThat(repository.search("web"))
@@ -204,8 +212,8 @@ class StatusPlatformRepositoryTest {
     void countByTenantId_countsScopedPlatforms() {
         persistPlatform("A", "a", 0, tenant, organization);
         persistPlatform("B", "b", 0, tenant, organization);
-        Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
+        Tenant other = persistTenant(TENANT_B);
+        Organization otherOrg = persistOrganization(ORG_B, other);
         persistPlatform("C", "c", 0, other, otherOrg);
 
         assertThat(repository.countByTenantId(tenant.getId())).isEqualTo(2L);
@@ -222,7 +230,7 @@ class StatusPlatformRepositoryTest {
     @Test
     void existsByTenantIdAndSlug_scopesToTenant() {
         persistPlatform("A", "a", 0, tenant, organization);
-        Tenant other = persistTenant("Tenant B");
+        Tenant other = persistTenant(TENANT_B);
 
         assertThat(repository.existsByTenantIdAndSlug(tenant.getId(), "a")).isTrue();
         assertThat(repository.existsByTenantIdAndSlug(other.getId(), "a")).isFalse();

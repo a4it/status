@@ -42,6 +42,14 @@ class StatusIncidentComponentRepositoryTest {
     private StatusComponent component;
     private StatusIncident incident;
 
+    private static final String STATUS_INVESTIGATING = "INVESTIGATING";
+    private static final String STATUS_DEGRADED = "DEGRADED";
+    private static final String STATUS_OUTAGE = "OUTAGE";
+    private static final String APP_B_NAME = "App B";
+    private static final String APP_B_SLUG = "app-b";
+    private static final String OTHER_COMPONENT_NAME = "OtherComp";
+    private static final String OTHER_INCIDENT_TITLE = "OtherInc";
+
     private final ZonedDateTime now = ZonedDateTime.now();
 
     @BeforeEach
@@ -50,7 +58,7 @@ class StatusIncidentComponentRepositoryTest {
         organization = persistOrganization("Org A", tenant);
         app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
-        incident = persistIncident("Outage", "INVESTIGATING", app);
+        incident = persistIncident("Outage", STATUS_INVESTIGATING, app);
     }
 
     private Tenant persistTenant(String name) {
@@ -113,125 +121,125 @@ class StatusIncidentComponentRepositoryTest {
 
     @Test
     void findByIncidentId_returnsLinksForIncident() {
-        persistLink(incident, component, "DEGRADED");
-        StatusIncident other = persistIncident("Other", "INVESTIGATING", app);
-        persistLink(other, component, "OUTAGE");
+        persistLink(incident, component, STATUS_DEGRADED);
+        StatusIncident other = persistIncident("Other", STATUS_INVESTIGATING, app);
+        persistLink(other, component, STATUS_OUTAGE);
 
         assertThat(repository.findByIncidentId(incident.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void findByComponentId_returnsLinksForComponent() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
         assertThat(repository.findByComponentId(component.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void findByIncidentIdAndComponentId_returnsSpecificLink() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
 
         assertThat(repository.findByIncidentIdAndComponentId(incident.getId(), component.getId()))
                 .isPresent()
-                .get().extracting(StatusIncidentComponent::getComponentStatus).isEqualTo("DEGRADED");
+                .get().extracting(StatusIncidentComponent::getComponentStatus).isEqualTo(STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
         assertThat(repository.findByIncidentIdAndComponentId(incident.getId(), other.getId())).isEmpty();
     }
 
     @Test
     void findByComponentStatus_filtersByStatus() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
-        assertThat(repository.findByComponentStatus("OUTAGE"))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("OUTAGE");
+        assertThat(repository.findByComponentStatus(STATUS_OUTAGE))
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_OUTAGE);
     }
 
     @Test
     void findByIncidentIdAndComponentStatus_combinesIncidentAndStatus() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
-        assertThat(repository.findByIncidentIdAndComponentStatus(incident.getId(), "OUTAGE"))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("OUTAGE");
+        assertThat(repository.findByIncidentIdAndComponentStatus(incident.getId(), STATUS_OUTAGE))
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_OUTAGE);
     }
 
     @Test
     void findByTenantId_scopesByIncidentAppTenant() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         Tenant other = persistTenant("Tenant B");
         Organization otherOrg = persistOrganization("Org B", other);
-        StatusApp otherApp = persistApp("App B", "app-b", other, otherOrg);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusIncident otherInc = persistIncident("OtherInc", "INVESTIGATING", otherApp);
-        persistLink(otherInc, otherComp, "OUTAGE");
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, other, otherOrg);
+        StatusComponent otherComp = persistComponent(OTHER_COMPONENT_NAME, otherApp);
+        StatusIncident otherInc = persistIncident(OTHER_INCIDENT_TITLE, STATUS_INVESTIGATING, otherApp);
+        persistLink(otherInc, otherComp, STATUS_OUTAGE);
 
         assertThat(repository.findByTenantId(tenant.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void findByOrganizationId_scopesByIncidentAppOrganization() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         Organization otherOrg = persistOrganization("Org B", tenant);
-        StatusApp otherApp = persistApp("App B", "app-b", tenant, otherOrg);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusIncident otherInc = persistIncident("OtherInc", "INVESTIGATING", otherApp);
-        persistLink(otherInc, otherComp, "OUTAGE");
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, tenant, otherOrg);
+        StatusComponent otherComp = persistComponent(OTHER_COMPONENT_NAME, otherApp);
+        StatusIncident otherInc = persistIncident(OTHER_INCIDENT_TITLE, STATUS_INVESTIGATING, otherApp);
+        persistLink(otherInc, otherComp, STATUS_OUTAGE);
 
         assertThat(repository.findByOrganizationId(organization.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void findByAppId_scopesByIncidentApp() {
-        persistLink(incident, component, "DEGRADED");
-        StatusApp otherApp = persistApp("App B", "app-b", tenant, organization);
-        StatusComponent otherComp = persistComponent("OtherComp", otherApp);
-        StatusIncident otherInc = persistIncident("OtherInc", "INVESTIGATING", otherApp);
-        persistLink(otherInc, otherComp, "OUTAGE");
+        persistLink(incident, component, STATUS_DEGRADED);
+        StatusApp otherApp = persistApp(APP_B_NAME, APP_B_SLUG, tenant, organization);
+        StatusComponent otherComp = persistComponent(OTHER_COMPONENT_NAME, otherApp);
+        StatusIncident otherInc = persistIncident(OTHER_INCIDENT_TITLE, STATUS_INVESTIGATING, otherApp);
+        persistLink(otherInc, otherComp, STATUS_OUTAGE);
 
         assertThat(repository.findByAppId(app.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void countByIncidentId_countsAffectedComponents() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
         assertThat(repository.countByIncidentId(incident.getId())).isEqualTo(2L);
     }
 
     @Test
     void countByComponentId_countsAffectingIncidents() {
-        persistLink(incident, component, "DEGRADED");
-        StatusIncident other = persistIncident("Other", "INVESTIGATING", app);
-        persistLink(other, component, "OUTAGE");
+        persistLink(incident, component, STATUS_DEGRADED);
+        StatusIncident other = persistIncident("Other", STATUS_INVESTIGATING, app);
+        persistLink(other, component, STATUS_OUTAGE);
 
         assertThat(repository.countByComponentId(component.getId())).isEqualTo(2L);
     }
 
     @Test
     void findActiveIncidentsByComponentId_excludesResolvedIncidents() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusIncident resolved = persistIncident("Resolved", "RESOLVED", app);
-        persistLink(resolved, component, "OUTAGE");
+        persistLink(resolved, component, STATUS_OUTAGE);
 
         assertThat(repository.findActiveIncidentsByComponentId(component.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("DEGRADED");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_DEGRADED);
     }
 
     @Test
     void existsByIncidentIdAndComponentId_reflectsPresence() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
 
         assertThat(repository.existsByIncidentIdAndComponentId(incident.getId(), component.getId())).isTrue();
@@ -240,9 +248,9 @@ class StatusIncidentComponentRepositoryTest {
 
     @Test
     void deleteByIncidentId_removesAllLinksForIncident() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
         repository.deleteByIncidentId(incident.getId());
         em.flush();
@@ -253,16 +261,16 @@ class StatusIncidentComponentRepositoryTest {
 
     @Test
     void deleteByIncidentIdAndComponentId_removesSingleLink() {
-        persistLink(incident, component, "DEGRADED");
+        persistLink(incident, component, STATUS_DEGRADED);
         StatusComponent other = persistComponent("Web", app);
-        persistLink(incident, other, "OUTAGE");
+        persistLink(incident, other, STATUS_OUTAGE);
 
         repository.deleteByIncidentIdAndComponentId(incident.getId(), component.getId());
         em.flush();
         em.clear();
 
         assertThat(repository.findByIncidentId(incident.getId()))
-                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly("OUTAGE");
+                .extracting(StatusIncidentComponent::getComponentStatus).containsExactly(STATUS_OUTAGE);
     }
 
     @Test
@@ -270,27 +278,27 @@ class StatusIncidentComponentRepositoryTest {
         ZonedDateTime dayStart = now.toLocalDate().atStartOfDay(now.getZone());
         ZonedDateTime dayEnd = dayStart.plusDays(1).minusSeconds(1);
 
-        StatusIncident startedToday = persistIncident("StartedToday", "INVESTIGATING", app);
+        StatusIncident startedToday = persistIncident("StartedToday", STATUS_INVESTIGATING, app);
         startedToday.setStartedAt(dayStart.plusHours(1));
         em.persistAndFlush(startedToday);
-        persistLink(startedToday, component, "DEGRADED");
+        persistLink(startedToday, component, STATUS_DEGRADED);
 
-        StatusIncident ongoing = persistIncident("Ongoing", "INVESTIGATING", app);
+        StatusIncident ongoing = persistIncident("Ongoing", STATUS_INVESTIGATING, app);
         ongoing.setStartedAt(dayStart.minusDays(2));
         em.persistAndFlush(ongoing);
-        persistLink(ongoing, component, "OUTAGE");
+        persistLink(ongoing, component, STATUS_OUTAGE);
 
         StatusIncident resolvedBefore = persistIncident("ResolvedBefore", "RESOLVED", app);
         resolvedBefore.setStartedAt(dayStart.minusDays(3));
         resolvedBefore.setResolvedAt(dayStart.minusDays(2));
         em.persistAndFlush(resolvedBefore);
-        persistLink(resolvedBefore, component, "OUTAGE");
+        persistLink(resolvedBefore, component, STATUS_OUTAGE);
 
-        StatusIncident privateToday = persistIncident("PrivateToday", "INVESTIGATING", app);
+        StatusIncident privateToday = persistIncident("PrivateToday", STATUS_INVESTIGATING, app);
         privateToday.setStartedAt(dayStart.plusHours(2));
         privateToday.setIsPublic(false);
         em.persistAndFlush(privateToday);
-        persistLink(privateToday, component, "DEGRADED");
+        persistLink(privateToday, component, STATUS_DEGRADED);
 
         assertThat(repository.findPublicIncidentsAffectingComponentOnDate(component.getId(), dayStart, dayEnd))
                 .extracting(ic -> ic.getIncident().getTitle())

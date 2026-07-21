@@ -33,6 +33,8 @@ class LogMetricRepositoryTest {
     private LogMetricRepository repository;
 
     private static final ZonedDateTime BASE = ZonedDateTime.parse("2026-01-01T00:00:00Z");
+    private static final String BUCKET_TYPE_MINUTE = "MINUTE";
+    private static final String LEVEL_ERROR = "ERROR";
 
     private Tenant persistTenant(String name) {
         Tenant t = new Tenant();
@@ -57,9 +59,9 @@ class LogMetricRepositoryTest {
     @Test
     void findSince_returnsBucketsAtOrAfterBoundaryOrderedAscending() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "svc", "INFO", BASE.minusMinutes(1), "MINUTE", 1);
-        persistMetric(t, "svc", "INFO", BASE.plusMinutes(2), "MINUTE", 1);
-        persistMetric(t, "svc", "INFO", BASE, "MINUTE", 1);
+        persistMetric(t, "svc", "INFO", BASE.minusMinutes(1), BUCKET_TYPE_MINUTE, 1);
+        persistMetric(t, "svc", "INFO", BASE.plusMinutes(2), BUCKET_TYPE_MINUTE, 1);
+        persistMetric(t, "svc", "INFO", BASE, BUCKET_TYPE_MINUTE, 1);
 
         List<LogMetric> result = repository.findSince(BASE);
 
@@ -69,7 +71,7 @@ class LogMetricRepositoryTest {
     @Test
     void findSinceByType_filtersByBucketType() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "svc", "INFO", BASE.plusMinutes(1), "MINUTE", 1);
+        persistMetric(t, "svc", "INFO", BASE.plusMinutes(1), BUCKET_TYPE_MINUTE, 1);
         persistMetric(t, "svc", "INFO", BASE.plusMinutes(2), "HOUR", 1);
         persistMetric(t, "svc", "INFO", BASE.minusMinutes(5), "HOUR", 1);
 
@@ -82,8 +84,8 @@ class LogMetricRepositoryTest {
     void findByTenantSince_withTenant_scopesToTenant() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistMetric(t1, "svc", "INFO", BASE.plusMinutes(1), "MINUTE", 1);
-        persistMetric(t2, "svc", "INFO", BASE.plusMinutes(2), "MINUTE", 1);
+        persistMetric(t1, "svc", "INFO", BASE.plusMinutes(1), BUCKET_TYPE_MINUTE, 1);
+        persistMetric(t2, "svc", "INFO", BASE.plusMinutes(2), BUCKET_TYPE_MINUTE, 1);
 
         List<LogMetric> result = repository.findByTenantSince(t1.getId(), BASE);
 
@@ -94,8 +96,8 @@ class LogMetricRepositoryTest {
     void findByTenantSince_withNullTenant_returnsAllTenants() {
         Tenant t1 = persistTenant("T1");
         Tenant t2 = persistTenant("T2");
-        persistMetric(t1, "svc", "INFO", BASE.plusMinutes(1), "MINUTE", 1);
-        persistMetric(t2, "svc", "INFO", BASE.plusMinutes(2), "MINUTE", 1);
+        persistMetric(t1, "svc", "INFO", BASE.plusMinutes(1), BUCKET_TYPE_MINUTE, 1);
+        persistMetric(t2, "svc", "INFO", BASE.plusMinutes(2), BUCKET_TYPE_MINUTE, 1);
 
         List<LogMetric> result = repository.findByTenantSince(null, BASE);
 
@@ -105,9 +107,9 @@ class LogMetricRepositoryTest {
     @Test
     void sumCountSince_withoutFilters_sumsAllBucketsInWindow() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "api", "INFO", BASE.plusMinutes(1), "MINUTE", 5);
-        persistMetric(t, "web", "ERROR", BASE.plusMinutes(2), "MINUTE", 7);
-        persistMetric(t, "api", "INFO", BASE.minusMinutes(5), "MINUTE", 99);
+        persistMetric(t, "api", "INFO", BASE.plusMinutes(1), BUCKET_TYPE_MINUTE, 5);
+        persistMetric(t, "web", LEVEL_ERROR, BASE.plusMinutes(2), BUCKET_TYPE_MINUTE, 7);
+        persistMetric(t, "api", "INFO", BASE.minusMinutes(5), BUCKET_TYPE_MINUTE, 99);
 
         assertThat(repository.sumCountSince(null, null, BASE)).isEqualTo(12L);
     }
@@ -115,18 +117,18 @@ class LogMetricRepositoryTest {
     @Test
     void sumCountSince_withServiceAndLevelFilters_sumsMatchingBuckets() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "api", "ERROR", BASE.plusMinutes(1), "MINUTE", 5);
-        persistMetric(t, "api", "ERROR", BASE.plusMinutes(2), "MINUTE", 3);
-        persistMetric(t, "api", "INFO", BASE.plusMinutes(3), "MINUTE", 10);
-        persistMetric(t, "web", "ERROR", BASE.plusMinutes(4), "MINUTE", 20);
+        persistMetric(t, "api", LEVEL_ERROR, BASE.plusMinutes(1), BUCKET_TYPE_MINUTE, 5);
+        persistMetric(t, "api", LEVEL_ERROR, BASE.plusMinutes(2), BUCKET_TYPE_MINUTE, 3);
+        persistMetric(t, "api", "INFO", BASE.plusMinutes(3), BUCKET_TYPE_MINUTE, 10);
+        persistMetric(t, "web", LEVEL_ERROR, BASE.plusMinutes(4), BUCKET_TYPE_MINUTE, 20);
 
-        assertThat(repository.sumCountSince("api", "ERROR", BASE)).isEqualTo(8L);
+        assertThat(repository.sumCountSince("api", LEVEL_ERROR, BASE)).isEqualTo(8L);
     }
 
     @Test
     void sumCountSince_noMatchingBuckets_returnsNull() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "api", "INFO", BASE.minusMinutes(5), "MINUTE", 5);
+        persistMetric(t, "api", "INFO", BASE.minusMinutes(5), BUCKET_TYPE_MINUTE, 5);
 
         assertThat(repository.sumCountSince(null, null, BASE)).isNull();
     }
@@ -134,13 +136,13 @@ class LogMetricRepositoryTest {
     @Test
     void findByTenantIdAndServiceAndLevelAndBucketAndBucketType_matchesExactCombination() {
         Tenant t = persistTenant("T1");
-        persistMetric(t, "api", "ERROR", BASE, "MINUTE", 5);
-        persistMetric(t, "api", "INFO", BASE, "MINUTE", 5);
+        persistMetric(t, "api", LEVEL_ERROR, BASE, BUCKET_TYPE_MINUTE, 5);
+        persistMetric(t, "api", "INFO", BASE, BUCKET_TYPE_MINUTE, 5);
 
         assertThat(repository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
-                t.getId(), "api", "ERROR", BASE, "MINUTE")).isPresent().get()
-                .extracting(LogMetric::getLevel).isEqualTo("ERROR");
+                t.getId(), "api", LEVEL_ERROR, BASE, BUCKET_TYPE_MINUTE)).isPresent().get()
+                .extracting(LogMetric::getLevel).isEqualTo(LEVEL_ERROR);
         assertThat(repository.findByTenantIdAndServiceAndLevelAndBucketAndBucketType(
-                t.getId(), "api", "WARN", BASE, "MINUTE")).isEmpty();
+                t.getId(), "api", "WARN", BASE, BUCKET_TYPE_MINUTE)).isEmpty();
     }
 }

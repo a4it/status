@@ -33,6 +33,9 @@ class NotificationSubscriberRepositoryTest {
     @Autowired
     private NotificationSubscriberRepository repository;
 
+    private static final String EXISTS_EMAIL = "exists@x.com";
+    private static final String FINDABLE_NAME = "Findable";
+
     private StatusApp app;
     private StatusApp otherApp;
 
@@ -135,11 +138,11 @@ class NotificationSubscriberRepositoryTest {
 
     @Test
     void existsByAppIdAndEmail_reflectsPresence() {
-        persistSubscriber(app, "exists@x.com", "E", true, true, null);
+        persistSubscriber(app, EXISTS_EMAIL, "E", true, true, null);
 
-        assertThat(repository.existsByAppIdAndEmail(app.getId(), "exists@x.com")).isTrue();
+        assertThat(repository.existsByAppIdAndEmail(app.getId(), EXISTS_EMAIL)).isTrue();
         assertThat(repository.existsByAppIdAndEmail(app.getId(), "missing@x.com")).isFalse();
-        assertThat(repository.existsByAppIdAndEmail(otherApp.getId(), "exists@x.com")).isFalse();
+        assertThat(repository.existsByAppIdAndEmail(otherApp.getId(), EXISTS_EMAIL)).isFalse();
     }
 
     @Test
@@ -162,11 +165,11 @@ class NotificationSubscriberRepositoryTest {
 
     @Test
     void searchByAppId_matchesEmailOrNameWithinApp() {
-        persistSubscriber(app, "search@x.com", "Findable", true, true, null);
+        persistSubscriber(app, "search@x.com", FINDABLE_NAME, true, true, null);
         persistSubscriber(app, "other@x.com", "Nomatch", true, true, null);
-        persistSubscriber(otherApp, "search2@x.com", "Findable", true, true, null);
+        persistSubscriber(otherApp, "search2@x.com", FINDABLE_NAME, true, true, null);
 
-        assertThat(repository.searchByAppId(app.getId(), "Findable"))
+        assertThat(repository.searchByAppId(app.getId(), FINDABLE_NAME))
                 .extracting(NotificationSubscriber::getEmail).containsExactly("search@x.com");
     }
 
