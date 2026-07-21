@@ -2,6 +2,9 @@ package org.automatize.status.services;
 
 import org.automatize.status.api.response.StatusAppResponse;
 import org.automatize.status.api.response.StatusPlatformResponse;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.DuplicateResourceException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.*;
 import org.automatize.status.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,11 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class StatusPlatformService {
+
+    /**
+     * Message fragment used when a platform cannot be located by its identifier.
+     */
+    private static final String PLATFORM_NOT_FOUND = "Platform not found with id: ";
 
     @Autowired
     private StatusPlatformRepository statusPlatformRepository;
@@ -100,12 +108,12 @@ public class StatusPlatformService {
      *
      * @param id the UUID of the platform
      * @return the StatusPlatformResponse for the requested platform
-     * @throws RuntimeException if the platform is not found
+     * @throws ResourceNotFoundException if the platform is not found
      */
     @Transactional(readOnly = true)
     public StatusPlatformResponse getPlatformById(UUID id) {
         StatusPlatform platform = statusPlatformRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
         return mapToResponse(platform);
     }
 
@@ -114,12 +122,12 @@ public class StatusPlatformService {
      *
      * @param slug the URL-friendly identifier of the platform
      * @return the StatusPlatformResponse for the requested platform
-     * @throws RuntimeException if the platform is not found
+     * @throws ResourceNotFoundException if the platform is not found
      */
     @Transactional(readOnly = true)
     public StatusPlatformResponse getPlatformBySlug(String slug) {
         StatusPlatform platform = statusPlatformRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Platform not found with slug: " + slug));
+                .orElseThrow(() -> new ResourceNotFoundException("Platform not found with slug: " + slug));
         return mapToResponse(platform);
     }
 
@@ -141,12 +149,12 @@ public class StatusPlatformService {
      *
      * @param platform the platform entity to create
      * @return the newly created StatusPlatformResponse
-     * @throws RuntimeException if the slug already exists in the tenant
+     * @throws DuplicateResourceException if the slug already exists in the tenant
      */
     public StatusPlatformResponse createPlatform(StatusPlatform platform) {
         if (platform.getTenant() != null &&
             statusPlatformRepository.existsByTenantIdAndSlug(platform.getTenant().getId(), platform.getSlug())) {
-            throw new RuntimeException("Platform with slug already exists in this tenant: " + platform.getSlug());
+            throw new DuplicateResourceException("Platform with slug already exists in this tenant: " + platform.getSlug());
         }
 
         String currentUser = getCurrentUsername();
@@ -168,13 +176,13 @@ public class StatusPlatformService {
     public StatusPlatformResponse createPlatform(StatusPlatform platform, UUID tenantId, UUID organizationId) {
         if (tenantId != null) {
             Tenant tenant = tenantRepository.findById(tenantId)
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             platform.setTenant(tenant);
         }
 
         if (organizationId != null) {
             Organization organization = organizationRepository.findById(organizationId)
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             platform.setOrganization(organization);
         }
 
@@ -187,16 +195,16 @@ public class StatusPlatformService {
      * @param id the UUID of the platform to update
      * @param updatedPlatform the updated platform data
      * @return the updated StatusPlatformResponse
-     * @throws RuntimeException if the platform is not found
+     * @throws ResourceNotFoundException if the platform is not found
      */
     public StatusPlatformResponse updatePlatform(UUID id, StatusPlatform updatedPlatform) {
         StatusPlatform platform = statusPlatformRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
         if (!platform.getSlug().equals(updatedPlatform.getSlug()) &&
             platform.getTenant() != null &&
             statusPlatformRepository.existsByTenantIdAndSlug(platform.getTenant().getId(), updatedPlatform.getSlug())) {
-            throw new RuntimeException("Platform with slug already exists in this tenant: " + updatedPlatform.getSlug());
+            throw new DuplicateResourceException("Platform with slug already exists in this tenant: " + updatedPlatform.getSlug());
         }
 
         platform.setName(updatedPlatform.getName());
@@ -224,17 +232,17 @@ public class StatusPlatformService {
      */
     public StatusPlatformResponse updatePlatform(UUID id, StatusPlatform updatedPlatform, UUID tenantId, UUID organizationId) {
         StatusPlatform platform = statusPlatformRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
         if (tenantId != null && (platform.getTenant() == null || !platform.getTenant().getId().equals(tenantId))) {
             Tenant tenant = tenantRepository.findById(tenantId)
-                    .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
             platform.setTenant(tenant);
         }
 
         if (organizationId != null && (platform.getOrganization() == null || !platform.getOrganization().getId().equals(organizationId))) {
             Organization organization = organizationRepository.findById(organizationId)
-                    .orElseThrow(() -> new RuntimeException("Organization not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Organization not found"));
             platform.setOrganization(organization);
         }
 
@@ -258,11 +266,11 @@ public class StatusPlatformService {
      * @param id the UUID of the platform
      * @param status the new status value
      * @return the updated StatusPlatformResponse
-     * @throws RuntimeException if the platform is not found
+     * @throws ResourceNotFoundException if the platform is not found
      */
     public StatusPlatformResponse updateStatus(UUID id, String status) {
         StatusPlatform platform = statusPlatformRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
         platform.setStatus(status);
         platform.setLastModifiedBy(getCurrentUsername());
@@ -275,17 +283,17 @@ public class StatusPlatformService {
      * Deletes a platform by its unique identifier.
      *
      * @param id the UUID of the platform to delete
-     * @throws RuntimeException if the platform is not found
-     * @throws RuntimeException if the platform has associated apps
+     * @throws ResourceNotFoundException if the platform is not found
+     * @throws BusinessRuleException if the platform has associated apps
      */
     public void deletePlatform(UUID id) {
         StatusPlatform platform = statusPlatformRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Platform not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(PLATFORM_NOT_FOUND + id));
 
         // Check for associated apps
         List<StatusApp> apps = statusAppRepository.findByPlatformId(id);
         if (!apps.isEmpty()) {
-            throw new RuntimeException("Cannot delete platform with associated applications. Remove or reassign apps first.");
+            throw new BusinessRuleException("Cannot delete platform with associated applications. Remove or reassign apps first.");
         }
 
         statusPlatformRepository.delete(platform);

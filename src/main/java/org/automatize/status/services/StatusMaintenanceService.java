@@ -3,6 +3,8 @@ package org.automatize.status.services;
 import org.automatize.status.api.request.StatusMaintenanceRequest;
 import org.automatize.status.api.response.StatusComponentResponse;
 import org.automatize.status.api.response.StatusMaintenanceResponse;
+import org.automatize.status.exceptions.BusinessRuleException;
+import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.models.*;
 import org.automatize.status.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,28 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class StatusMaintenanceService {
+
+    /**
+     * Message fragment used when a maintenance window cannot be located by its identifier.
+     */
+    private static final String MAINTENANCE_NOT_FOUND = "Maintenance not found with id: ";
+
+    /**
+     * Message used when a referenced status app cannot be located.
+     */
+    private static final String STATUS_APP_NOT_FOUND = "Status app not found";
+
+    /**
+     * Maintenance lifecycle status values.
+     */
+    private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+
+    /**
+     * Component/app status values affected by maintenance windows.
+     */
+    private static final String STATUS_UNDER_MAINTENANCE = "UNDER_MAINTENANCE";
+    private static final String STATUS_OPERATIONAL = "OPERATIONAL";
 
     /**
      * Repository for maintenance data access operations.
