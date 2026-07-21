@@ -5,17 +5,15 @@ import org.automatize.status.exceptions.BusinessRuleException;
 import org.automatize.status.exceptions.DuplicateResourceException;
 import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.services.StatusComponentService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
-import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,28 +30,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Standalone MockMvc tests for {@link StatusComponentController}. No Spring
- * context / security is loaded; focus is request mapping, bean validation,
- * JSON contract, {@code @ResponseStatus} exception mapping, and delegation to
- * the (mocked) service layer.
+ * WebMvc slice tests for {@link StatusComponentController}. Security filters are
+ * disabled ({@code addFilters = false}); focus is request mapping, bean
+ * validation (400), JSON contract, {@code @ResponseStatus} exception mapping
+ * (404/409), and delegation to the (mocked) service layer.
  */
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(controllers = StatusComponentController.class)
+@AutoConfigureMockMvc(addFilters = false)
+@ActiveProfiles("test")
 class StatusComponentControllerTest {
 
-    @Mock
-    private StatusComponentService statusComponentService;
-
-    @InjectMocks
-    private StatusComponentController controller;
-
+    @Autowired
     private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller)
-                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
-                .build();
-    }
+    @MockitoBean
+    private StatusComponentService statusComponentService;
 
     private StatusComponentResponse sampleResponse(UUID id) {
         StatusComponentResponse r = new StatusComponentResponse();
