@@ -41,6 +41,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProcessMiningRetentionServiceTest {
 
+    private static final String TOTAL_DELETED = "totalDeleted";
+
     @Mock
     private ProcessMiningRetentionRuleRepository retentionRuleRepository;
 
@@ -320,7 +322,7 @@ class ProcessMiningRetentionServiceTest {
         Map<String, Object> result = service.runRetentionNow();
 
         assertThat(result.get("rulesProcessed")).isEqualTo(1);
-        assertThat(result.get("totalDeleted")).isEqualTo(7);
+        assertThat(result.get(TOTAL_DELETED)).isEqualTo(7);
         assertThat(r.getLastRunDeletedCount()).isEqualTo(7);
         assertThat(r.getLastRunAt()).isNotNull();
         verify(retentionRuleRepository).save(r);
@@ -346,7 +348,7 @@ class ProcessMiningRetentionServiceTest {
 
         Map<String, Object> result = service.runRetentionNow();
 
-        assertThat(result.get("totalDeleted")).isEqualTo(0);
+        assertThat(result.get(TOTAL_DELETED)).isEqualTo(0);
         assertThat(r.getLastRunDeletedCount()).isEqualTo(0);
         verify(entityManager, never()).createQuery(anyString());
     }
@@ -370,7 +372,7 @@ class ProcessMiningRetentionServiceTest {
 
         Map<String, Object> result = service.runRetentionNow();
 
-        assertThat(result.get("totalDeleted")).isEqualTo(3);
+        assertThat(result.get(TOTAL_DELETED)).isEqualTo(3);
         verify(query).executeUpdate();
         verify(statusAppRepository, never()).findByPlatformId(any());
     }
@@ -387,7 +389,7 @@ class ProcessMiningRetentionServiceTest {
 
         Map<String, Object> result = service.runRetentionNow();
 
-        assertThat(result.get("totalDeleted")).isEqualTo(0);
+        assertThat(result.get(TOTAL_DELETED)).isEqualTo(0);
         verify(entityManager, never()).createQuery(anyString());
         verify(retentionRuleRepository).save(r);
     }
@@ -402,7 +404,7 @@ class ProcessMiningRetentionServiceTest {
         Map<String, Object> result = service.runRetentionNow();
 
         assertThat(result.get("rulesProcessed")).isEqualTo(0);
-        assertThat(result.get("totalDeleted")).isEqualTo(0);
+        assertThat(result.get(TOTAL_DELETED)).isEqualTo(0);
         assertThat((List<?>) result.get("details")).isEmpty();
     }
 

@@ -51,6 +51,8 @@ import static org.mockito.Mockito.when;
 class PublicStatusServiceTest {
 
     private static final String OPERATIONAL = "OPERATIONAL";
+    private static final String DEGRADED = "DEGRADED";
+    private static final String MAJOR_OUTAGE = "MAJOR_OUTAGE";
 
     @Mock
     private StatusAppRepository statusAppRepository;
@@ -264,7 +266,7 @@ class PublicStatusServiceTest {
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusComponentRepository.findByAppIdOrderByPosition(appId))
                 .thenReturn(List.of(newComponent(UUID.randomUUID(), app, OPERATIONAL),
-                        newComponent(UUID.randomUUID(), app, "DEGRADED")));
+                        newComponent(UUID.randomUUID(), app, DEGRADED)));
 
         List<StatusComponentResponse> result = publicStatusService.getAppComponents(appId);
 
@@ -291,7 +293,7 @@ class PublicStatusServiceTest {
     @Test
     void getCurrentIncidents_returnsOnlyPublicUnresolved() {
         UUID appId = UUID.randomUUID();
-        StatusApp app = newApp(appId, "web", "DEGRADED", true);
+        StatusApp app = newApp(appId, "web", DEGRADED, true);
         StatusIncident publicIncident = newIncident(UUID.randomUUID(), app, "INVESTIGATING", true);
         StatusIncident privateIncident = newIncident(UUID.randomUUID(), app, "INVESTIGATING", false);
         when(statusIncidentRepository.findByAppIdAndStatusNot(appId, "RESOLVED"))
@@ -346,13 +348,13 @@ class PublicStatusServiceTest {
     @Test
     void getStatusSummary_majorityDown_overallMajorOutage() {
         StatusApp a1 = newApp(UUID.randomUUID(), "a1", OPERATIONAL, true);
-        StatusApp a2 = newApp(UUID.randomUUID(), "a2", "MAJOR_OUTAGE", true);
+        StatusApp a2 = newApp(UUID.randomUUID(), "a2", MAJOR_OUTAGE, true);
         when(statusAppRepository.findByIsPublic(true)).thenReturn(List.of(a1, a2));
 
         StatusSummaryResponse summary = publicStatusService.getStatusSummary(null);
 
         assertThat(summary.getAppsWithIssues()).isEqualTo(1);
-        assertThat(summary.getOverallStatus()).isEqualTo("MAJOR_OUTAGE");
+        assertThat(summary.getOverallStatus()).isEqualTo(MAJOR_OUTAGE);
     }
 
     /**
@@ -363,12 +365,12 @@ class PublicStatusServiceTest {
     void getStatusSummary_minorityDown_overallDegraded() {
         StatusApp a1 = newApp(UUID.randomUUID(), "a1", OPERATIONAL, true);
         StatusApp a2 = newApp(UUID.randomUUID(), "a2", OPERATIONAL, true);
-        StatusApp a3 = newApp(UUID.randomUUID(), "a3", "MAJOR_OUTAGE", true);
+        StatusApp a3 = newApp(UUID.randomUUID(), "a3", MAJOR_OUTAGE, true);
         when(statusAppRepository.findByIsPublic(true)).thenReturn(List.of(a1, a2, a3));
 
         StatusSummaryResponse summary = publicStatusService.getStatusSummary(null);
 
-        assertThat(summary.getOverallStatus()).isEqualTo("DEGRADED");
+        assertThat(summary.getOverallStatus()).isEqualTo(DEGRADED);
     }
 
     /**

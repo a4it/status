@@ -57,6 +57,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SetupServiceTest {
 
+    private static final String SETUP_COMPLETED_FIELD = "setupCompleted";
+    private static final String FLYWAY_FIELD = "flyway";
+    private static final String ADMIN_USERNAME = "admin";
+    private static final String ADMIN_EMAIL = "admin@acme.test";
+    private static final String ENCODED_PASSWORD = "ENC(supersecret)";
+    private static final String RAW_PASSWORD = "supersecret";
+
     @Mock
     private TenantService tenantService;
 
@@ -96,7 +103,7 @@ class SetupServiceTest {
      */
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(setupService, "setupCompleted", false);
+        ReflectionTestUtils.setField(setupService, SETUP_COMPLETED_FIELD, false);
         ReflectionTestUtils.setField(setupService, "datasourceUrl", "jdbc:postgresql://localhost:5432/status");
         ReflectionTestUtils.setField(setupService, "datasourceUsername", "status_user");
     }
@@ -111,7 +118,7 @@ class SetupServiceTest {
      */
     @Test
     void isSetupAlreadyComplete_whenFlagFalse_returnsFalse() {
-        ReflectionTestUtils.setField(setupService, "setupCompleted", false);
+        ReflectionTestUtils.setField(setupService, SETUP_COMPLETED_FIELD, false);
 
         assertThat(setupService.isSetupAlreadyComplete()).isFalse();
     }
@@ -122,7 +129,7 @@ class SetupServiceTest {
      */
     @Test
     void isSetupAlreadyComplete_whenFlagTrue_returnsTrue() {
-        ReflectionTestUtils.setField(setupService, "setupCompleted", true);
+        ReflectionTestUtils.setField(setupService, SETUP_COMPLETED_FIELD, true);
 
         assertThat(setupService.isSetupAlreadyComplete()).isTrue();
     }

@@ -32,6 +32,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ProcessMiningServiceTest {
 
+    private static final String SERVICE_A = SERVICE_A;
+    private static final String PLATFORM_SCOPE = PLATFORM_SCOPE;
+    private static final String TRACE_1 = TRACE_1;
+
     @Mock
     private LogRepository logRepository;
 
@@ -114,11 +118,11 @@ class ProcessMiningServiceTest {
     @Test
     void buildCases_platformScopeNoTraceIds_returnsEmptyResponse() {
         UUID platformId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of());
 
-        ProcessMiningResponse resp = service.buildCases("platform", platformId, null,
+        ProcessMiningResponse resp = service.buildCases(PLATFORM_SCOPE, platformId, null,
                 from, to, 100, 1);
 
         assertThat(resp.getCases()).isEmpty();
@@ -151,25 +155,25 @@ class ProcessMiningServiceTest {
     @Test
     void buildCases_groupsByTraceIdAndMapsEventsWithIcons() {
         UUID platformId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(any(), any(), any(), any(), any(Pageable.class)))
-                .thenReturn(List.of("trace-1"));
+                .thenReturn(List.of(TRACE_1));
 
         ZonedDateTime t1 = from.plusMinutes(1);
         ZonedDateTime t2 = from.plusMinutes(2);
         // deliberately out of order so we can assert sorting by timestamp
-        when(logRepository.findByTraceIdIn(List.of("trace-1"))).thenReturn(List.of(
-                log("trace-1", "svc-a", "ERROR", "later", t2),
-                log("trace-1", "svc-a", "INFO", "earlier", t1)
+        when(logRepository.findByTraceIdIn(List.of(TRACE_1))).thenReturn(List.of(
+                log(TRACE_1, SERVICE_A, "ERROR", "later", t2),
+                log(TRACE_1, SERVICE_A, "INFO", "earlier", t1)
         ));
 
-        ProcessMiningResponse resp = service.buildCases("platform", platformId, null,
+        ProcessMiningResponse resp = service.buildCases(PLATFORM_SCOPE, platformId, null,
                 from, to, 100, 1);
 
         assertThat(resp.getCases()).hasSize(1);
         assertThat(resp.getTotalCases()).isEqualTo(1);
         ProcessMiningResponse.ProcessCase c = resp.getCases().get(0);
-        assertThat(c.getCaseId()).isEqualTo("trace-1");
+        assertThat(c.getCaseId()).isEqualTo(TRACE_1);
         assertThat(c.getEvents()).hasSize(2);
         // sorted ascending by timestamp
         assertThat(c.getEvents().get(0).getMessage()).isEqualTo("earlier");
@@ -185,14 +189,14 @@ class ProcessMiningServiceTest {
     @Test
     void buildCases_belowMinEvents_caseFilteredOut() {
         UUID platformId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(any(), any(), any(), any(), any(Pageable.class)))
-                .thenReturn(List.of("trace-1"));
+                .thenReturn(List.of(TRACE_1));
         when(logRepository.findByTraceIdIn(any())).thenReturn(List.of(
-                log("trace-1", "svc-a", "INFO", "only one", from.plusMinutes(1))
+                log(TRACE_1, SERVICE_A, "INFO", "only one", from.plusMinutes(1))
         ));
 
-        ProcessMiningResponse resp = service.buildCases("platform", platformId, null,
+        ProcessMiningResponse resp = service.buildCases(PLATFORM_SCOPE, platformId, null,
                 from, to, 100, 2);
 
         assertThat(resp.getCases()).isEmpty();
@@ -206,15 +210,15 @@ class ProcessMiningServiceTest {
     @Test
     void buildCases_traceIdsEqualMaxCases_flagsTruncated() {
         UUID platformId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(any(), any(), any(), any(), any(Pageable.class)))
                 .thenReturn(List.of("t1", "t2"));
         when(logRepository.findByTraceIdIn(any())).thenReturn(List.of(
-                log("t1", "svc-a", "INFO", "m1", from.plusMinutes(1)),
-                log("t2", "svc-a", "INFO", "m2", from.plusMinutes(2))
+                log("t1", SERVICE_A, "INFO", "m1", from.plusMinutes(1)),
+                log("t2", SERVICE_A, "INFO", "m2", from.plusMinutes(2))
         ));
 
-        ProcessMiningResponse resp = service.buildCases("platform", platformId, null,
+        ProcessMiningResponse resp = service.buildCases(PLATFORM_SCOPE, platformId, null,
                 from, to, 2, 1);
 
         assertThat(resp.isTruncated()).isTrue();
@@ -228,13 +232,13 @@ class ProcessMiningServiceTest {
     @Test
     void buildCases_nullServiceAndUnknownLevel_useDefaults() {
         UUID platformId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(any(), any(), any(), any(), any(Pageable.class)))
-                .thenReturn(List.of("trace-1"));
-        Log noService = log("trace-1", null, "TRACE", "msg", from.plusMinutes(1));
+                .thenReturn(List.of(TRACE_1));
+        Log noService = log(TRACE_1, null, "TRACE", "msg", from.plusMinutes(1));
         when(logRepository.findByTraceIdIn(any())).thenReturn(List.of(noService));
 
-        ProcessMiningResponse resp = service.buildCases("platform", platformId, null,
+        ProcessMiningResponse resp = service.buildCases(PLATFORM_SCOPE, platformId, null,
                 from, to, 100, 1);
 
         ProcessMiningResponse.ProcessEvent event = resp.getCases().get(0).getEvents().get(0);
@@ -250,14 +254,14 @@ class ProcessMiningServiceTest {
     void buildCases_passesTenantAndWindowThrough() {
         UUID platformId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
-        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app("svc-a")));
+        when(statusAppRepository.findByPlatformId(platformId)).thenReturn(List.of(app(SERVICE_A)));
         when(logRepository.findDistinctTraceIdsForServices(
-                eq(tenantId), eq(from), eq(to), eq(List.of("svc-a")), any(Pageable.class)))
+                eq(tenantId), eq(from), eq(to), eq(List.of(SERVICE_A)), any(Pageable.class)))
                 .thenReturn(List.of());
 
-        service.buildCases("platform", platformId, tenantId, from, to, 50, 1);
+        service.buildCases(PLATFORM_SCOPE, platformId, tenantId, from, to, 50, 1);
 
         verify(logRepository).findDistinctTraceIdsForServices(
-                eq(tenantId), eq(from), eq(to), eq(List.of("svc-a")), any(Pageable.class));
+                eq(tenantId), eq(from), eq(to), eq(List.of(SERVICE_A)), any(Pageable.class));
     }
 }

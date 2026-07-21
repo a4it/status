@@ -110,12 +110,12 @@ class StatusAppServiceTest {
     @Test
     void getStatusAppById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
-        when(statusAppRepository.findById(id)).thenReturn(Optional.of(newApp(id, "web", "OPERATIONAL")));
+        when(statusAppRepository.findById(id)).thenReturn(Optional.of(newApp(id, "web", STATUS_OPERATIONAL)));
 
         StatusAppResponse response = statusAppService.getStatusAppById(id);
 
         assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(response.getStatus()).isEqualTo(STATUS_OPERATIONAL);
     }
 
     /**
@@ -137,7 +137,7 @@ class StatusAppServiceTest {
      */
     @Test
     void getAllStatusApps_noFilters_returnsPageFromFindAll() {
-        StatusApp app = newApp(UUID.randomUUID(), "web", "OPERATIONAL");
+        StatusApp app = newApp(UUID.randomUUID(), "web", STATUS_OPERATIONAL);
         when(statusAppRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(app)));
 
         var page = statusAppService.getAllStatusApps(null, null, null, pageable);
@@ -153,7 +153,7 @@ class StatusAppServiceTest {
     void getAllStatusApps_byTenant_returnsMappedList() {
         UUID tenantId = UUID.randomUUID();
         when(statusAppRepository.findByTenantId(tenantId))
-                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", "OPERATIONAL")));
+                .thenReturn(List.of(newApp(UUID.randomUUID(), "web", STATUS_OPERATIONAL)));
 
         var page = statusAppService.getAllStatusApps(tenantId, null, null, pageable);
 
@@ -172,16 +172,16 @@ class StatusAppServiceTest {
 
         StatusAppRequest request = new StatusAppRequest();
         request.setName("New App");
-        request.setSlug("new-app");
+        request.setSlug(SLUG_NEW_APP);
         request.setTenantId(tenantId);
 
-        when(statusAppRepository.existsByTenantIdAndSlug(tenantId, "new-app")).thenReturn(false);
+        when(statusAppRepository.existsByTenantIdAndSlug(tenantId, SLUG_NEW_APP)).thenReturn(false);
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(statusAppRepository.save(any(StatusApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
         StatusAppResponse response = statusAppService.createStatusApp(request);
 
-        assertThat(response.getSlug()).isEqualTo("new-app");
+        assertThat(response.getSlug()).isEqualTo(SLUG_NEW_APP);
         assertThat(response.getApiKey()).isNotBlank();
         verify(statusAppRepository).save(any(StatusApp.class));
     }
@@ -241,7 +241,7 @@ class StatusAppServiceTest {
     @Test
     void updateStatusApp_sameSlug_updatesAndSaves() {
         UUID id = UUID.randomUUID();
-        StatusApp existing = newApp(id, "web", "OPERATIONAL");
+        StatusApp existing = newApp(id, "web", STATUS_OPERATIONAL);
         existing.setApiKey("existing-key");
 
         StatusAppRequest request = new StatusAppRequest();
@@ -264,9 +264,9 @@ class StatusAppServiceTest {
     @Test
     void updateStatus_majorOutage_cascadesToComponents() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(id, "web", "OPERATIONAL");
+        StatusApp app = newApp(id, "web", STATUS_OPERATIONAL);
         StatusComponent c1 = new StatusComponent();
-        c1.setStatus("OPERATIONAL");
+        c1.setStatus(STATUS_OPERATIONAL);
         StatusComponent c2 = new StatusComponent();
         c2.setStatus("DEGRADED");
 
@@ -274,10 +274,10 @@ class StatusAppServiceTest {
         when(statusAppRepository.save(any(StatusApp.class))).thenAnswer(inv -> inv.getArgument(0));
         when(statusComponentRepository.findByAppId(id)).thenReturn(List.of(c1, c2));
 
-        statusAppService.updateStatus(id, "MAJOR_OUTAGE");
+        statusAppService.updateStatus(id, STATUS_MAJOR_OUTAGE);
 
-        assertThat(c1.getStatus()).isEqualTo("MAJOR_OUTAGE");
-        assertThat(c2.getStatus()).isEqualTo("MAJOR_OUTAGE");
+        assertThat(c1.getStatus()).isEqualTo(STATUS_MAJOR_OUTAGE);
+        assertThat(c2.getStatus()).isEqualTo(STATUS_MAJOR_OUTAGE);
         verify(statusComponentRepository).saveAll(List.of(c1, c2));
     }
 
@@ -288,11 +288,11 @@ class StatusAppServiceTest {
     @Test
     void updateStatus_operational_doesNotCascade() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(id, "web", "MAJOR_OUTAGE");
+        StatusApp app = newApp(id, "web", STATUS_MAJOR_OUTAGE);
         when(statusAppRepository.findById(id)).thenReturn(Optional.of(app));
         when(statusAppRepository.save(any(StatusApp.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        statusAppService.updateStatus(id, "OPERATIONAL");
+        statusAppService.updateStatus(id, STATUS_OPERATIONAL);
 
         verify(statusComponentRepository, never()).saveAll(any());
         verify(statusComponentRepository, never()).findByAppId(id);
@@ -304,7 +304,7 @@ class StatusAppServiceTest {
     @Test
     void deleteStatusApp_noActiveIncidentsOrMaintenance_deletes() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(id, "web", "OPERATIONAL");
+        StatusApp app = newApp(id, "web", STATUS_OPERATIONAL);
         when(statusAppRepository.findById(id)).thenReturn(Optional.of(app));
         when(statusIncidentRepository.countActiveIncidentsByAppId(id)).thenReturn(0L);
         when(statusMaintenanceRepository.countActiveMaintenanceByAppId(id)).thenReturn(0L);
@@ -321,7 +321,7 @@ class StatusAppServiceTest {
     @Test
     void deleteStatusApp_activeIncidents_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(id, "web", "MAJOR_OUTAGE");
+        StatusApp app = newApp(id, "web", STATUS_MAJOR_OUTAGE);
         when(statusAppRepository.findById(id)).thenReturn(Optional.of(app));
         when(statusIncidentRepository.countActiveIncidentsByAppId(id)).thenReturn(1L);
 
@@ -337,7 +337,7 @@ class StatusAppServiceTest {
     @Test
     void deleteStatusApp_upcomingMaintenance_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
-        StatusApp app = newApp(id, "web", "OPERATIONAL");
+        StatusApp app = newApp(id, "web", STATUS_OPERATIONAL);
         when(statusAppRepository.findById(id)).thenReturn(Optional.of(app));
         when(statusIncidentRepository.countActiveIncidentsByAppId(id)).thenReturn(0L);
         when(statusMaintenanceRepository.countActiveMaintenanceByAppId(id)).thenReturn(2L);
@@ -375,7 +375,7 @@ class StatusAppServiceTest {
 
         verify(statusAppRepository).save(captor.capture());
         StatusApp saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo("OPERATIONAL");
+        assertThat(saved.getStatus()).isEqualTo(STATUS_OPERATIONAL);
         assertThat(saved.getIsPublic()).isTrue();
         assertThat(saved.getCheckType()).isEqualTo("NONE");
     }
