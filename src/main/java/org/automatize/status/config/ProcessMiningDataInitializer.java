@@ -43,7 +43,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // Reused log-message fragments
     private static final String MSG_INCOMING_ORDERS = MSG_INCOMING_ORDERS;
-    private static final String MSG_JWT_VALIDATED = "JWT validated for user ";
+    private static final String MSG_JWT_VALIDATED = MSG_JWT_VALIDATED;
     private static final String MSG_ORDER = "Order ";
     private static final String MSG_FOR = " for ";
     private static final String MSG_PAYMENT_AUTHORISED = "Payment authorised: ";
@@ -251,8 +251,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO", MSG_INCOMING_ORDERS + orderId + " from user " + userId),
-            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO", "JWT validated for user " + userId + ", role=CUSTOMER"),
-            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO", "Order " + orderId + " created and persisted to DB"),
+            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO", MSG_JWT_VALIDATED + userId + ", role=CUSTOMER"),
+            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO", MSG_ORDER + orderId + " created and persisted to DB"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),  "INFO", "Stock reserved: 1x SKU-" + (rng.nextInt(900) + 100) + " for " + orderId),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(6),  "INFO", "Payment authorised: " + currency(rng) + " for " + orderId),
             log(tenant, apps.get(SVC_NOTIFY),     traceId, base.plusSeconds(8),  "INFO", "Confirmation email queued for " + orderId + " → user " + userId)
@@ -280,13 +280,13 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                  "INFO",    MSG_INCOMING_ORDERS + orderId),
-            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO",    "JWT validated for user " + userId),
-            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO",    "Order " + orderId + " reserved in DB"),
+            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),  "INFO",    MSG_JWT_VALIDATED + userId),
+            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),  "INFO",    MSG_ORDER + orderId + " reserved in DB"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),  "INFO",    "Stock reserved for " + orderId),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(6),  "WARNING", "Payment gateway timeout for " + orderId + " (5200ms)"),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(9),  "ERROR",   "Payment declined: card issuer refused " + orderId),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(10), "WARNING", "Stock reservation rolled back for " + orderId),
-            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(11), "WARNING", "Order " + orderId + " cancelled due to payment failure")
+            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(11), "WARNING", MSG_ORDER + orderId + " cancelled due to payment failure")
         );
     }
 
@@ -300,8 +300,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         double balance = 20 + rng.nextInt(480);
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY),  traceId, base,                 "INFO", MSG_INCOMING_ORDERS + orderId + " (wallet payment)"),
-            log(tenant, apps.get(SVC_AUTH),      traceId, base.plusSeconds(1), "INFO", "JWT validated for user " + userId + ", wallet balance=" + balance),
-            log(tenant, apps.get(SVC_ORDER),     traceId, base.plusSeconds(3), "INFO", "Order " + orderId + " created, deducted from wallet balance"),
+            log(tenant, apps.get(SVC_AUTH),      traceId, base.plusSeconds(1), "INFO", MSG_JWT_VALIDATED + userId + ", wallet balance=" + balance),
+            log(tenant, apps.get(SVC_ORDER),     traceId, base.plusSeconds(3), "INFO", MSG_ORDER + orderId + " created, deducted from wallet balance"),
             log(tenant, apps.get(SVC_INVENTORY), traceId, base.plusSeconds(4), "INFO", "Stock reserved for " + orderId),
             log(tenant, apps.get(SVC_NOTIFY),    traceId, base.plusSeconds(6), "INFO", "Wallet order confirmation sent for " + orderId + " → user " + userId)
         );
@@ -332,7 +332,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         String cacheKey = "cart:" + userId + ":" + (rng.nextInt(9000) + 1000);
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY), traceId, base,                 "INFO", "Incoming POST /api/checkout — " + orderId + " (express checkout)"),
-            log(tenant, apps.get(SVC_AUTH),    traceId, base.plusSeconds(1),  "INFO", "JWT validated for user " + userId),
+            log(tenant, apps.get(SVC_AUTH),    traceId, base.plusSeconds(1),  "INFO", MSG_JWT_VALIDATED + userId),
             log(tenant, apps.get(SVC_CACHE),   traceId, base.plusSeconds(1),  "INFO", "Cache HIT for key " + cacheKey + " — 3 items, skipping Order Service"),
             log(tenant, apps.get(SVC_PAYMENT), traceId, base.plusSeconds(3),  "INFO", "Payment authorised: " + currency(rng) + " for " + orderId),
             log(tenant, apps.get(SVC_NOTIFY),  traceId, base.plusSeconds(5),  "INFO", "Express checkout confirmation queued for " + orderId)
@@ -364,7 +364,7 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int riskScore = 75 + rng.nextInt(25);
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY), traceId, base,                  "INFO",    "Incoming POST /api/orders from IP " + randomIp(rng) + " — user " + userId),
-            log(tenant, apps.get(SVC_AUTH),    traceId, base.plusSeconds(1),   "INFO",    "JWT validated for user " + userId),
+            log(tenant, apps.get(SVC_AUTH),    traceId, base.plusSeconds(1),   "INFO",    MSG_JWT_VALIDATED + userId),
             log(tenant, apps.get(SVC_FRAUD),   traceId, base.plusSeconds(2),   "WARNING", "Evaluating risk for user " + userId + ": velocity=" + (rng.nextInt(20) + 5) + " orders/hr"),
             log(tenant, apps.get(SVC_FRAUD),   traceId, base.plusSeconds(3),   "ERROR",   "Risk score " + riskScore + "/100 exceeds threshold (70) for user " + userId + " — blocking order"),
             log(tenant, apps.get(SVC_GATEWAY), traceId, base.plusSeconds(4),   "WARNING", "Request rejected: 403 Fraud detected — Order, Payment, Notify skipped")
@@ -399,8 +399,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         return List.of(
             log(tenant, apps.get(SVC_SEARCH),    traceId, base,                  "INFO", "Search query '" + query + "' — " + results + " results returned to user " + userId),
             log(tenant, apps.get(SVC_GATEWAY),   traceId, base.plusSeconds(4),   "INFO", MSG_INCOMING_ORDERS + orderId + " (originated from search click)"),
-            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(5),  "INFO", "JWT validated for user " + userId),
-            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(7),  "INFO", "Order " + orderId + " created from search result — query='" + query + "'"),
+            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(5),  "INFO", MSG_JWT_VALIDATED + userId),
+            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(7),  "INFO", MSG_ORDER + orderId + " created from search result — query='" + query + "'"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(8),  "INFO", "Stock reserved for " + orderId),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(10), "INFO", "Payment authorised: " + currency(rng) + " for " + orderId),
             log(tenant, apps.get(SVC_NOTIFY),     traceId, base.plusSeconds(12), "INFO", "Order confirmation queued for " + orderId + " → user " + userId)
@@ -416,8 +416,8 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
         int userId = rng.nextInt(9000) + 1000;
         return List.of(
             log(tenant, apps.get(SVC_GATEWAY),   traceId, base,                   "INFO",    MSG_INCOMING_ORDERS + orderId),
-            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),   "INFO",    "JWT validated for user " + userId),
-            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),   "INFO",    "Order " + orderId + " created and reserved"),
+            log(tenant, apps.get(SVC_AUTH),       traceId, base.plusSeconds(1),   "INFO",    MSG_JWT_VALIDATED + userId),
+            log(tenant, apps.get(SVC_ORDER),      traceId, base.plusSeconds(3),   "INFO",    MSG_ORDER + orderId + " created and reserved"),
             log(tenant, apps.get(SVC_INVENTORY),  traceId, base.plusSeconds(4),   "INFO",    "Stock reserved for " + orderId),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(6),   "WARNING", "Payment attempt 1 failed for " + orderId + ": upstream network timeout (3100ms)"),
             log(tenant, apps.get(SVC_PAYMENT),    traceId, base.plusSeconds(12),  "INFO",    "Retrying payment for " + orderId + " (attempt 2 of 3)"),

@@ -115,7 +115,7 @@ public class CronWizardApiController {
     private Map<String, String> preset(String name, String expression, String humanReadable) {
         Map<String, String> m = new LinkedHashMap<>();
         m.put("name", name);
-        m.put("expression", expression);
+        m.put(EXPRESSION, expression);
         m.put("humanReadable", humanReadable);
         return m;
     }
