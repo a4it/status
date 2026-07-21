@@ -113,16 +113,22 @@ public class StatusMaintenanceService {
                                                            ZonedDateTime endDate, String search, Pageable pageable) {
         List<StatusMaintenance> maintenances;
         
+        // Both app and status filters supplied: query by both
         if (appId != null && status != null) {
             maintenances = statusMaintenanceRepository.findByAppIdAndStatus(appId, status);
+        // Only app filter supplied: query by app
         } else if (appId != null) {
             maintenances = statusMaintenanceRepository.findByAppId(appId);
+        // Only status filter supplied: query by status
         } else if (status != null) {
             maintenances = statusMaintenanceRepository.findByStatus(status);
+        // Date range supplied: query by start date between bounds
         } else if (startDate != null && endDate != null) {
             maintenances = statusMaintenanceRepository.findByStartsAtBetween(startDate, endDate);
+        // Search term supplied: run full-text search
         } else if (search != null && !search.isEmpty()) {
             maintenances = statusMaintenanceRepository.search(search);
+        // No filters: return the full paginated result directly
         } else {
             return statusMaintenanceRepository.findAll(pageable).map(this::mapToResponse);
         }
@@ -162,13 +168,16 @@ public class StatusMaintenanceService {
         ZonedDateTime endDate = startDate.plusDays(days);
         
         List<StatusMaintenance> maintenances;
+        // App filter supplied: fetch upcoming maintenance for that app
         if (appId != null) {
             maintenances = statusMaintenanceRepository.findUpcomingMaintenanceByAppId(appId, startDate);
+        // Tenant filter supplied: fetch tenant maintenance and narrow to the window
         } else if (tenantId != null) {
             maintenances = statusMaintenanceRepository.findByTenantId(tenantId);
             maintenances = maintenances.stream()
                     .filter(m -> m.getStartsAt().isAfter(startDate) && m.getStartsAt().isBefore(endDate))
                     .collect(Collectors.toList());
+        // No filter: fetch all maintenance starting within the window
         } else {
             maintenances = statusMaintenanceRepository.findByStartsAtBetween(startDate, endDate);
         }
@@ -191,10 +200,12 @@ public class StatusMaintenanceService {
         ZonedDateTime currentTime = ZonedDateTime.now();
         List<StatusMaintenance> maintenances = statusMaintenanceRepository.findActiveMaintenance(currentTime);
         
+        // App filter supplied: keep only maintenance for that app
         if (appId != null) {
             maintenances = maintenances.stream()
                     .filter(m -> m.getApp().getId().equals(appId))
                     .collect(Collectors.toList());
+        // Tenant filter supplied: keep only maintenance for that tenant
         } else if (tenantId != null) {
             maintenances = maintenances.stream()
                     .filter(m -> m.getApp().getTenant() != null && m.getApp().getTenant().getId().equals(tenantId))
@@ -221,6 +232,7 @@ public class StatusMaintenanceService {
         StatusApp app = statusAppRepository.findById(request.getAppId())
                 .orElseThrow(() -> new ResourceNotFoundException(STATUS_APP_NOT_FOUND));
 
+        // Guard: start time must not be after the end time
         if (request.getStartsAt().isAfter(request.getEndsAt())) {
             throw new BusinessRuleException("Start time must be before end time");
         }
@@ -237,6 +249,7 @@ public class StatusMaintenanceService {
         StatusMaintenance savedMaintenance = statusMaintenanceRepository.save(maintenance);
         
         // Link affected components
+        // Affected component IDs were supplied: link them to the maintenance
         if (request.getAffectedComponentIds() != null && !request.getAffectedComponentIds().isEmpty()) {
             linkAffectedComponents(savedMaintenance, request.getAffectedComponentIds());
         }
@@ -265,6 +278,7 @@ public class StatusMaintenanceService {
             throw new BusinessRuleException("Cannot update completed or cancelled maintenance");
         }
 
+        // Guard: start time must not be after the end time
         if (request.getStartsAt().isAfter(request.getEndsAt())) {
             throw new BusinessRuleException("Start time must be before end time");
         }
