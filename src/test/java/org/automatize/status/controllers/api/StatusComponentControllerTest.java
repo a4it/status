@@ -7,13 +7,10 @@ import org.automatize.status.exceptions.ResourceNotFoundException;
 import org.automatize.status.services.StatusComponentService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.UUID;
@@ -36,12 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * (404/409), and delegation to the (mocked) service layer.
  */
 @WebMvcTest(controllers = StatusComponentController.class)
-@AutoConfigureMockMvc(addFilters = false)
-@ActiveProfiles("test")
-class StatusComponentControllerTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class StatusComponentControllerTest extends AbstractApiControllerTest {
 
     @MockitoBean
     private StatusComponentService statusComponentService;
