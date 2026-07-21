@@ -43,17 +43,17 @@ class RestExecutorServiceTest {
     @InjectMocks
     private RestExecutorService restExecutorService;
 
-    private static final String STATUS_URL = STATUS_URL;
-    private static final String LOCALHOST_URL = LOCALHOST_URL;
-    private static final String METHOD_BUILD_URL = METHOD_BUILD_URL;
-    private static final String METHOD_CHECK_ASSERTIONS = METHOD_CHECK_ASSERTIONS;
-    private static final String METHOD_APPLY_AUTH = METHOD_APPLY_AUTH;
-    private static final String METHOD_RECORD_RESPONSE = METHOD_RECORD_RESPONSE;
-    private static final String HEADER_AUTHORIZATION = HEADER_AUTHORIZATION;
-    private static final String HEADER_X_CUSTOM_KEY = HEADER_X_CUSTOM_KEY;
+    private static final String STATUS_URL = "https://api.example.com/status";
+    private static final String LOCALHOST_URL = "http://localhost";
+    private static final String METHOD_BUILD_URL = "buildUrl";
+    private static final String METHOD_CHECK_ASSERTIONS = "checkAssertions";
+    private static final String METHOD_APPLY_AUTH = "applyAuth";
+    private static final String METHOD_RECORD_RESPONSE = "recordResponse";
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String HEADER_X_CUSTOM_KEY = "X-Custom-Key";
     private static final String BODY_HEALTHY = "healthy";
-    private static final String ENC_KEY = ENC_KEY;
-    private static final String KEY_VALUE = KEY_VALUE;
+    private static final String ENC_KEY = "enc-key";
+    private static final String KEY_VALUE = "keyval";
 
     // -------------------------------------------------------------------------
     // execute() - null config guard

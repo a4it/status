@@ -44,16 +44,16 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
-    private static final String ROLE_ADMIN = ROLE_ADMIN;
-    private static final String USERNAME_TESTER = USERNAME_TESTER;
-    private static final String EMAIL_TESTER = EMAIL_TESTER;
-    private static final String STORED_HASH = STORED_HASH;
-    private static final String USERNAME_NEWUSER = USERNAME_NEWUSER;
-    private static final String EMAIL_NEW = EMAIL_NEW;
-    private static final String USERNAME_TARGET = USERNAME_TARGET;
-    private static final String USERNAME_TAKEN = USERNAME_TAKEN;
-    private static final String EMAIL_TAKEN = EMAIL_TAKEN;
-    private static final String HASHED_NEW = HASHED_NEW;
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String USERNAME_TESTER = "tester";
+    private static final String EMAIL_TESTER = "tester@example.com";
+    private static final String STORED_HASH = "stored-hash";
+    private static final String USERNAME_NEWUSER = "newuser";
+    private static final String EMAIL_NEW = "new@example.com";
+    private static final String USERNAME_TARGET = "target";
+    private static final String USERNAME_TAKEN = "taken";
+    private static final String EMAIL_TAKEN = "taken@example.com";
+    private static final String HASHED_NEW = "hashed-new";
 
     @Mock
     private UserRepository userRepository;

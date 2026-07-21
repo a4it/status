@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ProcessMiningRetentionController.class)
 class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
 
-    private static final String RETENTION_BY_ID_PATH = RETENTION_BY_ID_PATH;
+    private static final String RETENTION_BY_ID_PATH = "/api/process-mining/retention/{id}";
 
     @MockitoBean
     private ProcessMiningRetentionService service;

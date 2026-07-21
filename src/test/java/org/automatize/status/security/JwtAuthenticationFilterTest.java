@@ -32,10 +32,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
 
-    private static final String API_DATA_URI = API_DATA_URI;
+    private static final String API_DATA_URI = "/api/data";
     private static final String AUTHORIZATION_HEADER = "Authorization";
-    private static final String VALID_TOKEN = VALID_TOKEN;
-    private static final String CTX_TOKEN = CTX_TOKEN;
+    private static final String VALID_TOKEN = "valid-token";
+    private static final String CTX_TOKEN = "ctx-token";
 
     @Mock
     private JwtUtils jwtUtils;

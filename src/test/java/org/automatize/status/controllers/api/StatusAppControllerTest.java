@@ -36,8 +36,8 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
 
     private static final String APP_NAME = "My App";
     private static final String APP_SLUG = "my-app";
-    private static final String BASE_PATH = BASE_PATH;
-    private static final String BASE_PATH_ID = BASE_PATH_ID;
+    private static final String BASE_PATH = "/api/status-apps";
+    private static final String BASE_PATH_ID = "/api/status-apps/{id}";
 
     @MockitoBean
     private StatusAppService statusAppService;

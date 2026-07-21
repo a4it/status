@@ -162,7 +162,7 @@ class SoapExecutorServiceTest {
     @Test
     void containsSoapFault_noFault_returnsFalse() {
         Boolean result = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "containsSoapFault", "<Envelope><Body>ok</Body></Envelope>");
+                soapExecutorService, CONTAINS_SOAP_FAULT, "<Envelope><Body>ok</Body></Envelope>");
 
         assertThat(result).isFalse();
     }
@@ -174,7 +174,7 @@ class SoapExecutorServiceTest {
     @Test
     void containsSoapFault_nullBody_returnsFalse() {
         Boolean result = ReflectionTestUtils.invokeMethod(
-                soapExecutorService, "containsSoapFault", new Object[]{null});
+                soapExecutorService, CONTAINS_SOAP_FAULT, new Object[]{null});
 
         assertThat(result).isFalse();
     }
@@ -225,11 +225,11 @@ class SoapExecutorServiceTest {
     void applyAuth_none_addsNoAuthorizationHeader() {
         SchedulerSoapConfig config = new SchedulerSoapConfig();
         config.setAuthType(AuthType.NONE);
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(HTTP_LOCALHOST)).GET();
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, APPLY_AUTH, config, builder);
 
-        assertThat(builder.build().headers().firstValue("Authorization")).isEmpty();
+        assertThat(builder.build().headers().firstValue(AUTHORIZATION)).isEmpty();
     }
 
     /**
@@ -243,13 +243,13 @@ class SoapExecutorServiceTest {
         config.setAuthUsername("user");
         config.setAuthPasswordEnc("enc-pass");
         when(encryptionService.decrypt("enc-pass")).thenReturn("secret");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(HTTP_LOCALHOST)).GET();
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, APPLY_AUTH, config, builder);
 
         String expected = "Basic " + Base64.getEncoder()
                 .encodeToString("user:secret".getBytes(StandardCharsets.UTF_8));
-        assertThat(builder.build().headers().firstValue("Authorization")).hasValue(expected);
+        assertThat(builder.build().headers().firstValue(AUTHORIZATION)).hasValue(expected);
     }
 
     /**
@@ -262,11 +262,11 @@ class SoapExecutorServiceTest {
         config.setAuthType(AuthType.BEARER);
         config.setAuthTokenEnc("enc-token");
         when(encryptionService.decrypt("enc-token")).thenReturn("tok123");
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create("http://localhost")).GET();
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(HTTP_LOCALHOST)).GET();
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "applyAuth", config, builder);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, APPLY_AUTH, config, builder);
 
-        assertThat(builder.build().headers().firstValue("Authorization")).hasValue("Bearer tok123");
+        assertThat(builder.build().headers().firstValue(AUTHORIZATION)).hasValue("Bearer tok123");
     }
 
     // -------------------------------------------------------------------------
@@ -286,7 +286,7 @@ class SoapExecutorServiceTest {
         when(response.statusCode()).thenReturn(200);
         when(response.body()).thenReturn("<Envelope><Body>ok</Body></Envelope>");
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "evaluateResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, EVALUATE_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.SUCCESS);
         assertThat(run.getHttpStatusCode()).isEqualTo(200);
@@ -306,7 +306,7 @@ class SoapExecutorServiceTest {
         when(response.statusCode()).thenReturn(200);
         when(response.body()).thenReturn("<soap:Fault>bad</soap:Fault>");
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "evaluateResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, EVALUATE_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.FAILURE);
         assertThat(run.getErrorMessage()).isEqualTo("SOAP call failed with HTTP 200 (SOAP Fault detected)");
@@ -325,7 +325,7 @@ class SoapExecutorServiceTest {
         when(response.statusCode()).thenReturn(500);
         when(response.body()).thenReturn("internal error");
 
-        ReflectionTestUtils.invokeMethod(soapExecutorService, "evaluateResponse", config, run, response);
+        ReflectionTestUtils.invokeMethod(soapExecutorService, EVALUATE_RESPONSE, config, run, response);
 
         assertThat(run.getStatus()).isEqualTo(JobRunStatus.FAILURE);
         assertThat(run.getErrorMessage()).isEqualTo("SOAP call failed with HTTP 500");
