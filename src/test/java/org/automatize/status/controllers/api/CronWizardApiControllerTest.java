@@ -1,0 +1,125 @@
+package org.automatize.status.controllers.api;
+
+import org.automatize.status.services.scheduler.CronValidationService;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.time.ZonedDateTime;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * WebMvc slice tests for {@link CronWizardApiController}. Cron validation,
+ * preview, presets, and timezone endpoints delegate to the mocked
+ * {@link CronValidationService}. No security principal is required as the
+ * controller does not read the {@code SecurityContext}.
+ */
+@WebMvcTest(controllers = CronWizardApiController.class)
+class CronWizardApiControllerTest extends AbstractApiControllerTest {
+
+    @MockitoBean
+    private CronValidationService cronValidationService;
+
+    // -------------------------------------------------------------------------
+    // POST /api/scheduler/cron/validate
+    // -------------------------------------------------------------------------
+
+    @Test
+    void validate_validExpression_returnsOkValidTrue() throws Exception {
+        String expr = "0 * * * * *";
+        when(cronValidationService.isValid(expr)).thenReturn(true);
+        when(cronValidationService.toHumanReadable(expr)).thenReturn("Every minute");
+        when(cronValidationService.getNextExecutions(eq(expr), eq("UTC"), eq(5)))
+                .thenReturn(List.of(ZonedDateTime.now()));
+
+        mockMvc.perform(post("/api/scheduler/cron/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expression\":\"" + expr + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(true))
+                .andExpect(jsonPath("$.humanReadable").value("Every minute"))
+                .andExpect(jsonPath("$.nextRuns").isArray())
+                .andExpect(jsonPath("$.error").doesNotExist());
+    }
+
+    @Test
+    void validate_invalidExpression_returnsOkValidFalseWithError() throws Exception {
+        String expr = "not-a-cron";
+        when(cronValidationService.isValid(expr)).thenReturn(false);
+        when(cronValidationService.getValidationError(expr)).thenReturn("Invalid cron");
+
+        mockMvc.perform(post("/api/scheduler/cron/validate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expression\":\"" + expr + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.valid").value(false))
+                .andExpect(jsonPath("$.error").value("Invalid cron"))
+                .andExpect(jsonPath("$.humanReadable").doesNotExist());
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/scheduler/cron/preview
+    // -------------------------------------------------------------------------
+
+    @Test
+    void preview_returnsOkListOfExecutions() throws Exception {
+        when(cronValidationService.getNextExecutions(eq("0 * * * * *"), eq("UTC"), anyInt()))
+                .thenReturn(List.of(ZonedDateTime.now(), ZonedDateTime.now().plusMinutes(1)));
+
+        mockMvc.perform(post("/api/scheduler/cron/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"expression\":\"0 * * * * *\",\"timezone\":\"UTC\",\"count\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0]").exists());
+    }
+
+    @Test
+    void preview_missingExpression_returnsOkEmptyList() throws Exception {
+        when(cronValidationService.getNextExecutions(eq(""), eq("UTC"), anyInt()))
+                .thenReturn(List.of());
+
+        mockMvc.perform(post("/api/scheduler/cron/preview")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/scheduler/cron/presets
+    // -------------------------------------------------------------------------
+
+    @Test
+    void presets_returnsOkStaticList() throws Exception {
+        mockMvc.perform(get("/api/scheduler/cron/presets"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].name").value("Every minute"))
+                .andExpect(jsonPath("$[0].expression").value("0 * * * * *"));
+    }
+
+    // -------------------------------------------------------------------------
+    // GET /api/scheduler/cron/timezones
+    // -------------------------------------------------------------------------
+
+    @Test
+    void timezones_returnsOkList() throws Exception {
+        when(cronValidationService.getAvailableTimezones())
+                .thenReturn(List.of("UTC", "Europe/Brussels"));
+
+        mockMvc.perform(get("/api/scheduler/cron/timezones"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("UTC"))
+                .andExpect(jsonPath("$[1]").value("Europe/Brussels"));
+    }
+}
