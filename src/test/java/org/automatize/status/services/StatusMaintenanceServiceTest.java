@@ -43,6 +43,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StatusMaintenanceServiceTest {
 
+    private static final String STATUS_SCHEDULED = "SCHEDULED";
+    private static final String STATUS_OPERATIONAL = "OPERATIONAL";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String STATUS_UNDER_MAINTENANCE = "UNDER_MAINTENANCE";
+
     @Mock
     private StatusMaintenanceRepository statusMaintenanceRepository;
     @Mock

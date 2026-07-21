@@ -243,13 +243,13 @@ class AuthServiceTest {
     void registerUser_validRequest_savesUserWithForcedUserRole() {
         RegisterRequest request = new RegisterRequest();
         request.setUsername(NEW_USERNAME);
-        request.setEmail("new@b.com");
+        request.setEmail(NEW_EMAIL);
         request.setPassword("pw");
         request.setFullName("New User");
 
         when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
-        when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
-        when(passwordEncoder.encode("pw")).thenReturn("hashed");
+        when(userRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode("pw")).thenReturn(HASHED_PASSWORD);
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         MessageResponse response = authService.registerUser(request);
@@ -259,7 +259,7 @@ class AuthServiceTest {
         verify(userRepository).save(captor.capture());
         User saved = captor.getValue();
         assertThat(saved.getRole()).isEqualTo("USER");
-        assertThat(saved.getPassword()).isEqualTo("hashed");
+        assertThat(saved.getPassword()).isEqualTo(HASHED_PASSWORD);
         assertThat(saved.getEnabled()).isTrue();
     }
 
@@ -275,13 +275,13 @@ class AuthServiceTest {
 
         RegisterRequest request = new RegisterRequest();
         request.setUsername(NEW_USERNAME);
-        request.setEmail("new@b.com");
+        request.setEmail(NEW_EMAIL);
         request.setPassword("pw");
         request.setOrganizationId(orgId);
 
         when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
-        when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
-        when(passwordEncoder.encode("pw")).thenReturn("hashed");
+        when(userRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode("pw")).thenReturn(HASHED_PASSWORD);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.of(org));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -303,13 +303,13 @@ class AuthServiceTest {
 
         RegisterRequest request = new RegisterRequest();
         request.setUsername(NEW_USERNAME);
-        request.setEmail("new@b.com");
+        request.setEmail(NEW_EMAIL);
         request.setPassword("pw");
         request.setOrganizationId(orgId);
 
         when(userRepository.existsByUsername(NEW_USERNAME)).thenReturn(false);
-        when(userRepository.existsByEmail("new@b.com")).thenReturn(false);
-        when(passwordEncoder.encode("pw")).thenReturn("hashed");
+        when(userRepository.existsByEmail(NEW_EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode("pw")).thenReturn(HASHED_PASSWORD);
         when(organizationRepository.findById(orgId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.registerUser(request))
