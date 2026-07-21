@@ -324,23 +324,28 @@ public class SchedulerJobService {
      * Relies on JPA cascading to persist child config entities.
      */
     private void updateJobConfig(SchedulerJob existing, SchedulerJob newData) {
+        // Copy the config subtype matching the job's type
         switch (existing.getJobType()) {
             case REST -> {
+                // Only copy when both existing and incoming REST configs are present
                 if (newData.getRestConfig() != null && existing.getRestConfig() != null) {
                     copyRestConfig(existing.getRestConfig(), newData.getRestConfig());
                 }
             }
             case SQL -> {
+                // Only copy when both existing and incoming SQL configs are present
                 if (newData.getSqlConfig() != null && existing.getSqlConfig() != null) {
                     copySqlConfig(existing.getSqlConfig(), newData.getSqlConfig());
                 }
             }
             case PROGRAM -> {
+                // Only copy when both existing and incoming PROGRAM configs are present
                 if (newData.getProgramConfig() != null && existing.getProgramConfig() != null) {
                     copyProgramConfig(existing.getProgramConfig(), newData.getProgramConfig());
                 }
             }
             case SOAP -> {
+                // Only copy when both existing and incoming SOAP configs are present
                 if (newData.getSoapConfig() != null && existing.getSoapConfig() != null) {
                     copySoapConfig(existing.getSoapConfig(), newData.getSoapConfig());
                 }

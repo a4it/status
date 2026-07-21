@@ -314,6 +314,10 @@ class StatusAppServiceTest {
         verify(statusAppRepository).delete(app);
     }
 
+    /**
+     * Verifies that deleting an app with active incidents raises
+     * {@link BusinessRuleException} and does not delete.
+     */
     @Test
     void deleteStatusApp_activeIncidents_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
@@ -326,6 +330,10 @@ class StatusAppServiceTest {
         verify(statusAppRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that deleting an app with active/upcoming maintenance raises
+     * {@link BusinessRuleException} and does not delete.
+     */
     @Test
     void deleteStatusApp_upcomingMaintenance_throwsBusinessRule() {
         UUID id = UUID.randomUUID();
@@ -339,6 +347,9 @@ class StatusAppServiceTest {
         verify(statusAppRepository, never()).delete(any());
     }
 
+    /**
+     * Verifies that deleting a missing app raises {@link ResourceNotFoundException}.
+     */
     @Test
     void deleteStatusApp_notFound_throwsResourceNotFound() {
         UUID id = UUID.randomUUID();
@@ -348,6 +359,10 @@ class StatusAppServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    /**
+     * Verifies that creating an app with only required fields applies defaults for
+     * status (OPERATIONAL), visibility (public) and check type (NONE).
+     */
     @Test
     void createStatusApp_defaultsAppliedForOptionalFields() {
         StatusAppRequest request = new StatusAppRequest();

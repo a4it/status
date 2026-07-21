@@ -145,6 +145,10 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.isEnabled()).isTrue();
     }
 
+    /**
+     * Verifies that {@code isEnabled} returns false when the stored "enabled" value is
+     * "false".
+     */
     @Test
     void isEnabled_whenValueFalse_returnsFalse() {
         when(repository.findBySettingKey("enabled")).thenReturn(Optional.of(setting("enabled", "false")));
@@ -152,6 +156,9 @@ class HealthCheckSettingsServiceTest {
         assertThat(service.isEnabled()).isFalse();
     }
 
+    /**
+     * Verifies that {@code isEnabled} defaults to true when the "enabled" setting is absent.
+     */
     @Test
     void isEnabled_whenMissing_defaultsToTrue() {
         when(repository.findBySettingKey("enabled")).thenReturn(Optional.empty());

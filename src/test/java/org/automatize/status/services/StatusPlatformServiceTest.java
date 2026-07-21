@@ -53,17 +53,32 @@ class StatusPlatformServiceTest {
 
     private final Pageable pageable = PageRequest.of(0, 10);
 
+    /**
+     * Establishes an authenticated security context before each test so that
+     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
+     */
     @BeforeEach
     void setUp() {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("tester", null, List.of()));
     }
 
+    /**
+     * Clears the security context after each test to avoid leaking authentication state between tests.
+     */
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
     }
 
+    /**
+     * Builds a minimal public {@link StatusPlatform} fixture for use in tests.
+     *
+     * @param id     the identifier to assign to the platform
+     * @param slug   the platform slug (also used to derive its name)
+     * @param status the status value to assign to the platform
+     * @return a populated {@link StatusPlatform} instance
+     */
     private StatusPlatform newPlatform(UUID id, String slug, String status) {
         StatusPlatform platform = new StatusPlatform();
         platform.setId(id);
@@ -75,6 +90,9 @@ class StatusPlatformServiceTest {
         return platform;
     }
 
+    /**
+     * Verifies that requesting an existing platform by id returns a response mapping its id and slug.
+     */
     @Test
     void getPlatformById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
@@ -86,6 +104,9 @@ class StatusPlatformServiceTest {
         assertThat(response.getSlug()).isEqualTo("cloud");
     }
 
+    /**
+     * Verifies that requesting a platform whose id does not exist throws a {@link RuntimeException}.
+     */
     @Test
     void getPlatformById_notFound_throwsRuntime() {
         UUID id = UUID.randomUUID();

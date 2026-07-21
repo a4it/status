@@ -257,6 +257,10 @@ class OrganizationServiceTest {
                 .isInstanceOf(BusinessRuleException.class);
     }
 
+    /**
+     * Verifies that creating an organization with a unique name and email persists it with an ACTIVE
+     * status and returns the saved instance.
+     */
     @Test
     void createOrganization_uniqueNameAndEmail_savesOrganization() {
         OrganizationRequest request = buildRequest("Org1");
@@ -273,6 +277,10 @@ class OrganizationServiceTest {
         verify(organizationRepository).save(any(Organization.class));
     }
 
+    /**
+     * Verifies that creating an organization with an already-used name throws
+     * {@link DuplicateResourceException} and never saves.
+     */
     @Test
     void createOrganization_duplicateName_throwsDuplicateResourceException() {
         OrganizationRequest request = buildRequest("Org1");

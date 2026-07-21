@@ -91,6 +91,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Verifies GET /api/public/status/apps returns 200 with the list of public apps.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAllPublicApps_returnsOk() throws Exception {
         when(publicStatusService.getAllPublicApps(isNull()))
@@ -101,6 +106,11 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$[0].name").value("Public App"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{slug} returns 200 with the app when the slug resolves.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppBySlug_found_returnsOk() throws Exception {
         when(publicStatusService.getAppBySlug(eq("public-app"), any()))
@@ -111,6 +121,12 @@ class PublicStatusControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.slug").value("public-app"));
     }
 
+    /**
+     * Verifies GET /api/public/status/apps/{slug} returns 404 when the service throws
+     * {@code ResourceNotFoundException} for a non-public/unknown slug.
+     *
+     * @throws Exception if the mock request fails
+     */
     @Test
     void getAppBySlug_notFound_returns404() throws Exception {
         when(publicStatusService.getAppBySlug(eq("missing"), any()))
