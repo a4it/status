@@ -108,7 +108,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusIncidentService.getIncidentById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/incidents/{id}", id))
+        mockMvc.perform(get(INCIDENT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.severity").value("MAJOR"));
     }
@@ -124,7 +124,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         when(statusIncidentService.getIncidentById(id))
                 .thenThrow(new ResourceNotFoundException("Incident not found with id: " + id));
 
-        mockMvc.perform(get("/api/incidents/{id}", id))
+        mockMvc.perform(get(INCIDENT_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -151,7 +151,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     void createIncident_missingTitle_returns400() throws Exception {
         String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"status\":\"INVESTIGATING\","
                 + "\"severity\":\"MAJOR\",\"startedAt\":\"2026-01-01T10:00:00Z\"}";
-        mockMvc.perform(post("/api/incidents").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(INCIDENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -164,7 +164,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     void createIncident_missingAppId_returns400() throws Exception {
         String body = "{\"title\":\"DB outage\",\"status\":\"INVESTIGATING\","
                 + "\"severity\":\"MAJOR\",\"startedAt\":\"2026-01-01T10:00:00Z\"}";
-        mockMvc.perform(post("/api/incidents").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(INCIDENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -178,7 +178,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusIncidentService.updateIncident(eq(id), any())).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(put("/api/incidents/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(INCIDENT_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -192,7 +192,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     void deleteIncident_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/incidents/{id}", id))
+        mockMvc.perform(delete(INCIDENT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -210,7 +210,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         when(statusIncidentService.addIncidentUpdate(eq(id), any())).thenReturn(sampleUpdate(UUID.randomUUID()));
 
         String body = "{\"status\":\"MONITORING\",\"message\":\"Recovering\"}";
-        mockMvc.perform(post("/api/incidents/{id}/updates", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(INCIDENT_UPDATES_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.message").value("Recovering"));
     }
@@ -224,7 +224,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
     void addIncidentUpdate_missingMessage_returns400() throws Exception {
         UUID id = UUID.randomUUID();
         String body = "{\"status\":\"MONITORING\"}";
-        mockMvc.perform(post("/api/incidents/{id}/updates", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(INCIDENT_UPDATES_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -238,7 +238,7 @@ class StatusIncidentControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusIncidentService.getIncidentUpdates(id)).thenReturn(List.of(sampleUpdate(UUID.randomUUID())));
 
-        mockMvc.perform(get("/api/incidents/{id}/updates", id))
+        mockMvc.perform(get(INCIDENT_UPDATES_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].status").value("MONITORING"));
     }

@@ -55,9 +55,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
 
     private static final String NIGHTLY_BACKUP = "Nightly Backup";
-    private static final String JOBS_PATH = JOBS_PATH;
-    private static final String JOB_BY_ID_PATH = JOB_BY_ID_PATH;
-    private static final String JOB_TRIGGER_PATH = JOB_TRIGGER_PATH;
+    private static final String JOBS_PATH = "/api/scheduler/jobs";
+    private static final String JOB_BY_ID_PATH = "/api/scheduler/jobs/{id}";
+    private static final String JOB_TRIGGER_PATH = "/api/scheduler/jobs/{id}/trigger";
     private static final String STATUS_JSON_PATH = "$.status";
     private static final String JOB_NOT_FOUND = "Job not found";
 

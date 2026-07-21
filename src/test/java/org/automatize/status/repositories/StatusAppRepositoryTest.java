@@ -27,6 +27,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("test")
 class StatusAppRepositoryTest {
 
+    private static final String SLUG_PAYMENTS = "payments";
+    private static final String NAME_PAYMENTS = "Payments";
+    private static final String TENANT_B = "Tenant B";
+    private static final String ORG_B = "Org B";
+    private static final String STATUS_DEGRADED = "DEGRADED";
+    private static final String NAME_PAYMENT_API = "Payment API";
+    private static final String SLUG_PAY_API = "pay-api";
+
     @Autowired
     private TestEntityManager em;
 
@@ -84,27 +92,27 @@ class StatusAppRepositoryTest {
 
     @Test
     void findBySlug_returnsMatchingApp() {
-        persistApp("Payments", "payments", tenant, organization);
+        persistApp(NAME_PAYMENTS, SLUG_PAYMENTS, tenant, organization);
 
-        assertThat(repository.findBySlug("payments"))
+        assertThat(repository.findBySlug(SLUG_PAYMENTS))
                 .isPresent()
-                .get().extracting(StatusApp::getName).isEqualTo("Payments");
+                .get().extracting(StatusApp::getName).isEqualTo(NAME_PAYMENTS);
         assertThat(repository.findBySlug("missing")).isEmpty();
     }
 
     @Test
     void findByTenantIdAndSlug_scopesBySlugWithinTenant() {
-        persistApp("Payments", "payments", tenant, organization);
+        persistApp(NAME_PAYMENTS, SLUG_PAYMENTS, tenant, organization);
 
-        assertThat(repository.findByTenantIdAndSlug(tenant.getId(), "payments")).isPresent();
+        assertThat(repository.findByTenantIdAndSlug(tenant.getId(), SLUG_PAYMENTS)).isPresent();
         assertThat(repository.findByTenantIdAndSlug(tenant.getId(), "other")).isEmpty();
     }
 
     @Test
     void findByTenantId_returnsAppsOfTenantOnly() {
         persistApp("A", "a", tenant, organization);
-        Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
+        Tenant other = persistTenant(TENANT_B);
+        Organization otherOrg = persistOrganization(ORG_B, other);
         persistApp("B", "b", other, otherOrg);
 
         List<StatusApp> result = repository.findByTenantId(tenant.getId());
@@ -115,7 +123,7 @@ class StatusAppRepositoryTest {
     @Test
     void findByOrganizationId_returnsAppsOfOrganizationOnly() {
         persistApp("A", "a", tenant, organization);
-        Organization otherOrg = persistOrganization("Org B", tenant);
+        Organization otherOrg = persistOrganization(ORG_B, tenant);
         persistApp("B", "b", tenant, otherOrg);
 
         assertThat(repository.findByOrganizationId(organization.getId()))
@@ -143,11 +151,11 @@ class StatusAppRepositoryTest {
     @Test
     void findByStatus_filtersByStatus() {
         StatusApp degraded = persistApp("A", "a", tenant, organization);
-        degraded.setStatus("DEGRADED");
+        degraded.setStatus(STATUS_DEGRADED);
         em.persistAndFlush(degraded);
         persistApp("B", "b", tenant, organization); // default OPERATIONAL
 
-        assertThat(repository.findByStatus("DEGRADED"))
+        assertThat(repository.findByStatus(STATUS_DEGRADED))
                 .extracting(StatusApp::getName).containsExactly("A");
     }
 
@@ -178,41 +186,41 @@ class StatusAppRepositoryTest {
     @Test
     void findByOrganizationIdAndStatus_combinesOrgAndStatus() {
         StatusApp degraded = persistApp("A", "a", tenant, organization);
-        degraded.setStatus("DEGRADED");
+        degraded.setStatus(STATUS_DEGRADED);
         em.persistAndFlush(degraded);
         persistApp("B", "b", tenant, organization);
 
-        assertThat(repository.findByOrganizationIdAndStatus(organization.getId(), "DEGRADED"))
+        assertThat(repository.findByOrganizationIdAndStatus(organization.getId(), STATUS_DEGRADED))
                 .extracting(StatusApp::getName).containsExactly("A");
     }
 
     @Test
     void searchByTenantId_matchesNameDescriptionOrSlug() {
-        StatusApp app = persistApp("Payment API", "pay-api", tenant, organization);
+        StatusApp app = persistApp(NAME_PAYMENT_API, SLUG_PAY_API, tenant, organization);
         app.setDescription("handles billing");
         em.persistAndFlush(app);
         persistApp("Web", "web", tenant, organization);
 
         assertThat(repository.searchByTenantId(tenant.getId(), "API"))
-                .extracting(StatusApp::getName).containsExactly("Payment API");
+                .extracting(StatusApp::getName).containsExactly(NAME_PAYMENT_API);
         assertThat(repository.searchByTenantId(tenant.getId(), "billing"))
-                .extracting(StatusApp::getName).containsExactly("Payment API");
-        assertThat(repository.searchByTenantId(tenant.getId(), "pay-api"))
-                .extracting(StatusApp::getName).containsExactly("Payment API");
+                .extracting(StatusApp::getName).containsExactly(NAME_PAYMENT_API);
+        assertThat(repository.searchByTenantId(tenant.getId(), SLUG_PAY_API))
+                .extracting(StatusApp::getName).containsExactly(NAME_PAYMENT_API);
     }
 
     @Test
     void searchByOrganizationId_matchesNameOrDescription() {
-        persistApp("Payment API", "pay-api", tenant, organization);
+        persistApp(NAME_PAYMENT_API, SLUG_PAY_API, tenant, organization);
         persistApp("Web", "web", tenant, organization);
 
         assertThat(repository.searchByOrganizationId(organization.getId(), "Payment"))
-                .extracting(StatusApp::getName).containsExactly("Payment API");
+                .extracting(StatusApp::getName).containsExactly(NAME_PAYMENT_API);
     }
 
     @Test
     void search_matchesGloballyBySlug() {
-        persistApp("Payment API", "pay-api", tenant, organization);
+        persistApp(NAME_PAYMENT_API, SLUG_PAY_API, tenant, organization);
         persistApp("Web", "web", tenant, organization);
 
         assertThat(repository.search("web"))
@@ -223,8 +231,8 @@ class StatusAppRepositoryTest {
     void countByTenantId_countsScopedApps() {
         persistApp("A", "a", tenant, organization);
         persistApp("B", "b", tenant, organization);
-        Tenant other = persistTenant("Tenant B");
-        Organization otherOrg = persistOrganization("Org B", other);
+        Tenant other = persistTenant(TENANT_B);
+        Organization otherOrg = persistOrganization(ORG_B, other);
         persistApp("C", "c", other, otherOrg);
 
         assertThat(repository.countByTenantId(tenant.getId())).isEqualTo(2L);
@@ -249,7 +257,7 @@ class StatusAppRepositoryTest {
     @Test
     void existsByTenantIdAndSlug_scopesToTenant() {
         persistApp("A", "a", tenant, organization);
-        Tenant other = persistTenant("Tenant B");
+        Tenant other = persistTenant(TENANT_B);
 
         assertThat(repository.existsByTenantIdAndSlug(tenant.getId(), "a")).isTrue();
         assertThat(repository.existsByTenantIdAndSlug(other.getId(), "a")).isFalse();

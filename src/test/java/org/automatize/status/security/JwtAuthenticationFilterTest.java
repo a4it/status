@@ -32,6 +32,11 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class JwtAuthenticationFilterTest {
 
+    private static final String API_DATA_URI = API_DATA_URI;
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private static final String VALID_TOKEN = VALID_TOKEN;
+    private static final String CTX_TOKEN = CTX_TOKEN;
+
     @Mock
     private JwtUtils jwtUtils;
 
@@ -68,14 +73,14 @@ class JwtAuthenticationFilterTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/data");
-        request.addHeader("Authorization", "Bearer valid-token");
+        request.setRequestURI(API_DATA_URI);
+        request.addHeader(AUTHORIZATION_HEADER, "Bearer valid-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtils.validateJwtToken("valid-token")).thenReturn(true);
-        when(jwtUtils.getUserIdFromJwtToken("valid-token")).thenReturn(userId);
-        when(jwtUtils.getTenantIdFromJwtToken("valid-token")).thenReturn(null);
-        when(jwtUtils.getOrganizationIdFromJwtToken("valid-token")).thenReturn(null);
+        when(jwtUtils.validateJwtToken(VALID_TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken(VALID_TOKEN)).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken(VALID_TOKEN)).thenReturn(null);
+        when(jwtUtils.getOrganizationIdFromJwtToken(VALID_TOKEN)).thenReturn(null);
         when(customUserDetailsService.loadUserById(userId)).thenReturn(userDetails);
         when(userDetails.getAuthorities()).thenReturn(Collections.emptyList());
 
@@ -103,14 +108,14 @@ class JwtAuthenticationFilterTest {
         UUID tenantId = UUID.randomUUID();
         UUID orgId = UUID.randomUUID();
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/data");
-        request.addHeader("Authorization", "Bearer ctx-token");
+        request.setRequestURI(API_DATA_URI);
+        request.addHeader(AUTHORIZATION_HEADER, "Bearer ctx-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtils.validateJwtToken("ctx-token")).thenReturn(true);
-        when(jwtUtils.getUserIdFromJwtToken("ctx-token")).thenReturn(userId);
-        when(jwtUtils.getTenantIdFromJwtToken("ctx-token")).thenReturn(tenantId);
-        when(jwtUtils.getOrganizationIdFromJwtToken("ctx-token")).thenReturn(orgId);
+        when(jwtUtils.validateJwtToken(CTX_TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken(CTX_TOKEN)).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken(CTX_TOKEN)).thenReturn(tenantId);
+        when(jwtUtils.getOrganizationIdFromJwtToken(CTX_TOKEN)).thenReturn(orgId);
         when(customUserDetailsService.loadUserByIdWithContext(userId, tenantId, orgId))
                 .thenReturn(userDetails);
         when(userDetails.getAuthorities()).thenReturn(Collections.emptyList());
@@ -134,7 +139,7 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_missingToken_doesNotAuthenticateButContinuesChain() throws Exception {
         // Arrange
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/data");
+        request.setRequestURI(API_DATA_URI);
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         // Act
@@ -156,8 +161,8 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_invalidToken_doesNotAuthenticateButContinuesChain() throws Exception {
         // Arrange
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/data");
-        request.addHeader("Authorization", "Bearer bad-token");
+        request.setRequestURI(API_DATA_URI);
+        request.addHeader(AUTHORIZATION_HEADER, "Bearer bad-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         when(jwtUtils.validateJwtToken("bad-token")).thenReturn(false);
@@ -205,14 +210,14 @@ class JwtAuthenticationFilterTest {
         // Arrange
         UUID userId = UUID.randomUUID();
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setRequestURI("/api/data");
-        request.addHeader("Authorization", "Bearer valid-token");
+        request.setRequestURI(API_DATA_URI);
+        request.addHeader(AUTHORIZATION_HEADER, "Bearer valid-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
-        when(jwtUtils.validateJwtToken("valid-token")).thenReturn(true);
-        when(jwtUtils.getUserIdFromJwtToken("valid-token")).thenReturn(userId);
-        when(jwtUtils.getTenantIdFromJwtToken("valid-token")).thenReturn(null);
-        when(jwtUtils.getOrganizationIdFromJwtToken("valid-token")).thenReturn(null);
+        when(jwtUtils.validateJwtToken(VALID_TOKEN)).thenReturn(true);
+        when(jwtUtils.getUserIdFromJwtToken(VALID_TOKEN)).thenReturn(userId);
+        when(jwtUtils.getTenantIdFromJwtToken(VALID_TOKEN)).thenReturn(null);
+        when(jwtUtils.getOrganizationIdFromJwtToken(VALID_TOKEN)).thenReturn(null);
         when(customUserDetailsService.loadUserById(userId))
                 .thenThrow(new RuntimeException("db down"));
 

@@ -44,7 +44,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post(BACKFILL_URL).param("days", "90"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true))
                 .andExpect(jsonPath("$.daysProcessed").value(90));
     }
 
@@ -60,7 +60,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(post(BACKFILL_URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
     }
 
     /**
@@ -74,7 +74,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void backfill_daysBelowOne_returns400() throws Exception {
         mockMvc.perform(post(BACKFILL_URL).param("days", "0"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -88,7 +88,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void backfill_daysAbove365_returns400() throws Exception {
         mockMvc.perform(post(BACKFILL_URL).param("days", "366"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -102,7 +102,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void calculate_validPastDate_returnsOk() throws Exception {
         mockMvc.perform(post(CALCULATE_URL).param("date", "2020-01-01"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true))
                 .andExpect(jsonPath("$.date").value("2020-01-01"));
 
         verify(uptimeHistoryService).calculateUptimeForDate(LocalDate.of(2020, 1, 1));
@@ -118,7 +118,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void calculate_invalidFormat_returns400() throws Exception {
         mockMvc.perform(post(CALCULATE_URL).param("date", "01-01-2020"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -133,7 +133,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
         String future = LocalDate.now().plusDays(5).toString();
         mockMvc.perform(post(CALCULATE_URL).param("date", future))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(false));
     }
 
     /**
@@ -158,7 +158,7 @@ class UptimeHistoryControllerTest extends AbstractApiControllerTest {
     void triggerDaily_returnsOk() throws Exception {
         mockMvc.perform(post("/api/uptime-history/trigger-daily"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
+                .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
 
         verify(uptimeHistoryService).calculateUptimeForDate(any(LocalDate.class));
     }

@@ -21,6 +21,8 @@ class JwtUtilsTest {
             "dGhpc2lzYXNlY3JldGtleWZvcmp3dGF1dGhlbnRpY2F0aW9uYW5kYXV0aG9yaXphdGlvbjEyMw==";
     private static final long EXPIRATION_MS = 86_400_000L;
     private static final long REFRESH_EXPIRATION_MS = 604_800_000L;
+    private static final String JDOE_EMAIL = "jdoe@x.com";
+    private static final String ROOT_EMAIL = "root@x.com";
 
     private JwtUtils jwtUtils;
 
@@ -49,7 +51,7 @@ class JwtUtilsTest {
         UUID orgId = UUID.randomUUID();
 
         // Act
-        String token = jwtUtils.generateJwtTokenFromUserId(userId, "jdoe", "jdoe@x.com", orgId, "USER");
+        String token = jwtUtils.generateJwtTokenFromUserId(userId, "jdoe", JDOE_EMAIL, orgId, "USER");
 
         // Assert
         assertThat(token).isNotBlank();
@@ -81,7 +83,7 @@ class JwtUtilsTest {
     void validateJwtToken_validToken_returnsTrue() {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "jdoe", "jdoe@x.com", null, "USER");
+                UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
 
         // Act & Assert
         assertThat(jwtUtils.validateJwtToken(token)).isTrue();
@@ -96,7 +98,7 @@ class JwtUtilsTest {
         // Arrange: negative expiry so the token is already expired at creation
         ReflectionTestUtils.setField(jwtUtils, "jwtExpirationMs", -10_000L);
         String expired = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "jdoe", "jdoe@x.com", null, "USER");
+                UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
 
         // Act & Assert
         assertThat(jwtUtils.validateJwtToken(expired)).isFalse();
@@ -110,7 +112,7 @@ class JwtUtilsTest {
     void validateJwtToken_tamperedSignature_returnsFalse() {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "jdoe", "jdoe@x.com", null, "USER");
+                UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
         // Flip the last character of the signature segment
         char last = token.charAt(token.length() - 1);
         char replacement = last == 'A' ? 'B' : 'A';
@@ -152,14 +154,14 @@ class JwtUtilsTest {
         UUID orgId = UUID.randomUUID();
         UUID tenantId = UUID.randomUUID();
         String token = jwtUtils.generateJwtTokenWithContext(
-                userId, "root", "root@x.com", orgId, "SUPERADMIN", tenantId);
+                userId, "root", ROOT_EMAIL, orgId, "SUPERADMIN", tenantId);
 
         // Act
         Claims claims = jwtUtils.getAllClaimsFromToken(token);
 
         // Assert
         assertThat(claims.getSubject()).isEqualTo("root");
-        assertThat(claims.get("email", String.class)).isEqualTo("root@x.com");
+        assertThat(claims.get("email", String.class)).isEqualTo(ROOT_EMAIL);
         assertThat(jwtUtils.getTenantIdFromJwtToken(token)).isEqualTo(tenantId);
         assertThat(jwtUtils.getOrganizationIdFromJwtToken(token)).isEqualTo(orgId);
         assertThat(jwtUtils.getUserIdFromJwtToken(token)).isEqualTo(userId);
@@ -173,7 +175,7 @@ class JwtUtilsTest {
     void requiresContextSelection_superadminToken_returnsTrue() {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "root", "root@x.com", null, "SUPERADMIN");
+                UUID.randomUUID(), "root", ROOT_EMAIL, null, "SUPERADMIN");
 
         // Act & Assert
         assertThat(jwtUtils.requiresContextSelection(token)).isTrue();
@@ -187,7 +189,7 @@ class JwtUtilsTest {
     void requiresContextSelection_regularUserToken_returnsFalse() {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "jdoe", "jdoe@x.com", null, "USER");
+                UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
 
         // Act & Assert
         assertThat(jwtUtils.requiresContextSelection(token)).isFalse();
@@ -201,7 +203,7 @@ class JwtUtilsTest {
     void getTenantIdFromJwtToken_noTenantClaim_returnsNull() {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
-                UUID.randomUUID(), "jdoe", "jdoe@x.com", null, "USER");
+                UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
 
         // Act & Assert
         assertThat(jwtUtils.getTenantIdFromJwtToken(token)).isNull();

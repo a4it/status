@@ -39,6 +39,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HealthCheckSchedulerTest {
 
+    private static final String CHECK_TYPE_HTTP_GET = "HTTP_GET";
+    private static final String CHECK_URL = "http://8.8.8.8";
+    private static final String HTTP_200_MESSAGE = "HTTP 200";
+
     @Mock
     private StatusAppRepository statusAppRepository;
 
@@ -76,8 +80,8 @@ class HealthCheckSchedulerTest {
         StatusApp app = new StatusApp();
         app.setName("app");
         app.setCheckEnabled(true);
-        app.setCheckType("HTTP_GET");
-        app.setCheckUrl("http://8.8.8.8");
+        app.setCheckType(CHECK_TYPE_HTTP_GET);
+        app.setCheckUrl(CHECK_URL);
         app.setCheckTimeoutSeconds(5);
         app.setCheckExpectedStatus(200);
         return app;
@@ -94,8 +98,8 @@ class HealthCheckSchedulerTest {
         component.setName("component");
         component.setCheckInheritFromApp(false);
         component.setCheckEnabled(true);
-        component.setCheckType("HTTP_GET");
-        component.setCheckUrl("http://8.8.8.8");
+        component.setCheckType(CHECK_TYPE_HTTP_GET);
+        component.setCheckUrl(CHECK_URL);
         component.setCheckTimeoutSeconds(5);
         component.setCheckExpectedStatus(200);
         return component;
@@ -234,13 +238,13 @@ class HealthCheckSchedulerTest {
         UUID id = UUID.randomUUID();
         StatusApp app = checkableApp();
         when(statusAppRepository.findById(id)).thenReturn(java.util.Optional.of(app));
-        when(healthCheckService.performCheck(eq("HTTP_GET"), eq("http://8.8.8.8"), eq(5), eq(200)))
-                .thenReturn(new HealthCheckResult(true, "HTTP 200"));
+        when(healthCheckService.performCheck(eq(CHECK_TYPE_HTTP_GET), eq(CHECK_URL), eq(5), eq(200)))
+                .thenReturn(new HealthCheckResult(true, HTTP_200_MESSAGE));
 
         HealthCheckTriggerResponse response = scheduler.triggerAppCheck(id);
 
         assertThat(response.getSuccess()).isTrue();
-        assertThat(response.getMessage()).isEqualTo("HTTP 200");
+        assertThat(response.getMessage()).isEqualTo(HTTP_200_MESSAGE);
         assertThat(response.getDurationMs()).isNotNull();
         verify(healthCheckService).updateAppCheckResult(eq(app), any());
     }

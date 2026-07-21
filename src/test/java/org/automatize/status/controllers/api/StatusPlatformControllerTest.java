@@ -77,9 +77,9 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         when(statusPlatformService.getAllPlatforms(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/status-platforms"))
+        mockMvc.perform(get(BASE_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].name").value("Cloud"));
+                .andExpect(jsonPath("$.content[0].name").value(PLATFORM_NAME));
     }
 
     @Test
@@ -94,7 +94,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-platforms/all"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].slug").value("cloud"));
+                .andExpect(jsonPath("$[0].slug").value(PLATFORM_SLUG));
     }
 
     @Test
@@ -107,7 +107,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.getPlatformById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/status-platforms/{id}", id))
+        mockMvc.perform(get(ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(JSON_PATH_NAME).value(PLATFORM_NAME));
     }
@@ -123,7 +123,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         when(statusPlatformService.getPlatformById(id))
                 .thenThrow(new ResourceNotFoundException("Platform not found with id: " + id));
 
-        mockMvc.perform(get("/api/status-platforms/{id}", id))
+        mockMvc.perform(get(ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -134,11 +134,11 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
      * @throws Exception if the mock request cannot be performed
      */
     void getPlatformBySlug_found_returnsOk() throws Exception {
-        when(statusPlatformService.getPlatformBySlug("cloud")).thenReturn(sampleResponse(UUID.randomUUID()));
+        when(statusPlatformService.getPlatformBySlug(PLATFORM_SLUG)).thenReturn(sampleResponse(UUID.randomUUID()));
 
-        mockMvc.perform(get("/api/status-platforms/slug/{slug}", "cloud"))
+        mockMvc.perform(get("/api/status-platforms/slug/{slug}", PLATFORM_SLUG))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.slug").value("cloud"));
+                .andExpect(jsonPath("$.slug").value(PLATFORM_SLUG));
     }
 
     @Test
@@ -151,7 +151,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         when(statusPlatformService.createPlatform(any(), any(), any()))
                 .thenReturn(sampleResponse(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/status-platforms").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath(JSON_PATH_NAME).value(PLATFORM_NAME));
     }
@@ -164,7 +164,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
      */
     void createPlatform_missingName_returns400() throws Exception {
         String body = "{\"slug\":\"cloud\"}";
-        mockMvc.perform(post("/api/status-platforms").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -178,7 +178,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         when(statusPlatformService.createPlatform(any(), any(), any()))
                 .thenThrow(new DuplicateResourceException("Platform with slug already exists: cloud"));
 
-        mockMvc.perform(post("/api/status-platforms").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isConflict());
     }
 
@@ -192,7 +192,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusPlatformService.updatePlatform(eq(id), any(), any(), any())).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(put("/api/status-platforms/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -208,7 +208,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
         when(statusPlatformService.updatePlatform(eq(id), any(), any(), any()))
                 .thenThrow(new ResourceNotFoundException("Platform not found with id: " + id));
 
-        mockMvc.perform(put("/api/status-platforms/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isNotFound());
     }
 
@@ -221,7 +221,7 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
     void deletePlatform_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/status-platforms/{id}", id))
+        mockMvc.perform(delete(ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -256,6 +256,6 @@ class StatusPlatformControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/status-platforms/tenant/{tenantId}", tenantId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].slug").value("cloud"));
+                .andExpect(jsonPath("$[0].slug").value(PLATFORM_SLUG));
     }
 }

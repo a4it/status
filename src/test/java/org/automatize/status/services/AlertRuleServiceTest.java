@@ -34,6 +34,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AlertRuleServiceTest {
 
+    private static final String LEVEL_ERROR = "ERROR";
+    private static final String NOTIFICATION_TYPE_EMAIL = "EMAIL";
+
     @Mock
     private AlertRuleRepository alertRuleRepository;
 
@@ -59,11 +62,11 @@ class AlertRuleServiceTest {
         AlertRule rule = new AlertRule();
         rule.setName("rule");
         rule.setService("svc");
-        rule.setLevel("ERROR");
+        rule.setLevel(LEVEL_ERROR);
         rule.setThresholdCount(5L);
         rule.setWindowMinutes(10);
         rule.setCooldownMinutes(5);
-        rule.setNotificationType("EMAIL");
+        rule.setNotificationType(NOTIFICATION_TYPE_EMAIL);
         rule.setNotificationTarget("alert@x.com");
         rule.setIsActive(true);
         return rule;
@@ -121,8 +124,8 @@ class AlertRuleServiceTest {
         when(tenantRepository.findById(tenantId)).thenReturn(Optional.of(tenant));
         when(alertRuleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AlertRule created = alertRuleService.create(tenantId, "n", "s", "ERROR",
-                7L, 15, 3, "EMAIL", "t@x.com", true);
+        AlertRule created = alertRuleService.create(tenantId, "n", "s", LEVEL_ERROR,
+                7L, 15, 3, NOTIFICATION_TYPE_EMAIL, "t@x.com", true);
 
         assertThat(created.getTenant()).isSameAs(tenant);
         assertThat(created.getName()).isEqualTo("n");
@@ -140,8 +143,8 @@ class AlertRuleServiceTest {
     void create_withNullTenant_doesNotLookupTenant() {
         when(alertRuleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        AlertRule created = alertRuleService.create(null, "n", "s", "ERROR",
-                1L, 5, 1, "EMAIL", "t@x.com", false);
+        AlertRule created = alertRuleService.create(null, "n", "s", LEVEL_ERROR,
+                1L, 5, 1, NOTIFICATION_TYPE_EMAIL, "t@x.com", false);
 
         assertThat(created.getTenant()).isNull();
         assertThat(created.getIsActive()).isFalse();
@@ -179,7 +182,7 @@ class AlertRuleServiceTest {
         when(alertRuleRepository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> alertRuleService.update(id, "n", "s", "l",
-                1L, 1, 1, "EMAIL", "t", true))
+                1L, 1, 1, NOTIFICATION_TYPE_EMAIL, "t", true))
                 .isInstanceOf(RuntimeException.class);
     }
 
@@ -226,7 +229,7 @@ class AlertRuleServiceTest {
         AlertRule r = rule();
         r.setLastFiredAt(null);
         when(alertRuleRepository.findByIsActiveTrueOrderByCreatedDateTechnicalDesc()).thenReturn(List.of(r));
-        when(logMetricService.sumCountSince(eq("svc"), eq("ERROR"), any(ZonedDateTime.class))).thenReturn(10L);
+        when(logMetricService.sumCountSince(eq("svc"), eq(LEVEL_ERROR), any(ZonedDateTime.class))).thenReturn(10L);
 
         alertRuleService.evaluateAll();
 

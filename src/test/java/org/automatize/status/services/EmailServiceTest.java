@@ -33,6 +33,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class EmailServiceTest {
 
+    private static final String FIELD_EMAIL_ENABLED = "emailEnabled";
+    private static final String TO_ADDRESS = TO_ADDRESS;
+    private static final String SUBJECT = SUBJECT;
+
     @Mock
     private JavaMailSender mailSender;
 
@@ -46,7 +50,7 @@ class EmailServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@status.local");
-        ReflectionTestUtils.setField(emailService, "emailEnabled", true);
+        ReflectionTestUtils.setField(emailService, FIELD_EMAIL_ENABLED, true);
     }
 
     /**
@@ -67,9 +71,9 @@ class EmailServiceTest {
      */
     @Test
     void sendSimpleEmail_whenDisabled_doesNotSend() {
-        ReflectionTestUtils.setField(emailService, "emailEnabled", false);
+        ReflectionTestUtils.setField(emailService, FIELD_EMAIL_ENABLED, false);
 
-        emailService.sendSimpleEmail("to@x.com", "subject", "body");
+        emailService.sendSimpleEmail(TO_ADDRESS, SUBJECT, "body");
 
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
@@ -80,7 +84,7 @@ class EmailServiceTest {
      */
     @Test
     void sendSimpleEmail_whenEnabled_sendsMessage() {
-        emailService.sendSimpleEmail("to@x.com", "subject", "body");
+        emailService.sendSimpleEmail(TO_ADDRESS, SUBJECT, "body");
 
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
@@ -94,7 +98,7 @@ class EmailServiceTest {
         doThrow(new RuntimeException("smtp down"))
                 .when(mailSender).send(any(SimpleMailMessage.class));
 
-        assertThatCode(() -> emailService.sendSimpleEmail("to@x.com", "s", "b"))
+        assertThatCode(() -> emailService.sendSimpleEmail(TO_ADDRESS, "s", "b"))
                 .doesNotThrowAnyException();
 
         verify(mailSender).send(any(SimpleMailMessage.class));
@@ -108,9 +112,9 @@ class EmailServiceTest {
      */
     @Test
     void sendHtmlEmail_whenDisabled_doesNotSend() {
-        ReflectionTestUtils.setField(emailService, "emailEnabled", false);
+        ReflectionTestUtils.setField(emailService, FIELD_EMAIL_ENABLED, false);
 
-        emailService.sendHtmlEmail("to@x.com", "subject", "<p>hi</p>");
+        emailService.sendHtmlEmail(TO_ADDRESS, SUBJECT, "<p>hi</p>");
 
         verify(mailSender, never()).createMimeMessage();
         verify(mailSender, never()).send(any(MimeMessage.class));
@@ -124,7 +128,7 @@ class EmailServiceTest {
     void sendHtmlEmail_whenEnabled_sendsMimeMessage() {
         when(mailSender.createMimeMessage()).thenReturn(newMimeMessage());
 
-        emailService.sendHtmlEmail("to@x.com", "subject", "<p>hi</p>");
+        emailService.sendHtmlEmail(TO_ADDRESS, SUBJECT, "<p>hi</p>");
 
         verify(mailSender, times(1)).send(any(MimeMessage.class));
     }
@@ -139,7 +143,7 @@ class EmailServiceTest {
     void sendIncidentNotification_whenEnabled_sendsHtmlEmail() {
         when(mailSender.createMimeMessage()).thenReturn(newMimeMessage());
 
-        emailService.sendIncidentNotification("to@x.com", "Platform", "Title",
+        emailService.sendIncidentNotification(TO_ADDRESS, "Platform", "Title",
                 "Description", "CRITICAL", "INVESTIGATING");
 
         verify(mailSender, times(1)).send(any(MimeMessage.class));
@@ -151,9 +155,9 @@ class EmailServiceTest {
      */
     @Test
     void sendIncidentNotification_whenDisabled_doesNotSend() {
-        ReflectionTestUtils.setField(emailService, "emailEnabled", false);
+        ReflectionTestUtils.setField(emailService, FIELD_EMAIL_ENABLED, false);
 
-        emailService.sendIncidentNotification("to@x.com", "Platform", "Title",
+        emailService.sendIncidentNotification(TO_ADDRESS, "Platform", "Title",
                 "Description", null, "INVESTIGATING");
 
         verify(mailSender, never()).send(any(MimeMessage.class));

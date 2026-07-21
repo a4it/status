@@ -33,6 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = TenantController.class)
 class TenantControllerTest extends AbstractApiControllerTest {
 
+    private static final String TENANT_NAME = "Globex";
+    private static final String TENANTS_PATH = "/api/tenants";
+    private static final String TENANT_BY_ID_PATH = "/api/tenants/{id}";
+    private static final String JSON_PATH_NAME = "$.name";
+    private static final String TENANT_JSON_BODY = "{\"name\":\"Globex\"}";
+
     @MockitoBean
     private TenantService tenantService;
 
@@ -46,7 +52,7 @@ class TenantControllerTest extends AbstractApiControllerTest {
     private Tenant sampleTenant(UUID id) {
         Tenant t = new Tenant();
         t.setId(id);
-        t.setName("Globex");
+        t.setName(TENANT_NAME);
         t.setIsActive(true);
         return t;
     }
@@ -62,9 +68,9 @@ class TenantControllerTest extends AbstractApiControllerTest {
         when(tenantService.getAllTenants(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleTenant(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/tenants"))
+        mockMvc.perform(get(TENANTS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].name").value("Globex"));
+                .andExpect(jsonPath("$.content[0].name").value(TENANT_NAME));
     }
 
     /**
@@ -78,9 +84,9 @@ class TenantControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(tenantService.getTenantById(id)).thenReturn(sampleTenant(id));
 
-        mockMvc.perform(get("/api/tenants/{id}", id))
+        mockMvc.perform(get(TENANT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Globex"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(TENANT_NAME));
     }
 
     /**
@@ -95,7 +101,7 @@ class TenantControllerTest extends AbstractApiControllerTest {
         when(tenantService.getTenantById(id))
                 .thenThrow(new ResourceNotFoundException("Tenant not found with id: " + id));
 
-        mockMvc.perform(get("/api/tenants/{id}", id))
+        mockMvc.perform(get(TENANT_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -109,10 +115,10 @@ class TenantControllerTest extends AbstractApiControllerTest {
     void createTenant_valid_returns201() throws Exception {
         when(tenantService.createTenant(any())).thenReturn(sampleTenant(UUID.randomUUID()));
 
-        String body = "{\"name\":\"Globex\"}";
-        mockMvc.perform(post("/api/tenants").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = TENANT_JSON_BODY;
+        mockMvc.perform(post(TENANTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Globex"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(TENANT_NAME));
     }
 
     /**
@@ -124,7 +130,7 @@ class TenantControllerTest extends AbstractApiControllerTest {
     @Test
     void createTenant_missingName_returns400() throws Exception {
         String body = "{}";
-        mockMvc.perform(post("/api/tenants").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(TENANTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -139,8 +145,8 @@ class TenantControllerTest extends AbstractApiControllerTest {
         when(tenantService.createTenant(any()))
                 .thenThrow(new DuplicateResourceException("Tenant with name already exists: Globex"));
 
-        String body = "{\"name\":\"Globex\"}";
-        mockMvc.perform(post("/api/tenants").contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = TENANT_JSON_BODY;
+        mockMvc.perform(post(TENANTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
     }
 
@@ -155,10 +161,10 @@ class TenantControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(tenantService.updateTenant(eq(id), any())).thenReturn(sampleTenant(id));
 
-        String body = "{\"name\":\"Globex\"}";
-        mockMvc.perform(put("/api/tenants/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        String body = TENANT_JSON_BODY;
+        mockMvc.perform(put(TENANT_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Globex"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(TENANT_NAME));
     }
 
     /**
@@ -171,7 +177,7 @@ class TenantControllerTest extends AbstractApiControllerTest {
     void updateTenant_missingName_returns400() throws Exception {
         UUID id = UUID.randomUUID();
         String body = "{}";
-        mockMvc.perform(put("/api/tenants/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(put(TENANT_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -185,7 +191,7 @@ class TenantControllerTest extends AbstractApiControllerTest {
     void deleteTenant_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/tenants/{id}", id))
+        mockMvc.perform(delete(TENANT_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -200,11 +206,11 @@ class TenantControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getTenantByName_found_returns200() throws Exception {
-        when(tenantService.getTenantByName("Globex")).thenReturn(sampleTenant(UUID.randomUUID()));
+        when(tenantService.getTenantByName(TENANT_NAME)).thenReturn(sampleTenant(UUID.randomUUID()));
 
-        mockMvc.perform(get("/api/tenants/name/{name}", "Globex"))
+        mockMvc.perform(get("/api/tenants/name/{name}", TENANT_NAME))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Globex"));
+                .andExpect(jsonPath(JSON_PATH_NAME).value(TENANT_NAME));
     }
 
     /**

@@ -24,6 +24,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CustomUserDetailsServiceTest {
 
+    private static final String UNKNOWN_USERNAME = "ghost";
+
     @Mock
     private UserRepository userRepository;
 
@@ -76,12 +78,12 @@ class CustomUserDetailsServiceTest {
     @Test
     void loadUserByUsername_userNotFound_throwsUsernameNotFoundException() {
         // Arrange
-        when(userRepository.findByUsernameOrEmail("ghost", "ghost")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameOrEmail(UNKNOWN_USERNAME, UNKNOWN_USERNAME)).thenReturn(Optional.empty());
 
         // Act & Assert
-        assertThatThrownBy(() -> service.loadUserByUsername("ghost"))
+        assertThatThrownBy(() -> service.loadUserByUsername(UNKNOWN_USERNAME))
                 .isInstanceOf(UsernameNotFoundException.class)
-                .hasMessageContaining("ghost");
+                .hasMessageContaining(UNKNOWN_USERNAME);
     }
 
     /**

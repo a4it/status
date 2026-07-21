@@ -52,8 +52,8 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
     private StatusMaintenanceResponse sampleResponse(UUID id) {
         StatusMaintenanceResponse r = new StatusMaintenanceResponse();
         r.setId(id);
-        r.setTitle("DB upgrade");
-        r.setStatus("SCHEDULED");
+        r.setTitle(TITLE_DB_UPGRADE);
+        r.setStatus(STATUS_SCHEDULED);
         return r;
     }
 
@@ -63,7 +63,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
      * @return a JSON string with the required maintenance fields
      */
     private String validBody() {
-        return "{\"appId\":\"" + UUID.randomUUID() + "\",\"title\":\"DB upgrade\","
+        return JSON_APP_ID_PREFIX + UUID.randomUUID() + "\",\"title\":\"DB upgrade\","
                 + "\"status\":\"SCHEDULED\",\"startsAt\":\"2026-01-01T10:00:00Z\","
                 + "\"endsAt\":\"2026-01-01T12:00:00Z\"}";
     }
@@ -78,9 +78,9 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
         when(statusMaintenanceService.getAllMaintenance(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/maintenance"))
+        mockMvc.perform(get(BASE_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].title").value("DB upgrade"));
+                .andExpect(jsonPath("$.content[0].title").value(TITLE_DB_UPGRADE));
     }
 
     @Test
@@ -93,9 +93,9 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusMaintenanceService.getMaintenanceById(id)).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(get("/api/maintenance/{id}", id))
+        mockMvc.perform(get(ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("SCHEDULED"));
+                .andExpect(jsonPath("$.status").value(STATUS_SCHEDULED));
     }
 
     @Test
@@ -109,7 +109,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
         when(statusMaintenanceService.getMaintenanceById(id))
                 .thenThrow(new ResourceNotFoundException("Maintenance not found with id: " + id));
 
-        mockMvc.perform(get("/api/maintenance/{id}", id))
+        mockMvc.perform(get(ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -122,9 +122,9 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
     void createMaintenance_valid_returns201() throws Exception {
         when(statusMaintenanceService.createMaintenance(any())).thenReturn(sampleResponse(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/maintenance").contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("DB upgrade"));
+                .andExpect(jsonPath("$.title").value(TITLE_DB_UPGRADE));
     }
 
     @Test
@@ -134,9 +134,9 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
      * @throws Exception if the mock request cannot be performed
      */
     void createMaintenance_missingTitle_returns400() throws Exception {
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"status\":\"SCHEDULED\","
+        String body = JSON_APP_ID_PREFIX + UUID.randomUUID() + "\",\"status\":\"SCHEDULED\","
                 + "\"startsAt\":\"2026-01-01T10:00:00Z\",\"endsAt\":\"2026-01-01T12:00:00Z\"}";
-        mockMvc.perform(post("/api/maintenance").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -147,9 +147,9 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
      * @throws Exception if the mock request cannot be performed
      */
     void createMaintenance_missingEndsAt_returns400() throws Exception {
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"title\":\"DB upgrade\","
+        String body = JSON_APP_ID_PREFIX + UUID.randomUUID() + "\",\"title\":\"DB upgrade\","
                 + "\"status\":\"SCHEDULED\",\"startsAt\":\"2026-01-01T10:00:00Z\"}";
-        mockMvc.perform(post("/api/maintenance").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(BASE_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -163,7 +163,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(statusMaintenanceService.updateMaintenance(eq(id), any())).thenReturn(sampleResponse(id));
 
-        mockMvc.perform(put("/api/maintenance/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
+        mockMvc.perform(put(ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validBody()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -177,7 +177,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
     void deleteMaintenance_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/maintenance/{id}", id))
+        mockMvc.perform(delete(ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -196,7 +196,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/maintenance/{id}/status", id).param("status", "COMPLETED"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("DB upgrade"));
+                .andExpect(jsonPath("$.title").value(TITLE_DB_UPGRADE));
     }
 
     @Test
@@ -211,7 +211,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/maintenance/upcoming"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("DB upgrade"));
+                .andExpect(jsonPath("$[0].title").value(TITLE_DB_UPGRADE));
     }
 
     @Test
@@ -226,7 +226,7 @@ class StatusMaintenanceControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/maintenance/active"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].status").value("SCHEDULED"));
+                .andExpect(jsonPath("$[0].status").value(STATUS_SCHEDULED));
     }
 
     @Test

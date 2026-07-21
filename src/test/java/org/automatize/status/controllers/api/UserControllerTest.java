@@ -36,6 +36,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = UserController.class)
 class UserControllerTest extends AbstractApiControllerTest {
 
+    private static final String USERNAME_JOHNDOE = "johndoe";
+    private static final String USERS_PATH = "/api/users";
+    private static final String USER_BY_ID_PATH = "/api/users/{id}";
+    private static final String CHANGE_PASSWORD_PATH = "/api/users/{id}/change-password";
+    private static final String JSON_PATH_USERNAME = "$.username";
+
     @MockitoBean
     private UserService userService;
 
@@ -49,7 +55,7 @@ class UserControllerTest extends AbstractApiControllerTest {
     private User sampleUser(UUID id) {
         User u = new User();
         u.setId(id);
-        u.setUsername("johndoe");
+        u.setUsername(USERNAME_JOHNDOE);
         u.setEmail("johndoe@example.com");
         u.setStatus("ACTIVE");
         return u;
@@ -75,9 +81,9 @@ class UserControllerTest extends AbstractApiControllerTest {
         when(userService.getAllUsers(any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleUser(UUID.randomUUID()))));
 
-        mockMvc.perform(get("/api/users"))
+        mockMvc.perform(get(USERS_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content[0].username").value("johndoe"));
+                .andExpect(jsonPath("$.content[0].username").value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -91,9 +97,9 @@ class UserControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(userService.getUserById(id)).thenReturn(sampleUser(id));
 
-        mockMvc.perform(get("/api/users/{id}", id))
+        mockMvc.perform(get(USER_BY_ID_PATH, id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -108,7 +114,7 @@ class UserControllerTest extends AbstractApiControllerTest {
         when(userService.getUserById(id))
                 .thenThrow(new ResourceNotFoundException("User not found with id: " + id));
 
-        mockMvc.perform(get("/api/users/{id}", id))
+        mockMvc.perform(get(USER_BY_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -122,9 +128,9 @@ class UserControllerTest extends AbstractApiControllerTest {
     void createUser_valid_returns201() throws Exception {
         when(userService.createUser(any())).thenReturn(sampleUser(UUID.randomUUID()));
 
-        mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
+        mockMvc.perform(post(USERS_PATH).contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -136,7 +142,7 @@ class UserControllerTest extends AbstractApiControllerTest {
     @Test
     void createUser_missingEmail_returns400() throws Exception {
         String body = "{\"username\":\"johndoe\",\"fullName\":\"John Doe\"}";
-        mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(post(USERS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -151,7 +157,7 @@ class UserControllerTest extends AbstractApiControllerTest {
         when(userService.createUser(any()))
                 .thenThrow(new DuplicateResourceException("Username already exists: johndoe"));
 
-        mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
+        mockMvc.perform(post(USERS_PATH).contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
                 .andExpect(status().isConflict());
     }
 
@@ -166,9 +172,9 @@ class UserControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(userService.updateUser(eq(id), any())).thenReturn(sampleUser(id));
 
-        mockMvc.perform(put("/api/users/{id}", id).contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
+        mockMvc.perform(put(USER_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -181,7 +187,7 @@ class UserControllerTest extends AbstractApiControllerTest {
     void updateUser_missingUsername_returns400() throws Exception {
         UUID id = UUID.randomUUID();
         String body = "{\"email\":\"johndoe@example.com\",\"fullName\":\"John Doe\"}";
-        mockMvc.perform(put("/api/users/{id}", id).contentType(MediaType.APPLICATION_JSON).content(body))
+        mockMvc.perform(put(USER_BY_ID_PATH, id).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
 
@@ -195,7 +201,7 @@ class UserControllerTest extends AbstractApiControllerTest {
     void deleteUser_returns200Message() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/users/{id}", id))
+        mockMvc.perform(delete(USER_BY_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -213,7 +219,7 @@ class UserControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         String body = "{\"currentPassword\":\"oldpass12\",\"newPassword\":\"newpass12\"}";
 
-        mockMvc.perform(post("/api/users/{id}/change-password", id)
+        mockMvc.perform(post(CHANGE_PASSWORD_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
@@ -231,7 +237,7 @@ class UserControllerTest extends AbstractApiControllerTest {
     void changePassword_missingNewPassword_returns400() throws Exception {
         UUID id = UUID.randomUUID();
         String body = "{\"currentPassword\":\"oldpass12\"}";
-        mockMvc.perform(post("/api/users/{id}/change-password", id)
+        mockMvc.perform(post(CHANGE_PASSWORD_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -250,7 +256,7 @@ class UserControllerTest extends AbstractApiControllerTest {
                 .when(userService).changePassword(eq(id), any());
 
         String body = "{\"currentPassword\":\"oldpass12\",\"newPassword\":\"newpass12\"}";
-        mockMvc.perform(post("/api/users/{id}/change-password", id)
+        mockMvc.perform(post(CHANGE_PASSWORD_PATH, id)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
     }
@@ -268,7 +274,7 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/users/{id}/enable", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -284,7 +290,7 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/users/{id}/disable", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -300,7 +306,7 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(patch("/api/users/{id}/role", id).param("role", "ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -329,7 +335,7 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/users/organization/{organizationId}", orgId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].username").value("johndoe"));
+                .andExpect(jsonPath("$[0].username").value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -344,7 +350,7 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(get("/api/users/profile"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 
     /**
@@ -359,6 +365,6 @@ class UserControllerTest extends AbstractApiControllerTest {
 
         mockMvc.perform(put("/api/users/profile").contentType(MediaType.APPLICATION_JSON).content(validUserJson()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(jsonPath(JSON_PATH_USERNAME).value(USERNAME_JOHNDOE));
     }
 }

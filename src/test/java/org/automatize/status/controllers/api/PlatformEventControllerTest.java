@@ -177,7 +177,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         UUID id = UUID.randomUUID();
         when(platformEventService.getEventById(id)).thenReturn(sampleEvent(id));
 
-        mockMvc.perform(get("/api/events/{id}", id))
+        mockMvc.perform(get(EVENTS_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
     }
@@ -194,7 +194,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         when(platformEventService.getEventById(id))
                 .thenThrow(new ResourceNotFoundException("Event not found with id: " + id));
 
-        mockMvc.perform(get("/api/events/{id}", id))
+        mockMvc.perform(get(EVENTS_ID_PATH, id))
                 .andExpect(status().isNotFound());
     }
 
@@ -211,7 +211,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
         when(platformEventService.createEvent(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(sampleEvent(UUID.randomUUID()));
 
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
         mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.severity").value(SEVERITY_ERROR));
@@ -238,7 +238,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void createEvent_invalidSeverity_returns400() throws Exception {
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\",\"severity\":\"NOPE\",\"message\":\"Something broke\"}";
         mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isBadRequest());
     }
@@ -255,7 +255,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
 
         // No @ControllerAdvice and a plain (unannotated) RuntimeException: the
         // exception is not mapped to a status and propagates out of the servlet.
-        String body = "{\"appId\":\"" + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
+        String body = APP_ID_JSON_PREFIX + UUID.randomUUID() + "\",\"severity\":\"ERROR\",\"message\":\"Something broke\"}";
         org.junit.jupiter.api.Assertions.assertThrows(Exception.class, () ->
                 mockMvc.perform(post(EVENTS_PATH).contentType(MediaType.APPLICATION_JSON).content(body)));
     }
@@ -272,7 +272,7 @@ class PlatformEventControllerTest extends AbstractApiControllerTest {
     void deleteEvent_returnsOkMessage() throws Exception {
         UUID id = UUID.randomUUID();
 
-        mockMvc.perform(delete("/api/events/{id}", id))
+        mockMvc.perform(delete(EVENTS_ID_PATH, id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(JSON_PATH_SUCCESS).value(true));
 
