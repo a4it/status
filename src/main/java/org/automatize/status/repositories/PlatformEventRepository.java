@@ -39,18 +39,70 @@ import java.util.UUID;
 @Repository
 public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UUID> {
 
+    /**
+     * Finds a page of platform events belonging to a specific status app.
+     *
+     * @param appId the unique identifier of the status app
+     * @param pageable pagination and sorting parameters
+     * @return a page of events for the specified app
+     */
     Page<PlatformEvent> findByAppId(UUID appId, Pageable pageable);
 
+    /**
+     * Finds a page of platform events belonging to a specific component.
+     *
+     * @param componentId the unique identifier of the component
+     * @param pageable pagination and sorting parameters
+     * @return a page of events for the specified component
+     */
     Page<PlatformEvent> findByComponentId(UUID componentId, Pageable pageable);
 
+    /**
+     * Finds a page of platform events with a specific severity.
+     *
+     * @param severity the severity to filter by (e.g., "INFO", "WARNING", "CRITICAL")
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching the specified severity
+     */
     Page<PlatformEvent> findBySeverity(String severity, Pageable pageable);
 
+    /**
+     * Finds a page of platform events for a status app with a specific severity.
+     *
+     * @param appId the unique identifier of the status app
+     * @param severity the severity to filter by
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching both the app and severity criteria
+     */
     Page<PlatformEvent> findByAppIdAndSeverity(UUID appId, String severity, Pageable pageable);
 
+    /**
+     * Finds a page of platform events for a status app affecting a specific component.
+     *
+     * @param appId the unique identifier of the status app
+     * @param componentId the unique identifier of the component
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching both the app and component criteria
+     */
     Page<PlatformEvent> findByAppIdAndComponentId(UUID appId, UUID componentId, Pageable pageable);
 
+    /**
+     * Finds all platform events for a status app, ordered by event time descending.
+     *
+     * @param appId the unique identifier of the status app
+     * @return a list of the app's events, most recent first
+     */
     List<PlatformEvent> findByAppIdOrderByEventTimeDesc(UUID appId);
 
+    /**
+     * Finds a page of platform events for a status app within a date range, most recent first.
+     *
+     * @param appId the unique identifier of the status app
+     * @param startDate the start of the event-time range (inclusive)
+     * @param endDate the end of the event-time range (inclusive)
+     * @param pageable pagination and sorting parameters
+     * @return a page of events for the app within the specified range
+     */
     @Query("SELECT e FROM PlatformEvent e WHERE e.app.id = :appId AND e.eventTime BETWEEN :startDate AND :endDate ORDER BY e.eventTime DESC")
     Page<PlatformEvent> findByAppIdAndDateRange(
             @Param("appId") UUID appId,
@@ -72,6 +124,18 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
            "(CAST(:startDate AS timestamptz) IS NULL OR e.event_time >= :startDate) AND " +
            "(CAST(:endDate AS timestamptz) IS NULL OR e.event_time <= :endDate)",
            nativeQuery = true)
+    /**
+     * Finds a page of platform events applying optional filters on app, component, severity,
+     * and event-time range, ordered by event time descending. Null filter arguments are ignored.
+     *
+     * @param appId the app to filter by, or {@code null} for all apps
+     * @param componentId the component to filter by, or {@code null} for all components
+     * @param severity the severity to filter by, or {@code null} for all severities
+     * @param startDate the lower bound of the event-time range (inclusive), or {@code null}
+     * @param endDate the upper bound of the event-time range (inclusive), or {@code null}
+     * @param pageable pagination and sorting parameters
+     * @return a page of events matching the supplied filters, most recent first
+     */
     Page<PlatformEvent> findWithFilters(
             @Param("appId") UUID appId,
             @Param("componentId") UUID componentId,

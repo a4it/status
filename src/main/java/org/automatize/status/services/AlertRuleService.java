@@ -43,21 +43,49 @@ public class AlertRuleService {
     @Autowired
     private LogMetricService logMetricService;
 
+    /**
+     * Retrieves all alert rules ordered by creation date (newest first).
+     *
+     * @return the list of all persisted alert rules
+     */
     @Transactional(readOnly = true)
     public List<AlertRule> findAll() {
         return alertRuleRepository.findAllByOrderByCreatedDateTechnicalDesc();
     }
 
+    /**
+     * Retrieves a single alert rule by its identifier.
+     *
+     * @param id the unique identifier of the alert rule
+     * @return the matching alert rule
+     * @throws RuntimeException if no alert rule exists for the given id
+     */
     @Transactional(readOnly = true)
     public AlertRule findById(UUID id) {
         return alertRuleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Alert rule not found: " + id));
     }
 
+    /**
+     * Creates and persists a new alert rule.
+     *
+     * @param tenantId the tenant this rule belongs to, or {@code null} for no tenant association
+     * @param name the human-readable name of the rule
+     * @param service the service this rule monitors
+     * @param level the log level this rule matches
+     * @param thresholdCount the number of matching events that triggers the alert
+     * @param windowMinutes the evaluation window in minutes
+     * @param cooldownMinutes the cooldown period in minutes between consecutive alerts
+     * @param notificationType the notification channel type (EMAIL, SLACK, or WEBHOOK)
+     * @param notificationTarget the destination address or URL for the notification
+     * @param active whether the rule is active upon creation
+     * @return the persisted alert rule
+     */
     public AlertRule create(UUID tenantId, String name, String service, String level,
                             long thresholdCount, int windowMinutes, int cooldownMinutes,
                             String notificationType, String notificationTarget, boolean active) {
         AlertRule rule = new AlertRule();
+        // Associate the rule with a tenant only when a tenant id was supplied
         if (tenantId != null) {
             tenantRepository.findById(tenantId).ifPresent(rule::setTenant);
         }
@@ -73,6 +101,22 @@ public class AlertRuleService {
         return alertRuleRepository.save(rule);
     }
 
+    /**
+     * Updates an existing alert rule with new field values and persists the change.
+     *
+     * @param id the unique identifier of the alert rule to update
+     * @param name the new human-readable name of the rule
+     * @param service the new service this rule monitors
+     * @param level the new log level this rule matches
+     * @param thresholdCount the new number of matching events that triggers the alert
+     * @param windowMinutes the new evaluation window in minutes
+     * @param cooldownMinutes the new cooldown period in minutes between consecutive alerts
+     * @param notificationType the new notification channel type (EMAIL, SLACK, or WEBHOOK)
+     * @param notificationTarget the new destination address or URL for the notification
+     * @param active whether the rule should be active
+     * @return the updated and persisted alert rule
+     * @throws RuntimeException if no alert rule exists for the given id
+     */
     public AlertRule update(UUID id, String name, String service, String level,
                             long thresholdCount, int windowMinutes, int cooldownMinutes,
                             String notificationType, String notificationTarget, boolean active) {

@@ -219,6 +219,9 @@ class ProcessMiningRetentionServiceTest {
                 .hasMessageContaining("Tenant not found");
     }
 
+    /**
+     * Verifies that creating a rule with an unknown platform id throws {@link NoSuchElementException}.
+     */
     @Test
     void create_platformNotFound_throwsNoSuchElement() {
         UUID platformId = UUID.randomUUID();
@@ -231,6 +234,10 @@ class ProcessMiningRetentionServiceTest {
                 .hasMessageContaining("Platform not found");
     }
 
+    /**
+     * Verifies that updating an existing rule applies the request fields (retention days, enabled)
+     * and persists the change.
+     */
     @Test
     void update_existing_appliesRequestAndSaves() {
         UUID id = UUID.randomUUID();
@@ -249,6 +256,9 @@ class ProcessMiningRetentionServiceTest {
         assertThat(resp.isEnabled()).isFalse();
     }
 
+    /**
+     * Verifies that updating a non-existent rule throws {@link NoSuchElementException}.
+     */
     @Test
     void update_missing_throwsNoSuchElement() {
         UUID id = UUID.randomUUID();
@@ -260,6 +270,9 @@ class ProcessMiningRetentionServiceTest {
 
     // ── delete ────────────────────────────────────────────────────────────────
 
+    /**
+     * Verifies that deleting an existing rule delegates to the repository's {@code deleteById}.
+     */
     @Test
     void delete_existing_deletesById() {
         UUID id = UUID.randomUUID();
@@ -270,6 +283,10 @@ class ProcessMiningRetentionServiceTest {
         verify(retentionRuleRepository).deleteById(id);
     }
 
+    /**
+     * Verifies that deleting a non-existent rule throws {@link NoSuchElementException} and does
+     * not attempt a repository delete.
+     */
     @Test
     void delete_missing_throwsNoSuchElement() {
         UUID id = UUID.randomUUID();
@@ -282,6 +299,10 @@ class ProcessMiningRetentionServiceTest {
 
     // ── runRetentionNow (cleanup branches) ────────────────────────────────────
 
+    /**
+     * Verifies that a platform-scoped rule deletes process mining data for the platform's services,
+     * records the run timestamp and deleted count, and persists the rule.
+     */
     @Test
     void runRetentionNow_platformRule_deletesByServicesAndRecordsRun() {
         UUID platformId = UUID.randomUUID();
@@ -306,6 +327,10 @@ class ProcessMiningRetentionServiceTest {
         verify(query).executeUpdate();
     }
 
+    /**
+     * Verifies that a platform-scoped rule whose platform has no services deletes nothing and
+     * never issues a delete query.
+     */
     @Test
     void runRetentionNow_platformRuleWithNoServices_deletesNothing() {
         UUID platformId = UUID.randomUUID();

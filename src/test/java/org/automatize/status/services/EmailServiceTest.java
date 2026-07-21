@@ -74,6 +74,10 @@ class EmailServiceTest {
         verify(mailSender, never()).send(any(SimpleMailMessage.class));
     }
 
+    /**
+     * Verifies that when email is enabled, a simple email is dispatched exactly once as a
+     * {@link SimpleMailMessage}.
+     */
     @Test
     void sendSimpleEmail_whenEnabled_sendsMessage() {
         emailService.sendSimpleEmail("to@x.com", "subject", "body");
@@ -81,6 +85,10 @@ class EmailServiceTest {
         verify(mailSender, times(1)).send(any(SimpleMailMessage.class));
     }
 
+    /**
+     * Verifies that a failure thrown by the mail sender while sending a simple email is
+     * caught internally and does not propagate out of the service.
+     */
     @Test
     void sendSimpleEmail_whenSenderThrows_doesNotPropagate() {
         doThrow(new RuntimeException("smtp down"))
@@ -94,6 +102,10 @@ class EmailServiceTest {
 
     // ------------------------------------------------------------------ html
 
+    /**
+     * Verifies that when email is disabled, an HTML email request neither creates a MIME
+     * message nor sends anything.
+     */
     @Test
     void sendHtmlEmail_whenDisabled_doesNotSend() {
         ReflectionTestUtils.setField(emailService, "emailEnabled", false);

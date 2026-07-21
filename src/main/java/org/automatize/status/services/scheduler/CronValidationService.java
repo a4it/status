@@ -117,16 +117,22 @@ public class CronValidationService {
 
         String sec = parts[0], min = parts[1], hr = parts[2], dom = parts[3], mon = parts[4], dow = parts[5];
 
+        // Matches the "every minute" pattern
         if ("0".equals(sec) && "*".equals(min) && "*".equals(hr) && "*".equals(dom) && "*".equals(mon) && "*".equals(dow))
             return "Every minute";
+        // Matches the "every N minutes" pattern
         if ("0".equals(sec) && min.startsWith("0/") && "*".equals(hr) && "*".equals(dom) && "*".equals(mon) && "*".equals(dow))
             return "Every " + min.substring(2) + " minutes";
+        // Matches the "every hour" pattern
         if ("0".equals(sec) && "0".equals(min) && "*".equals(hr) && "*".equals(dom) && "*".equals(mon) && "*".equals(dow))
             return "Every hour";
+        // Matches the "daily at midnight" pattern
         if ("0".equals(sec) && "0".equals(min) && "0".equals(hr) && "*".equals(dom) && "*".equals(mon) && "*".equals(dow))
             return "Daily at midnight";
+        // Matches the "weekdays at a fixed hour" pattern
         if ("0".equals(sec) && "0".equals(min) && hr.matches("\\d+") && "*".equals(dom) && "*".equals(mon) && "MON-FRI".equals(dow))
             return "Weekdays at " + hr + ":00";
+        // Matches the "daily at a fixed hour" pattern
         if ("0".equals(sec) && "0".equals(min) && hr.matches("\\d+") && "*".equals(dom) && "*".equals(mon) && "*".equals(dow))
             return "Daily at " + hr + ":00";
 

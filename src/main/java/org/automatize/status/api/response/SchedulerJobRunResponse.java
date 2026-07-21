@@ -37,6 +37,13 @@ public class SchedulerJobRunResponse {
     // Factory method
     // -------------------------------------------------------------------------
 
+    /**
+     * Builds a response from a {@link SchedulerJobRun} entity, flattening the
+     * associated job reference and enum values into plain fields.
+     *
+     * @param run the scheduler job run entity to convert
+     * @return a populated response instance
+     */
     public static SchedulerJobRunResponse fromEntity(SchedulerJobRun run) {
         SchedulerJobRunResponse r = new SchedulerJobRunResponse();
         r.id = run.getId();

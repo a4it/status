@@ -134,15 +134,19 @@ public class NotificationSubscriber {
     @PrePersist
     public void prePersist() {
         ZonedDateTime now = ZonedDateTime.now();
+        // Default the creation timestamp when not already set
         if (createdDate == null) {
             createdDate = now;
         }
+        // Default the last-modified timestamp when not already set
         if (lastModifiedDate == null) {
             lastModifiedDate = now;
         }
+        // Default the technical creation timestamp when not already set
         if (createdDateTechnical == null) {
             createdDateTechnical = System.currentTimeMillis();
         }
+        // Default the technical last-modified timestamp when not already set
         if (lastModifiedDateTechnical == null) {
             lastModifiedDateTechnical = System.currentTimeMillis();
         }

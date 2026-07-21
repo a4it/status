@@ -39,37 +39,61 @@ public class LogMetric {
     @Column(name = "created_date_technical", nullable = false)
     private Long createdDateTechnical;
 
+    /**
+     * JPA lifecycle callback executed before persisting a new metric row.
+     * Populates the technical creation timestamp if it has not been set explicitly.
+     */
     @PrePersist
     public void prePersist() {
+        // Default the technical (epoch millis) creation timestamp when not already set
         if (createdDateTechnical == null) {
             createdDateTechnical = System.currentTimeMillis();
         }
     }
 
+    /**
+     * Default constructor required by JPA.
+     */
     public LogMetric() {
     }
 
+    /** @return the unique identifier of the metric row */
     public UUID getId() { return id; }
+    /** @param id the unique identifier to set */
     public void setId(UUID id) { this.id = id; }
 
+    /** @return the tenant that owns this metric */
     public Tenant getTenant() { return tenant; }
+    /** @param tenant the owning tenant to set */
     public void setTenant(Tenant tenant) { this.tenant = tenant; }
 
+    /** @return the service the metric aggregates */
     public String getService() { return service; }
+    /** @param service the service to set */
     public void setService(String service) { this.service = service; }
 
+    /** @return the log level the metric aggregates */
     public String getLevel() { return level; }
+    /** @param level the log level to set */
     public void setLevel(String level) { this.level = level; }
 
+    /** @return the start of the time bucket */
     public ZonedDateTime getBucket() { return bucket; }
+    /** @param bucket the time bucket start to set */
     public void setBucket(ZonedDateTime bucket) { this.bucket = bucket; }
 
+    /** @return the bucket granularity type (e.g. MINUTE) */
     public String getBucketType() { return bucketType; }
+    /** @param bucketType the bucket granularity type to set */
     public void setBucketType(String bucketType) { this.bucketType = bucketType; }
 
+    /** @return the aggregated log count for the bucket */
     public Long getCount() { return count; }
+    /** @param count the aggregated log count to set */
     public void setCount(Long count) { this.count = count; }
 
+    /** @return the technical creation timestamp in epoch milliseconds */
     public Long getCreatedDateTechnical() { return createdDateTechnical; }
+    /** @param createdDateTechnical the technical creation timestamp to set */
     public void setCreatedDateTechnical(Long createdDateTechnical) { this.createdDateTechnical = createdDateTechnical; }
 }

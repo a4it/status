@@ -260,226 +260,506 @@ public class StatusPlatform {
     public StatusPlatform() {
     }
 
+    /**
+     * Gets the unique identifier of the platform.
+     *
+     * @return the UUID of the platform
+     */
     public UUID getId() {
         return id;
     }
 
+    /**
+     * Sets the unique identifier of the platform.
+     *
+     * @param id the UUID to set
+     */
     public void setId(UUID id) {
         this.id = id;
     }
 
+    /**
+     * Gets the display name of the platform.
+     *
+     * @return the platform name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Sets the display name of the platform.
+     *
+     * @param name the name to set
+     */
     public void setName(String name) {
         this.name = name;
     }
 
+    /**
+     * Gets the description of the platform.
+     *
+     * @return the platform description
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * Sets the description of the platform.
+     *
+     * @param description the description to set
+     */
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /**
+     * Gets the URL-friendly slug identifier of the platform.
+     *
+     * @return the platform slug
+     */
     public String getSlug() {
         return slug;
     }
 
+    /**
+     * Sets the URL-friendly slug identifier of the platform.
+     *
+     * @param slug the slug to set
+     */
     public void setSlug(String slug) {
         this.slug = slug;
     }
 
+    /**
+     * Gets the URL to the platform logo image.
+     *
+     * @return the logo URL
+     */
     public String getLogoUrl() {
         return logoUrl;
     }
 
+    /**
+     * Sets the URL to the platform logo image.
+     *
+     * @param logoUrl the logo URL to set
+     */
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
     }
 
+    /**
+     * Gets the external website URL for the platform.
+     *
+     * @return the website URL
+     */
     public String getWebsiteUrl() {
         return websiteUrl;
     }
 
+    /**
+     * Sets the external website URL for the platform.
+     *
+     * @param websiteUrl the website URL to set
+     */
     public void setWebsiteUrl(String websiteUrl) {
         this.websiteUrl = websiteUrl;
     }
 
+    /**
+     * Gets the current operational status of the platform.
+     *
+     * @return the status (e.g., OPERATIONAL, DEGRADED, MAJOR_OUTAGE)
+     */
     public String getStatus() {
         return status;
     }
 
+    /**
+     * Sets the current operational status of the platform.
+     *
+     * @param status the status to set
+     */
     public void setStatus(String status) {
         this.status = status;
     }
 
+    /**
+     * Checks if the platform is publicly visible.
+     *
+     * @return true if public, false otherwise
+     */
     public Boolean getIsPublic() {
         return isPublic;
     }
 
+    /**
+     * Sets whether the platform is publicly visible.
+     *
+     * @param isPublic the public visibility flag to set
+     */
     public void setIsPublic(Boolean isPublic) {
         this.isPublic = isPublic;
     }
 
+    /**
+     * Gets the display position used for ordering platforms.
+     *
+     * @return the display position
+     */
     public Integer getPosition() {
         return position;
     }
 
+    /**
+     * Sets the display position used for ordering platforms.
+     *
+     * @param position the display position to set
+     */
     public void setPosition(Integer position) {
         this.position = position;
     }
 
+    /**
+     * Gets the tenant that owns this platform.
+     *
+     * @return the owning Tenant
+     */
     public Tenant getTenant() {
         return tenant;
     }
 
+    /**
+     * Sets the tenant that owns this platform.
+     *
+     * @param tenant the owning Tenant to set
+     */
     public void setTenant(Tenant tenant) {
         this.tenant = tenant;
     }
 
+    /**
+     * Gets the organization that owns this platform.
+     *
+     * @return the owning Organization
+     */
     public Organization getOrganization() {
         return organization;
     }
 
+    /**
+     * Sets the organization that owns this platform.
+     *
+     * @param organization the owning Organization to set
+     */
     public void setOrganization(Organization organization) {
         this.organization = organization;
     }
 
+    /**
+     * Gets the username of the user who created this platform.
+     *
+     * @return the creator's username
+     */
     public String getCreatedBy() {
         return createdBy;
     }
 
+    /**
+     * Sets the username of the user who created this platform.
+     *
+     * @param createdBy the creator's username to set
+     */
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
     }
 
+    /**
+     * Gets the creation timestamp of the platform.
+     *
+     * @return the creation date and time
+     */
     public ZonedDateTime getCreatedDate() {
         return createdDate;
     }
 
+    /**
+     * Sets the creation timestamp of the platform.
+     *
+     * @param createdDate the creation date and time to set
+     */
     public void setCreatedDate(ZonedDateTime createdDate) {
         this.createdDate = createdDate;
     }
 
+    /**
+     * Gets the username of the user who last modified this platform.
+     *
+     * @return the last modifier's username
+     */
     public String getLastModifiedBy() {
         return lastModifiedBy;
     }
 
+    /**
+     * Sets the username of the user who last modified this platform.
+     *
+     * @param lastModifiedBy the last modifier's username to set
+     */
     public void setLastModifiedBy(String lastModifiedBy) {
         this.lastModifiedBy = lastModifiedBy;
     }
 
+    /**
+     * Gets the last modification timestamp of the platform.
+     *
+     * @return the last modification date and time
+     */
     public ZonedDateTime getLastModifiedDate() {
         return lastModifiedDate;
     }
 
+    /**
+     * Sets the last modification timestamp of the platform.
+     *
+     * @param lastModifiedDate the last modification date and time to set
+     */
     public void setLastModifiedDate(ZonedDateTime lastModifiedDate) {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    /**
+     * Gets the technical creation timestamp in epoch milliseconds.
+     *
+     * @return the creation timestamp in milliseconds since epoch
+     */
     public Long getCreatedDateTechnical() {
         return createdDateTechnical;
     }
 
+    /**
+     * Sets the technical creation timestamp in epoch milliseconds.
+     *
+     * @param createdDateTechnical the creation timestamp in milliseconds to set
+     */
     public void setCreatedDateTechnical(Long createdDateTechnical) {
         this.createdDateTechnical = createdDateTechnical;
     }
 
+    /**
+     * Gets the technical last modification timestamp in epoch milliseconds.
+     *
+     * @return the last modification timestamp in milliseconds since epoch
+     */
     public Long getLastModifiedDateTechnical() {
         return lastModifiedDateTechnical;
     }
 
+    /**
+     * Sets the technical last modification timestamp in epoch milliseconds.
+     *
+     * @param lastModifiedDateTechnical the last modification timestamp in milliseconds to set
+     */
     public void setLastModifiedDateTechnical(Long lastModifiedDateTechnical) {
         this.lastModifiedDateTechnical = lastModifiedDateTechnical;
     }
 
+    /**
+     * Checks if automated health checks are enabled for this platform.
+     *
+     * @return true if health checks are enabled, false otherwise
+     */
     public Boolean getCheckEnabled() {
         return checkEnabled;
     }
 
+    /**
+     * Sets whether automated health checks are enabled for this platform.
+     *
+     * @param checkEnabled the health check enabled flag to set
+     */
     public void setCheckEnabled(Boolean checkEnabled) {
         this.checkEnabled = checkEnabled;
     }
 
+    /**
+     * Gets the type of health check to perform.
+     *
+     * @return the check type (e.g., NONE, HTTP, HTTPS, TCP)
+     */
     public String getCheckType() {
         return checkType;
     }
 
+    /**
+     * Sets the type of health check to perform.
+     *
+     * @param checkType the check type to set
+     */
     public void setCheckType(String checkType) {
         this.checkType = checkType;
     }
 
+    /**
+     * Gets the URL endpoint checked for health status.
+     *
+     * @return the check URL
+     */
     public String getCheckUrl() {
         return checkUrl;
     }
 
+    /**
+     * Sets the URL endpoint checked for health status.
+     *
+     * @param checkUrl the check URL to set
+     */
     public void setCheckUrl(String checkUrl) {
         this.checkUrl = checkUrl;
     }
 
+    /**
+     * Gets the interval in seconds between health check executions.
+     *
+     * @return the check interval in seconds
+     */
     public Integer getCheckIntervalSeconds() {
         return checkIntervalSeconds;
     }
 
+    /**
+     * Sets the interval in seconds between health check executions.
+     *
+     * @param checkIntervalSeconds the check interval in seconds to set
+     */
     public void setCheckIntervalSeconds(Integer checkIntervalSeconds) {
         this.checkIntervalSeconds = checkIntervalSeconds;
     }
 
+    /**
+     * Gets the timeout in seconds for health check requests.
+     *
+     * @return the check timeout in seconds
+     */
     public Integer getCheckTimeoutSeconds() {
         return checkTimeoutSeconds;
     }
 
+    /**
+     * Sets the timeout in seconds for health check requests.
+     *
+     * @param checkTimeoutSeconds the check timeout in seconds to set
+     */
     public void setCheckTimeoutSeconds(Integer checkTimeoutSeconds) {
         this.checkTimeoutSeconds = checkTimeoutSeconds;
     }
 
+    /**
+     * Gets the expected HTTP status code for successful health checks.
+     *
+     * @return the expected HTTP status code
+     */
     public Integer getCheckExpectedStatus() {
         return checkExpectedStatus;
     }
 
+    /**
+     * Sets the expected HTTP status code for successful health checks.
+     *
+     * @param checkExpectedStatus the expected HTTP status code to set
+     */
     public void setCheckExpectedStatus(Integer checkExpectedStatus) {
         this.checkExpectedStatus = checkExpectedStatus;
     }
 
+    /**
+     * Gets the number of consecutive failures required before marking the platform as down.
+     *
+     * @return the failure threshold
+     */
     public Integer getCheckFailureThreshold() {
         return checkFailureThreshold;
     }
 
+    /**
+     * Sets the number of consecutive failures required before marking the platform as down.
+     *
+     * @param checkFailureThreshold the failure threshold to set
+     */
     public void setCheckFailureThreshold(Integer checkFailureThreshold) {
         this.checkFailureThreshold = checkFailureThreshold;
     }
 
+    /**
+     * Gets the timestamp of the last health check execution.
+     *
+     * @return the last check timestamp
+     */
     public ZonedDateTime getLastCheckAt() {
         return lastCheckAt;
     }
 
+    /**
+     * Sets the timestamp of the last health check execution.
+     *
+     * @param lastCheckAt the last check timestamp to set
+     */
     public void setLastCheckAt(ZonedDateTime lastCheckAt) {
         this.lastCheckAt = lastCheckAt;
     }
 
+    /**
+     * Checks whether the last health check was successful.
+     *
+     * @return true if the last check succeeded, false otherwise
+     */
     public Boolean getLastCheckSuccess() {
         return lastCheckSuccess;
     }
 
+    /**
+     * Sets whether the last health check was successful.
+     *
+     * @param lastCheckSuccess the last check success flag to set
+     */
     public void setLastCheckSuccess(Boolean lastCheckSuccess) {
         this.lastCheckSuccess = lastCheckSuccess;
     }
 
+    /**
+     * Gets the message from the last health check.
+     *
+     * @return the last check message
+     */
     public String getLastCheckMessage() {
         return lastCheckMessage;
     }
 
+    /**
+     * Sets the message from the last health check.
+     *
+     * @param lastCheckMessage the last check message to set
+     */
     public void setLastCheckMessage(String lastCheckMessage) {
         this.lastCheckMessage = lastCheckMessage;
     }
 
+    /**
+     * Gets the count of consecutive failed health checks.
+     *
+     * @return the consecutive failure count
+     */
     public Integer getConsecutiveFailures() {
         return consecutiveFailures;
     }
 
+    /**
+     * Sets the count of consecutive failed health checks.
+     *
+     * @param consecutiveFailures the consecutive failure count to set
+     */
     public void setConsecutiveFailures(Integer consecutiveFailures) {
         this.consecutiveFailures = consecutiveFailures;
     }

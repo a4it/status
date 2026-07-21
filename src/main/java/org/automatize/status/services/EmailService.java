@@ -57,6 +57,7 @@ public class EmailService {
      */
     @Async
     public void sendSimpleEmail(String to, String subject, String text) {
+        // Skip sending when email delivery is disabled by configuration
         if (!emailEnabled) {
             logger.info("Email disabled. Would have sent email to {} with subject: {}", to, subject);
             return;
@@ -84,6 +85,7 @@ public class EmailService {
      */
     @Async
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
+        // Skip sending when email delivery is disabled by configuration
         if (!emailEnabled) {
             logger.info("Email disabled. Would have sent HTML email to {} with subject: {}", to, subject);
             return;

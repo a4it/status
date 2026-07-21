@@ -37,6 +37,12 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     @MockitoBean
     private StatusAppService statusAppService;
 
+    /**
+     * Builds a fully populated sample {@link StatusAppResponse} for stubbing service returns.
+     *
+     * @param id the identifier to assign to the response
+     * @return a sample status app response with representative field values
+     */
     private StatusAppResponse sampleResponse(UUID id) {
         StatusAppResponse r = new StatusAppResponse();
         r.setId(id);
@@ -46,11 +52,21 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
         return r;
     }
 
+    /**
+     * Provides a minimal valid JSON request body that satisfies bean validation.
+     *
+     * @return a JSON string with the required name and slug fields
+     */
     private String validBody() {
         return "{\"name\":\"My App\",\"slug\":\"my-app\"}";
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps returns 200 OK with a paged JSON body of status apps.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getAllStatusApps_returnsOkPage() throws Exception {
         when(statusAppService.getAllStatusApps(any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
@@ -61,6 +77,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps/{id} returns 200 OK with the app when it exists.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getStatusAppById_found_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusAppService.getStatusAppById(id)).thenReturn(sampleResponse(id));
@@ -71,6 +92,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies GET /api/status-apps/{id} maps {@link ResourceNotFoundException} to 404 Not Found.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void getStatusAppById_notFound_returns404() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusAppService.getStatusAppById(id))
@@ -81,6 +107,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-apps with a valid body returns 201 Created and echoes the app.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createStatusApp_valid_returns201() throws Exception {
         when(statusAppService.createStatusApp(any())).thenReturn(sampleResponse(UUID.randomUUID()));
 
@@ -90,6 +121,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-apps with a missing name fails bean validation with 400 Bad Request.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createStatusApp_missingName_returns400() throws Exception {
         String body = "{\"slug\":\"my-app\"}";
         mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -97,6 +133,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-apps with a malformed slug fails bean validation with 400 Bad Request.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createStatusApp_invalidSlug_returns400() throws Exception {
         String body = "{\"name\":\"My App\",\"slug\":\"Invalid Slug!\"}";
         mockMvc.perform(post("/api/status-apps").contentType(MediaType.APPLICATION_JSON).content(body))
@@ -104,6 +145,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies POST /api/status-apps maps {@link DuplicateResourceException} to 409 Conflict.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void createStatusApp_duplicate_returns409() throws Exception {
         when(statusAppService.createStatusApp(any()))
                 .thenThrow(new DuplicateResourceException("Status app with slug already exists: my-app"));
@@ -113,6 +159,11 @@ class StatusAppControllerTest extends AbstractApiControllerTest {
     }
 
     @Test
+    /**
+     * Verifies PUT /api/status-apps/{id} with a valid body returns 200 OK with the updated app.
+     *
+     * @throws Exception if the mock request cannot be performed
+     */
     void updateStatusApp_valid_returnsOk() throws Exception {
         UUID id = UUID.randomUUID();
         when(statusAppService.updateStatusApp(eq(id), any())).thenReturn(sampleResponse(id));

@@ -121,6 +121,10 @@ public class JvmService {
         // Manual trigger is still available via triggerGcNow().
     }
 
+    /**
+     * Manually requests a garbage collection run via {@link System#gc()} and
+     * records the timestamp of this run for reporting in {@link #getStats()}.
+     */
     public void triggerGcNow() {
         System.gc();
         lastGcRunAt = System.currentTimeMillis();

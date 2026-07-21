@@ -62,6 +62,20 @@ public class SchedulerJobApiController {
     // List jobs with optional filtering
     // -------------------------------------------------------------------------
 
+    /**
+     * Lists scheduler jobs for the current tenant with optional filtering and pagination.
+     * <p>
+     * HTTP GET {@code /api/scheduler/jobs}
+     * </p>
+     *
+     * @param page the zero-based page index (default 0)
+     * @param size the page size (default 20)
+     * @param sort the property to sort by (default "name")
+     * @param status optional filter by job status
+     * @param type optional filter by job type
+     * @param search optional free-text search term
+     * @return ResponseEntity containing a page of job responses
+     */
     @GetMapping
     public ResponseEntity<Page<SchedulerJobResponse>> listJobs(
             @RequestParam(defaultValue = "0") int page,
@@ -82,6 +96,15 @@ public class SchedulerJobApiController {
     // Get single job
     // -------------------------------------------------------------------------
 
+    /**
+     * Retrieves a single scheduler job by its identifier, scoped to the current tenant.
+     * <p>
+     * HTTP GET {@code /api/scheduler/jobs/{id}}
+     * </p>
+     *
+     * @param id the UUID of the job
+     * @return ResponseEntity containing the job response
+     */
     @GetMapping("/{id}")
     public ResponseEntity<SchedulerJobResponse> getJob(@PathVariable UUID id) {
         UserPrincipal principal = currentPrincipal();
@@ -93,6 +116,15 @@ public class SchedulerJobApiController {
     // Create job
     // -------------------------------------------------------------------------
 
+    /**
+     * Creates a new scheduler job for the current tenant.
+     * <p>
+     * HTTP POST {@code /api/scheduler/jobs}. Restricted to ADMIN or MANAGER roles.
+     * </p>
+     *
+     * @param request the validated job creation request
+     * @return ResponseEntity containing the created job with HTTP 201 status
+     */
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<SchedulerJobResponse> createJob(@Valid @RequestBody SchedulerJobRequest request) {

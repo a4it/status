@@ -17,6 +17,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+/**
+ * Service that exposes read access to application and system log files and
+ * runtime control over Logback logger levels.
+ * <p>
+ * Supports tailing the last N lines of a log file with optional case-insensitive
+ * search filtering, listing the currently interesting loggers with their effective
+ * and configured levels, and dynamically adjusting a logger's level at runtime.
+ * </p>
+ */
 @Service
 public class LogViewerService {
 
@@ -27,20 +36,49 @@ public class LogViewerService {
     @Value("${logging.file.name:}")
     private String configuredLogFile;
 
+    /**
+     * Reads the tail of the application log file.
+     *
+     * @param lines  the maximum number of lines to return (capped at {@link #MAX_LINES})
+     * @param search optional case-insensitive filter; only matching lines are returned
+     * @return a response containing the matching log lines and file metadata
+     */
     public LogViewerResponse readAppLog(int lines, String search) {
         String filePath = resolveAppLogPath();
         return readLogFile(filePath, lines, search);
     }
 
+    /**
+     * Reads the tail of the system log file (syslog/messages).
+     *
+     * @param lines  the maximum number of lines to return (capped at {@link #MAX_LINES})
+     * @param search optional case-insensitive filter; only matching lines are returned
+     * @return a response containing the matching log lines and file metadata
+     */
     public LogViewerResponse readSyslog(int lines, String search) {
         String filePath = resolveSyslogPath();
         return readLogFile(filePath, lines, search);
     }
 
+    /**
+     * Reads the last matching lines of the given log file.
+     * <p>
+     * Streams the file line by line, applying the optional search filter, and keeps
+     * only the last {@code lines} matching entries in memory. Missing paths, absent
+     * files, and I/O errors are reported gracefully within the response rather than
+     * thrown.
+     * </p>
+     *
+     * @param filePath the absolute path of the log file to read
+     * @param lines    the maximum number of lines to return (capped at {@link #MAX_LINES})
+     * @param search   optional case-insensitive filter; only matching lines are returned
+     * @return a response containing the resulting log lines, truncation flag and file size
+     */
     public LogViewerResponse readLogFile(String filePath, int lines, String search) {
         LogViewerResponse response = new LogViewerResponse();
         response.setFilePath(filePath);
 
+        // No log file path configured: return a placeholder response
         if (filePath == null || filePath.isBlank()) {
             response.setLines(List.of("[No log file path configured]"));
             response.setTotalLines(1);
@@ -50,6 +88,7 @@ public class LogViewerService {
         }
 
         Path path = Paths.get(filePath);
+        // Configured file does not exist on disk: return a not-found placeholder
         if (!Files.exists(path)) {
             response.setLines(List.of("[Log file not found: " + filePath + "]"));
             response.setTotalLines(1);

@@ -372,6 +372,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // ── Pattern 2 ──────────────────────────────────────────────────────────────
     // Full flow but Payment declines, Inventory rolls back, Notification skipped
+    /**
+     * Builds the payment-failure trace: the full flow runs but Payment declines, Inventory
+     * rolls back its reservation and the Order is cancelled (Notification skipped).
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> paymentFailure(Tenant tenant, List<StatusApp> apps, String traceId,
                                      ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -391,6 +402,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 3 ──────────────────────────────────────────────────────────────
     // Pre-paid / wallet order — Payment Service skipped entirely
     // Gateway → Auth → Order → Inventory → Notification
+    /**
+     * Builds the pre-paid/wallet-order trace: Gateway → Auth → Order → Inventory → Notification,
+     * with the Payment Service skipped entirely because the wallet balance covers the order.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> prePaidOrder(Tenant tenant, List<StatusApp> apps, String traceId,
                                    ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -407,6 +429,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
 
     // ── Pattern 4 ──────────────────────────────────────────────────────────────
     // Gateway → Auth → Order hangs → CRITICAL timeout, 504 returned
+    /**
+     * Builds the timeout/critical trace: Gateway → Auth → Order hangs on a slow DB query,
+     * exceeds the request timeout (CRITICAL) and the Gateway returns 504; Payment/Notify not reached.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> timeoutCritical(Tenant tenant, List<StatusApp> apps, String traceId,
                                       ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
@@ -423,6 +456,17 @@ public class ProcessMiningDataInitializer implements CommandLineRunner {
     // ── Pattern 5 ──────────────────────────────────────────────────────────────
     // Cache-hit checkout — Order Service skipped entirely (items already in cart cache)
     // Gateway → Auth → Cache → Payment → Notification
+    /**
+     * Builds the cache-hit checkout trace: Gateway → Auth → Cache → Payment → Notification,
+     * with the Order Service skipped because the cart items are already in the cache.
+     *
+     * @param tenant  the tenant the logs belong to
+     * @param apps    the demo services, indexed by the {@code SVC_*} constants
+     * @param traceId the correlation id shared by all entries in this trace
+     * @param base    the base timestamp from which entry timestamps are offset
+     * @param rng     the random generator used to fill in trace details
+     * @return the log entries for this trace
+     */
     private List<Log> cacheHitCheckout(Tenant tenant, List<StatusApp> apps, String traceId,
                                        ZonedDateTime base, Random rng) {
         String orderId = orderId(rng);
