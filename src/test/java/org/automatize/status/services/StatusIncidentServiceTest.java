@@ -61,6 +61,10 @@ class StatusIncidentServiceTest {
     @InjectMocks
     private StatusIncidentService statusIncidentService;
 
+    private static final String IMPACT_MAJOR = "MAJOR";
+    private static final String MINOR = "MINOR";
+    private static final String STATUS_INVESTIGATING = "INVESTIGATING";
+
     private final Pageable pageable = PageRequest.of(0, 10);
 
     @BeforeEach
@@ -89,7 +93,7 @@ class StatusIncidentServiceTest {
         incident.setTitle("Outage");
         incident.setStatus(status);
         incident.setSeverity(severity);
-        incident.setImpact("MINOR");
+        incident.setImpact(MINOR);
         incident.setIsPublic(true);
         return incident;
     }
@@ -98,12 +102,12 @@ class StatusIncidentServiceTest {
     void getIncidentById_existingId_returnsResponse() {
         UUID id = UUID.randomUUID();
         when(statusIncidentRepository.findById(id))
-                .thenReturn(Optional.of(newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "INVESTIGATING", "MINOR")));
+                .thenReturn(Optional.of(newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_INVESTIGATING, MINOR)));
 
         StatusIncidentResponse response = statusIncidentService.getIncidentById(id);
 
         assertThat(response.getId()).isEqualTo(id);
-        assertThat(response.getStatus()).isEqualTo("INVESTIGATING");
+        assertThat(response.getStatus()).isEqualTo(STATUS_INVESTIGATING);
     }
 
     @Test
@@ -117,7 +121,7 @@ class StatusIncidentServiceTest {
 
     @Test
     void getAllIncidents_noFilters_returnsPageFromFindAll() {
-        StatusIncident incident = newIncident(UUID.randomUUID(), newApp(UUID.randomUUID(), "OPERATIONAL"), "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(UUID.randomUUID(), newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_INVESTIGATING, MINOR);
         when(statusIncidentRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(incident)));
 
         var page = statusIncidentService.getAllIncidents(null, null, null, null, null, pageable);
@@ -128,14 +132,14 @@ class StatusIncidentServiceTest {
     @Test
     void getActiveIncidents_filtersOutResolved() {
         StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusIncident active = newIncident(UUID.randomUUID(), app, "INVESTIGATING", "MINOR");
-        StatusIncident resolved = newIncident(UUID.randomUUID(), app, "RESOLVED", "MINOR");
+        StatusIncident active = newIncident(UUID.randomUUID(), app, STATUS_INVESTIGATING, MINOR);
+        StatusIncident resolved = newIncident(UUID.randomUUID(), app, "RESOLVED", MINOR);
         when(statusIncidentRepository.findByResolvedAtIsNull()).thenReturn(List.of(active, resolved));
 
         List<StatusIncidentResponse> result = statusIncidentService.getActiveIncidents(null, null);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getStatus()).isEqualTo("INVESTIGATING");
+        assertThat(result.get(0).getStatus()).isEqualTo(STATUS_INVESTIGATING);
     }
 
     @Test
@@ -143,7 +147,7 @@ class StatusIncidentServiceTest {
         UUID incidentId = UUID.randomUUID();
         StatusIncidentUpdate u1 = new StatusIncidentUpdate();
         u1.setId(UUID.randomUUID());
-        u1.setStatus("INVESTIGATING");
+        u1.setStatus(STATUS_INVESTIGATING);
         u1.setMessage("m1");
         when(statusIncidentUpdateRepository.findByIncidentIdOrderByUpdateTimeDesc(incidentId)).thenReturn(List.of(u1));
 
@@ -160,9 +164,9 @@ class StatusIncidentServiceTest {
         StatusIncidentRequest request = new StatusIncidentRequest();
         request.setAppId(appId);
         request.setTitle("Outage");
-        request.setStatus("INVESTIGATING");
-        request.setSeverity("MINOR");
-        request.setImpact("MINOR");
+        request.setStatus(STATUS_INVESTIGATING);
+        request.setSeverity(MINOR);
+        request.setImpact(MINOR);
 
         when(statusAppRepository.findById(appId)).thenReturn(Optional.of(app));
         when(statusIncidentRepository.save(any(StatusIncident.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -188,9 +192,9 @@ class StatusIncidentServiceTest {
         StatusIncidentRequest request = new StatusIncidentRequest();
         request.setAppId(appId);
         request.setTitle("Outage");
-        request.setStatus("INVESTIGATING");
-        request.setSeverity("MINOR");
-        request.setImpact("MINOR");
+        request.setStatus(STATUS_INVESTIGATING);
+        request.setSeverity(MINOR);
+        request.setImpact(MINOR);
         request.setInitialMessage("initial");
         request.setAffectedComponentIds(List.of(componentId));
 
@@ -224,13 +228,13 @@ class StatusIncidentServiceTest {
     void updateIncident_happyPath_updatesStatus() {
         UUID id = UUID.randomUUID();
         StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusIncident incident = newIncident(id, app, "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(id, app, STATUS_INVESTIGATING, MINOR);
 
         StatusIncidentRequest request = new StatusIncidentRequest();
         request.setTitle("Outage");
         request.setStatus("IDENTIFIED");
-        request.setSeverity("MINOR");
-        request.setImpact("MINOR");
+        request.setSeverity(MINOR);
+        request.setImpact(MINOR);
 
         when(statusIncidentRepository.findById(id)).thenReturn(Optional.of(incident));
         when(statusIncidentRepository.save(any(StatusIncident.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -254,7 +258,7 @@ class StatusIncidentServiceTest {
     void addIncidentUpdate_statusChanged_updatesIncident() {
         UUID id = UUID.randomUUID();
         StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusIncident incident = newIncident(id, app, "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(id, app, STATUS_INVESTIGATING, MINOR);
 
         StatusIncidentUpdateRequest request = new StatusIncidentUpdateRequest();
         request.setStatus("IDENTIFIED");
@@ -276,10 +280,10 @@ class StatusIncidentServiceTest {
     void addIncidentUpdate_statusUnchanged_doesNotUpdateIncident() {
         UUID id = UUID.randomUUID();
         StatusApp app = newApp(UUID.randomUUID(), "OPERATIONAL");
-        StatusIncident incident = newIncident(id, app, "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(id, app, STATUS_INVESTIGATING, MINOR);
 
         StatusIncidentUpdateRequest request = new StatusIncidentUpdateRequest();
-        request.setStatus("INVESTIGATING");
+        request.setStatus(STATUS_INVESTIGATING);
         request.setMessage("still working");
 
         when(statusIncidentRepository.findById(id)).thenReturn(Optional.of(incident));
@@ -295,7 +299,7 @@ class StatusIncidentServiceTest {
     void resolveIncident_activeIncident_resolvesAndResetsComponents() {
         UUID id = UUID.randomUUID();
         StatusApp app = newApp(UUID.randomUUID(), "DEGRADED");
-        StatusIncident incident = newIncident(id, app, "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(id, app, STATUS_INVESTIGATING, MINOR);
 
         StatusComponent component = new StatusComponent();
         component.setId(UUID.randomUUID());
@@ -324,7 +328,7 @@ class StatusIncidentServiceTest {
     @Test
     void resolveIncident_alreadyResolved_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "RESOLVED", "MINOR");
+        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "RESOLVED", MINOR);
         when(statusIncidentRepository.findById(id)).thenReturn(Optional.of(incident));
 
         assertThatThrownBy(() -> statusIncidentService.resolveIncident(id, null))
@@ -335,7 +339,7 @@ class StatusIncidentServiceTest {
     @Test
     void deleteIncident_resolved_deletes() {
         UUID id = UUID.randomUUID();
-        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "RESOLVED", "MINOR");
+        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "RESOLVED", MINOR);
         when(statusIncidentRepository.findById(id)).thenReturn(Optional.of(incident));
 
         statusIncidentService.deleteIncident(id);
@@ -346,7 +350,7 @@ class StatusIncidentServiceTest {
     @Test
     void deleteIncident_active_throwsRuntime() {
         UUID id = UUID.randomUUID();
-        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), "INVESTIGATING", "MINOR");
+        StatusIncident incident = newIncident(id, newApp(UUID.randomUUID(), "OPERATIONAL"), STATUS_INVESTIGATING, MINOR);
         when(statusIncidentRepository.findById(id)).thenReturn(Optional.of(incident));
 
         assertThatThrownBy(() -> statusIncidentService.deleteIncident(id))
@@ -356,7 +360,7 @@ class StatusIncidentServiceTest {
 
     @Test
     void createAutomatedIncident_nullApp_returnsNull() {
-        StatusIncident result = statusIncidentService.createAutomatedIncident(null, "MAJOR", "down");
+        StatusIncident result = statusIncidentService.createAutomatedIncident(null, IMPACT_MAJOR, "down");
 
         assertThat(result).isNull();
     }
@@ -369,9 +373,9 @@ class StatusIncidentServiceTest {
         when(statusIncidentRepository.save(any(StatusIncident.class))).thenAnswer(inv -> inv.getArgument(0));
         when(statusIncidentUpdateRepository.save(any(StatusIncidentUpdate.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        StatusIncident result = statusIncidentService.createAutomatedIncident(app, "MAJOR", "down");
+        StatusIncident result = statusIncidentService.createAutomatedIncident(app, IMPACT_MAJOR, "down");
 
-        assertThat(result.getStatus()).isEqualTo("INVESTIGATING");
+        assertThat(result.getStatus()).isEqualTo(STATUS_INVESTIGATING);
         assertThat(result.getImpact()).isEqualTo("PARTIAL_OUTAGE");
         assertThat(result.getTitle()).contains("Automated");
         verify(incidentNotificationService).notifySubscribersOfNewIncident(any(StatusIncident.class));
@@ -381,14 +385,14 @@ class StatusIncidentServiceTest {
     void createAutomatedIncident_existingWorseSeverity_upgradesSeverity() {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId, "DEGRADED");
-        StatusIncident existing = newIncident(UUID.randomUUID(), app, "INVESTIGATING", "MINOR");
+        StatusIncident existing = newIncident(UUID.randomUUID(), app, STATUS_INVESTIGATING, MINOR);
         when(statusIncidentRepository.findActiveAutomatedIncidents(appId, "system")).thenReturn(List.of(existing));
         when(statusIncidentRepository.save(any(StatusIncident.class))).thenAnswer(inv -> inv.getArgument(0));
 
         StatusIncident result = statusIncidentService.createAutomatedIncident(app, "CRITICAL", "worse");
 
         assertThat(result.getSeverity()).isEqualTo("CRITICAL");
-        assertThat(result.getImpact()).isEqualTo("MAJOR");
+        assertThat(result.getImpact()).isEqualTo(IMPACT_MAJOR);
         verify(statusIncidentRepository).save(existing);
     }
 
@@ -396,10 +400,10 @@ class StatusIncidentServiceTest {
     void createAutomatedIncident_existingNotWorse_doesNotUpgrade() {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId, "MAJOR_OUTAGE");
-        StatusIncident existing = newIncident(UUID.randomUUID(), app, "INVESTIGATING", "CRITICAL");
+        StatusIncident existing = newIncident(UUID.randomUUID(), app, STATUS_INVESTIGATING, "CRITICAL");
         when(statusIncidentRepository.findActiveAutomatedIncidents(appId, "system")).thenReturn(List.of(existing));
 
-        StatusIncident result = statusIncidentService.createAutomatedIncident(app, "MINOR", "minor");
+        StatusIncident result = statusIncidentService.createAutomatedIncident(app, MINOR, "minor");
 
         assertThat(result.getSeverity()).isEqualTo("CRITICAL");
         verify(statusIncidentRepository, never()).save(any());
@@ -409,7 +413,7 @@ class StatusIncidentServiceTest {
     void resolveAutomatedIncidents_resolvesAllAndNotifies() {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId, "MAJOR_OUTAGE");
-        StatusIncident incident = newIncident(UUID.randomUUID(), app, "INVESTIGATING", "CRITICAL");
+        StatusIncident incident = newIncident(UUID.randomUUID(), app, STATUS_INVESTIGATING, "CRITICAL");
         when(statusIncidentRepository.findActiveAutomatedIncidents(appId, "system")).thenReturn(List.of(incident));
         when(statusIncidentRepository.save(any(StatusIncident.class))).thenAnswer(inv -> inv.getArgument(0));
         when(statusIncidentUpdateRepository.save(any(StatusIncidentUpdate.class))).thenAnswer(inv -> inv.getArgument(0));

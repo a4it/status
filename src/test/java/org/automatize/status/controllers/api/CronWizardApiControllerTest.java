@@ -9,6 +9,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -48,7 +49,7 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(jsonPath("$.valid").value(true))
                 .andExpect(jsonPath("$.humanReadable").value("Every minute"))
                 .andExpect(jsonPath("$.nextRuns").isArray())
-                .andExpect(jsonPath("$.error").doesNotExist());
+                .andExpect(jsonPath("$.error").value(nullValue()));
     }
 
     @Test
@@ -63,7 +64,7 @@ class CronWizardApiControllerTest extends AbstractApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.valid").value(false))
                 .andExpect(jsonPath("$.error").value("Invalid cron"))
-                .andExpect(jsonPath("$.humanReadable").doesNotExist());
+                .andExpect(jsonPath("$.humanReadable").value(nullValue()));
     }
 
     // -------------------------------------------------------------------------
