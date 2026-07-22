@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -30,9 +32,13 @@ public class StatusPlatformRequest {
 
     /** The name of the platform. */
     @NotBlank(message = "Name is required")
+    @Getter
+    @Setter
     private String name;
 
     /** A description of the platform. */
+    @Getter
+    @Setter
     private String description;
 
     /** The URL-friendly slug identifier (lowercase letters, numbers, and hyphens only). */
@@ -65,42 +71,6 @@ public class StatusPlatformRequest {
      * Default constructor.
      */
     public StatusPlatformRequest() {
-    }
-
-    /**
-     * Gets the platform name.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the platform name.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description.
-     *
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

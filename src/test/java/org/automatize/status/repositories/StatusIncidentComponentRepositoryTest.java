@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.ZonedDateTime;
@@ -28,10 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusIncidentComponentRepositoryTest {
-
-    @Autowired
-    private TestEntityManager em;
+class StatusIncidentComponentRepositoryTest extends AbstractRepositoryTest {
 
     @Autowired
     private StatusIncidentComponentRepository repository;
@@ -59,24 +55,6 @@ class StatusIncidentComponentRepositoryTest {
         app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
         incident = persistIncident("Outage", STATUS_INVESTIGATING, app);
-    }
-
-    private Tenant persistTenant(String name) {
-        Tenant t = new Tenant();
-        t.setName(name);
-        t.setCreatedBy("test");
-        t.setLastModifiedBy("test");
-        return em.persistAndFlush(t);
-    }
-
-    private Organization persistOrganization(String name, Tenant tenant) {
-        Organization o = new Organization();
-        o.setName(name);
-        o.setOrganizationType("BUSINESS");
-        o.setTenant(tenant);
-        o.setCreatedBy("test");
-        o.setLastModifiedBy("test");
-        return em.persistAndFlush(o);
     }
 
     private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {

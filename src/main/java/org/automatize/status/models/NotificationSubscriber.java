@@ -31,7 +31,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "notification_subscribers")
-public class NotificationSubscriber {
+@EntityListeners(AuditTimestampListener.class)
+public class NotificationSubscriber implements Auditable {
 
     /**
      * Unique identifier for the notification subscriber.
@@ -126,41 +127,6 @@ public class NotificationSubscriber {
      */
     @Column(name = "last_modified_date_technical", nullable = false)
     private Long lastModifiedDateTechnical;
-
-    /**
-     * JPA lifecycle callback executed before persisting a new subscriber.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Default the creation timestamp when not already set
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Default the last-modified timestamp when not already set
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Default the technical creation timestamp when not already set
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Default the technical last-modified timestamp when not already set
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing subscriber.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
 
     /**
      * Default constructor required by JPA.

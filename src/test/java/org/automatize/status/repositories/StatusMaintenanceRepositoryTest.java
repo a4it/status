@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.ZonedDateTime;
@@ -26,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusMaintenanceRepositoryTest {
+class StatusMaintenanceRepositoryTest extends AbstractRepositoryTest {
 
     private static final String SCHEDULED = "SCHEDULED";
     private static final String APP_B = "App B";
@@ -38,9 +37,6 @@ class StatusMaintenanceRepositoryTest {
     private static final String IN_RANGE = "InRange";
     private static final String ORG_B = "Org B";
     private static final String DB_UPGRADE = "DB upgrade";
-
-    @Autowired
-    private TestEntityManager em;
 
     @Autowired
     private StatusMaintenanceRepository repository;
@@ -56,24 +52,6 @@ class StatusMaintenanceRepositoryTest {
         tenant = persistTenant("Tenant A");
         organization = persistOrganization("Org A", tenant);
         app = persistApp("App A", "app-a", tenant, organization);
-    }
-
-    private Tenant persistTenant(String name) {
-        Tenant t = new Tenant();
-        t.setName(name);
-        t.setCreatedBy("test");
-        t.setLastModifiedBy("test");
-        return em.persistAndFlush(t);
-    }
-
-    private Organization persistOrganization(String name, Tenant tenant) {
-        Organization o = new Organization();
-        o.setName(name);
-        o.setOrganizationType("BUSINESS");
-        o.setTenant(tenant);
-        o.setCreatedBy("test");
-        o.setLastModifiedBy("test");
-        return em.persistAndFlush(o);
     }
 
     private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {

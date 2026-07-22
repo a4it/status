@@ -3,6 +3,8 @@ package org.automatize.status.models;
 import jakarta.persistence.*;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -32,7 +34,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "status_apps")
-public class StatusApp {
+@EntityListeners(AuditTimestampListener.class)
+public class StatusApp implements Auditable {
 
     /**
      * Unique identifier for the status application.
@@ -47,12 +50,16 @@ public class StatusApp {
      * Display name of the application or service being monitored.
      */
     @Column(name = "name", nullable = false, length = 255)
+    @Getter
+    @Setter
     private String name;
 
     /**
      * Detailed description of the application and its purpose.
      */
     @Column(name = "description", columnDefinition = "TEXT")
+    @Getter
+    @Setter
     private String description;
 
     /**
@@ -217,41 +224,6 @@ public class StatusApp {
     private Long lastModifiedDateTechnical;
 
     /**
-     * JPA lifecycle callback executed before persisting a new application.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Default the creation timestamp only if not already provided.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Default the last-modified timestamp only if not already provided.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Default the technical creation timestamp only if not already provided.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Default the technical last-modified timestamp only if not already provided.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing application.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
-
-    /**
      * Default constructor required by JPA.
      */
     public StatusApp() {
@@ -273,42 +245,6 @@ public class StatusApp {
      */
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    /**
-     * Gets the display name of the application.
-     *
-     * @return the application name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the display name of the application.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description of the application.
-     *
-     * @return the application description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description of the application.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

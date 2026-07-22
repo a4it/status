@@ -9,6 +9,8 @@ import org.automatize.status.models.scheduler.StringListConverter;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Entity representing a scheduled job definition.
@@ -25,7 +27,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "scheduler_jobs")
-public class SchedulerJob {
+@EntityListeners(AuditTimestampListener.class)
+public class SchedulerJob implements Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -41,9 +44,13 @@ public class SchedulerJob {
     private Organization organization;
 
     @Column(name = "name", nullable = false, length = 255)
+    @Getter
+    @Setter
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
+    @Getter
+    @Setter
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -128,41 +135,6 @@ public class SchedulerJob {
     private SchedulerSoapConfig soapConfig;
 
     /**
-     * JPA lifecycle callback executed before persisting a new job.
-     * Populates the creation and modification timestamps when they have not been set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Set the creation timestamp only if it has not already been assigned.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Set the last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Set the technical creation timestamp only if it has not already been assigned.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Set the technical last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing job.
-     * Refreshes the modification timestamps to the current time.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
-
-    /**
      * Default constructor required by JPA.
      */
     public SchedulerJob() {
@@ -220,42 +192,6 @@ public class SchedulerJob {
      */
     public void setOrganization(Organization organization) {
         this.organization = organization;
-    }
-
-    /**
-     * Gets the display name of the job.
-     *
-     * @return the job name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the display name of the job.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description of the job.
-     *
-     * @return the job description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description of the job.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

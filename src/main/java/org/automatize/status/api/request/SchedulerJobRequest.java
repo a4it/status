@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -31,9 +33,13 @@ public class SchedulerJobRequest {
 
     /** The job display name. */
     @NotBlank
+    @Getter
+    @Setter
     private String name;
 
     /** The human-readable job description. */
+    @Getter
+    @Setter
     private String description;
 
     /** The job type discriminator (e.g. PROGRAM, SQL, REST, SOAP). */
@@ -843,26 +849,6 @@ public class SchedulerJobRequest {
     // -------------------------------------------------------------------------
     // Getters / setters for top-level fields
     // -------------------------------------------------------------------------
-
-    /** @return the job display name */
-    public String getName() {
-        return name;
-    }
-
-    /** @param name the job display name to set */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /** @return the human-readable job description */
-    public String getDescription() {
-        return description;
-    }
-
-    /** @param description the human-readable job description to set */
-    public void setDescription(String description) {
-        this.description = description;
-    }
 
     /** @return the job type discriminator */
     public String getJobType() {

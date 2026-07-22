@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -24,35 +23,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class UserRepositoryTest {
+class UserRepositoryTest extends AbstractRepositoryTest {
 
     private static final String STATUS_ACTIVE = "ACTIVE";
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String SEARCH_TERM = "searchme";
 
     @Autowired
-    private TestEntityManager em;
-
-    @Autowired
     private UserRepository repository;
-
-    private Tenant persistTenant(String name) {
-        Tenant t = new Tenant();
-        t.setName(name);
-        t.setCreatedBy("test");
-        t.setLastModifiedBy("test");
-        return em.persistAndFlush(t);
-    }
-
-    private Organization persistOrganization(String name, Tenant tenant) {
-        Organization o = new Organization();
-        o.setName(name);
-        o.setOrganizationType("BUSINESS");
-        o.setTenant(tenant);
-        o.setCreatedBy("test");
-        o.setLastModifiedBy("test");
-        return em.persistAndFlush(o);
-    }
 
     private User persistUser(String username, String email, Organization org,
                              String role, String status, boolean enabled) {

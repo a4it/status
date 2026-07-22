@@ -30,7 +30,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "status_incidents")
-public class StatusIncident {
+@EntityListeners(AuditTimestampListener.class)
+public class StatusIncident implements Auditable {
 
     /**
      * Unique identifier for the incident.
@@ -138,41 +139,6 @@ public class StatusIncident {
      */
     @Column(name = "last_modified_date_technical", nullable = false)
     private Long lastModifiedDateTechnical;
-
-    /**
-     * JPA lifecycle callback executed before persisting a new incident.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Default the creation timestamp only if not already provided.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Default the last-modified timestamp only if not already provided.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Default the technical creation timestamp only if not already provided.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Default the technical last-modified timestamp only if not already provided.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing incident.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
 
     /**
      * Default constructor required by JPA.

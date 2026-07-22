@@ -29,7 +29,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "users")
-public class User {
+@EntityListeners(AuditTimestampListener.class)
+public class User implements Auditable {
 
     /**
      * Unique identifier for the user.
@@ -151,41 +152,6 @@ public class User {
      */
     @Column(name = "type", length = 255)
     private String type;
-
-    /**
-     * JPA lifecycle callback executed before persisting a new user.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Default the creation timestamp only if it has not been set
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Default the modification timestamp only if it has not been set
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Default the technical creation timestamp only if it has not been set
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Default the technical modification timestamp only if it has not been set
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing user.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
 
     /**
      * Default constructor required by JPA.

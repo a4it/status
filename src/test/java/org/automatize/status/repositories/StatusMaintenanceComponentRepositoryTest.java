@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.ZonedDateTime;
@@ -28,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusMaintenanceComponentRepositoryTest {
+class StatusMaintenanceComponentRepositoryTest extends AbstractRepositoryTest {
 
     private static final String STATUS_SCHEDULED = "SCHEDULED";
     private static final String TITLE_OTHER = "Other";
@@ -36,9 +35,6 @@ class StatusMaintenanceComponentRepositoryTest {
     private static final String APP_B_SLUG = "app-b";
     private static final String OTHER_COMP = "OtherComp";
     private static final String OTHER_M = "OtherM";
-
-    @Autowired
-    private TestEntityManager em;
 
     @Autowired
     private StatusMaintenanceComponentRepository repository;
@@ -58,24 +54,6 @@ class StatusMaintenanceComponentRepositoryTest {
         app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
         maintenance = persistMaintenance("Patch", STATUS_SCHEDULED, app);
-    }
-
-    private Tenant persistTenant(String name) {
-        Tenant t = new Tenant();
-        t.setName(name);
-        t.setCreatedBy("test");
-        t.setLastModifiedBy("test");
-        return em.persistAndFlush(t);
-    }
-
-    private Organization persistOrganization(String name, Tenant tenant) {
-        Organization o = new Organization();
-        o.setName(name);
-        o.setOrganizationType("BUSINESS");
-        o.setTenant(tenant);
-        o.setCreatedBy("test");
-        o.setLastModifiedBy("test");
-        return em.persistAndFlush(o);
     }
 
     private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {

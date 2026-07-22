@@ -5,6 +5,8 @@ import org.automatize.status.models.scheduler.DbType;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * Entity representing a reusable JDBC datasource configuration for scheduler SQL jobs.
@@ -21,7 +23,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "scheduler_jdbc_datasources")
-public class SchedulerJdbcDatasource {
+@EntityListeners(AuditTimestampListener.class)
+public class SchedulerJdbcDatasource implements Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -37,9 +40,13 @@ public class SchedulerJdbcDatasource {
     private Organization organization;
 
     @Column(name = "name", nullable = false, length = 255)
+    @Getter
+    @Setter
     private String name;
 
     @Column(name = "description", columnDefinition = "TEXT")
+    @Getter
+    @Setter
     private String description;
 
     @Enumerated(EnumType.STRING)
@@ -102,41 +109,6 @@ public class SchedulerJdbcDatasource {
     private Long lastModifiedDateTechnical;
 
     /**
-     * JPA lifecycle callback executed before persisting a new datasource.
-     * Populates the creation and modification timestamps when they have not been set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Set the creation timestamp only if it has not already been assigned.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Set the last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Set the technical creation timestamp only if it has not already been assigned.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Set the technical last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing datasource.
-     * Refreshes the modification timestamps to the current time.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
-
-    /**
      * Default constructor required by JPA.
      */
     public SchedulerJdbcDatasource() {
@@ -194,42 +166,6 @@ public class SchedulerJdbcDatasource {
      */
     public void setOrganization(Organization organization) {
         this.organization = organization;
-    }
-
-    /**
-     * Gets the display name of the datasource.
-     *
-     * @return the datasource name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the display name of the datasource.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description of the datasource.
-     *
-     * @return the datasource description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description of the datasource.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

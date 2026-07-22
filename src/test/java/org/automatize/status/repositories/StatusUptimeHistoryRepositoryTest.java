@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
-import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -29,15 +28,12 @@ import static org.assertj.core.api.Assertions.within;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusUptimeHistoryRepositoryTest {
+class StatusUptimeHistoryRepositoryTest extends AbstractRepositoryTest {
 
     private static final String UPTIME_99 = "99.000";
     private static final String UPTIME_100 = "100.000";
     private static final String UPTIME_98 = "98.000";
     private static final String UPTIME_50 = "50.000";
-
-    @Autowired
-    private TestEntityManager em;
 
     @Autowired
     private StatusUptimeHistoryRepository repository;
@@ -57,24 +53,6 @@ class StatusUptimeHistoryRepositoryTest {
         organization = persistOrganization("Org A", tenant);
         app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
-    }
-
-    private Tenant persistTenant(String name) {
-        Tenant t = new Tenant();
-        t.setName(name);
-        t.setCreatedBy("test");
-        t.setLastModifiedBy("test");
-        return em.persistAndFlush(t);
-    }
-
-    private Organization persistOrganization(String name, Tenant tenant) {
-        Organization o = new Organization();
-        o.setName(name);
-        o.setOrganizationType("BUSINESS");
-        o.setTenant(tenant);
-        o.setCreatedBy("test");
-        o.setLastModifiedBy("test");
-        return em.persistAndFlush(o);
     }
 
     private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {

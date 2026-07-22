@@ -2,6 +2,8 @@ package org.automatize.status.api.response;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -33,9 +35,13 @@ public class StatusComponentResponse {
     private UUID appId;
 
     /** The name of the component. */
+    @Getter
+    @Setter
     private String name;
 
     /** The description of the component. */
+    @Getter
+    @Setter
     private String description;
 
     /** The current operational status. */
@@ -126,42 +132,6 @@ public class StatusComponentResponse {
      */
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    /**
-     * Gets the name.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the name.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description.
-     *
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

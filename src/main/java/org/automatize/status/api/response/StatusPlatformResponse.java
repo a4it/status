@@ -3,6 +3,8 @@ package org.automatize.status.api.response;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -31,9 +33,13 @@ public class StatusPlatformResponse {
     private UUID id;
 
     /** The name of the platform. */
+    @Getter
+    @Setter
     private String name;
 
     /** The description of the platform. */
+    @Getter
+    @Setter
     private String description;
 
     /** The URL-friendly slug identifier. */
@@ -88,42 +94,6 @@ public class StatusPlatformResponse {
      */
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    /**
-     * Gets the platform name.
-     *
-     * @return the platform name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the platform name.
-     *
-     * @param name the platform name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the platform description.
-     *
-     * @return the platform description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the platform description.
-     *
-     * @param description the platform description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

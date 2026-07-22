@@ -4,6 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -34,9 +36,13 @@ public class StatusComponentRequest {
 
     /** The name of the component. */
     @NotBlank(message = "Name is required")
+    @Getter
+    @Setter
     private String name;
 
     /** A description of the component. */
+    @Getter
+    @Setter
     private String description;
 
     /** The current operational status of the component. */
@@ -94,42 +100,6 @@ public class StatusComponentRequest {
      */
     public void setAppId(UUID appId) {
         this.appId = appId;
-    }
-
-    /**
-     * Gets the component name.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the component name.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description.
-     *
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

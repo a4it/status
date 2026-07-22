@@ -3,6 +3,8 @@ package org.automatize.status.models;
 import jakarta.persistence.*;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -30,7 +32,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "organizations")
-public class Organization {
+@EntityListeners(AuditTimestampListener.class)
+public class Organization implements Auditable {
 
     /**
      * Unique identifier for the organization.
@@ -46,12 +49,16 @@ public class Organization {
      * Must be unique across all organizations in the system.
      */
     @Column(name = "name", nullable = false, length = 255, unique = true)
+    @Getter
+    @Setter
     private String name;
 
     /**
      * Detailed description of the organization and its purpose.
      */
     @Column(name = "description", columnDefinition = "TEXT")
+    @Getter
+    @Setter
     private String description;
 
     /**
@@ -196,41 +203,6 @@ public class Organization {
     private Tenant tenant;
 
     /**
-     * JPA lifecycle callback executed before persisting a new organization.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Set the creation timestamp only if it has not already been assigned.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Set the last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Set the technical creation timestamp only if it has not already been assigned.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Set the technical last-modified timestamp only if it has not already been assigned.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing organization.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
-
-    /**
      * Default constructor required by JPA.
      */
     public Organization() {
@@ -252,42 +224,6 @@ public class Organization {
      */
     public void setId(UUID id) {
         this.id = id;
-    }
-
-    /**
-     * Gets the display name of the organization.
-     *
-     * @return the organization name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the display name of the organization.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description of the organization.
-     *
-     * @return the organization description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description of the organization.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

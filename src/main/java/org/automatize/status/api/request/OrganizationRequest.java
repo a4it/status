@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -30,9 +32,13 @@ public class OrganizationRequest {
 
     /** The name of the organization. */
     @NotBlank(message = "Name is required")
+    @Getter
+    @Setter
     private String name;
 
     /** A description of the organization. */
+    @Getter
+    @Setter
     private String description;
 
     /** The contact email address for the organization. */
@@ -86,42 +92,6 @@ public class OrganizationRequest {
      * Default constructor.
      */
     public OrganizationRequest() {
-    }
-
-    /**
-     * Gets the organization name.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the organization name.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the organization description.
-     *
-     * @return the description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the organization description.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**

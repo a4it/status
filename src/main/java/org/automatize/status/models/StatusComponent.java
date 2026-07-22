@@ -3,6 +3,8 @@ package org.automatize.status.models;
 import jakarta.persistence.*;
 import java.time.ZonedDateTime;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * <p>
@@ -30,7 +32,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "status_components")
-public class StatusComponent {
+@EntityListeners(AuditTimestampListener.class)
+public class StatusComponent implements Auditable {
 
     /**
      * Unique identifier for the component.
@@ -52,12 +55,16 @@ public class StatusComponent {
      * Display name of the component.
      */
     @Column(name = "name", nullable = false, length = 255)
+    @Getter
+    @Setter
     private String name;
 
     /**
      * Detailed description of the component and its function.
      */
     @Column(name = "description", columnDefinition = "TEXT")
+    @Getter
+    @Setter
     private String description;
 
     /**
@@ -207,41 +214,6 @@ public class StatusComponent {
     private Long lastModifiedDateTechnical;
 
     /**
-     * JPA lifecycle callback executed before persisting a new component.
-     * Automatically sets creation and modification timestamps if not already set.
-     */
-    @PrePersist
-    public void prePersist() {
-        ZonedDateTime now = ZonedDateTime.now();
-        // Default the creation timestamp only if not already provided.
-        if (createdDate == null) {
-            createdDate = now;
-        }
-        // Default the last-modified timestamp only if not already provided.
-        if (lastModifiedDate == null) {
-            lastModifiedDate = now;
-        }
-        // Default the technical creation timestamp only if not already provided.
-        if (createdDateTechnical == null) {
-            createdDateTechnical = System.currentTimeMillis();
-        }
-        // Default the technical last-modified timestamp only if not already provided.
-        if (lastModifiedDateTechnical == null) {
-            lastModifiedDateTechnical = System.currentTimeMillis();
-        }
-    }
-
-    /**
-     * JPA lifecycle callback executed before updating an existing component.
-     * Automatically updates the modification timestamps.
-     */
-    @PreUpdate
-    public void preUpdate() {
-        lastModifiedDate = ZonedDateTime.now();
-        lastModifiedDateTechnical = System.currentTimeMillis();
-    }
-
-    /**
      * Default constructor required by JPA.
      */
     public StatusComponent() {
@@ -281,42 +253,6 @@ public class StatusComponent {
      */
     public void setApp(StatusApp app) {
         this.app = app;
-    }
-
-    /**
-     * Gets the display name of the component.
-     *
-     * @return the component name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Sets the display name of the component.
-     *
-     * @param name the name to set
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Gets the description of the component.
-     *
-     * @return the component description
-     */
-    public String getDescription() {
-        return description;
-    }
-
-    /**
-     * Sets the description of the component.
-     *
-     * @param description the description to set
-     */
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     /**
