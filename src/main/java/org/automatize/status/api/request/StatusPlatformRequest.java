@@ -44,176 +44,48 @@ public class StatusPlatformRequest {
     /** The URL-friendly slug identifier (lowercase letters, numbers, and hyphens only). */
     @NotBlank(message = "Slug is required")
     @Pattern(regexp = "^[a-z0-9-]+$", message = "Slug must contain only lowercase letters, numbers, and hyphens")
+    @Getter
+    @Setter
     private String slug;
 
     /** URL to the platform logo image. */
+    @Getter
+    @Setter
     private String logoUrl;
 
     /** External website URL for the platform. */
+    @Getter
+    @Setter
     private String websiteUrl;
 
     /** The current operational status of the platform. */
+    @Getter
+    @Setter
     private String status = "OPERATIONAL";
 
     /** Whether the platform is publicly visible. */
+    @Getter
+    @Setter
     private Boolean isPublic = true;
 
     /** Display order position for sorting platforms. */
+    @Getter
+    @Setter
     private Integer position = 0;
 
     /** The tenant this platform belongs to. */
+    @Getter
+    @Setter
     private UUID tenantId;
 
     /** The organization this platform belongs to. */
+    @Getter
+    @Setter
     private UUID organizationId;
 
     /**
      * Default constructor.
      */
     public StatusPlatformRequest() {
-    }
-
-    /**
-     * Gets the URL-friendly slug identifier.
-     *
-     * @return the slug
-     */
-    public String getSlug() {
-        return slug;
-    }
-
-    /**
-     * Sets the URL-friendly slug identifier.
-     *
-     * @param slug the slug to set
-     */
-    public void setSlug(String slug) {
-        this.slug = slug;
-    }
-
-    /**
-     * Gets the platform logo image URL.
-     *
-     * @return the logo URL
-     */
-    public String getLogoUrl() {
-        return logoUrl;
-    }
-
-    /**
-     * Sets the platform logo image URL.
-     *
-     * @param logoUrl the logo URL to set
-     */
-    public void setLogoUrl(String logoUrl) {
-        this.logoUrl = logoUrl;
-    }
-
-    /**
-     * Gets the external website URL.
-     *
-     * @return the website URL
-     */
-    public String getWebsiteUrl() {
-        return websiteUrl;
-    }
-
-    /**
-     * Sets the external website URL.
-     *
-     * @param websiteUrl the website URL to set
-     */
-    public void setWebsiteUrl(String websiteUrl) {
-        this.websiteUrl = websiteUrl;
-    }
-
-    /**
-     * Gets the operational status.
-     *
-     * @return the status
-     */
-    public String getStatus() {
-        return status;
-    }
-
-    /**
-     * Sets the operational status.
-     *
-     * @param status the status to set
-     */
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    /**
-     * Gets the public visibility flag.
-     *
-     * @return true if public, false otherwise
-     */
-    public Boolean getIsPublic() {
-        return isPublic;
-    }
-
-    /**
-     * Sets the public visibility flag.
-     *
-     * @param isPublic the public flag to set
-     */
-    public void setIsPublic(Boolean isPublic) {
-        this.isPublic = isPublic;
-    }
-
-    /**
-     * Gets the display order position.
-     *
-     * @return the position
-     */
-    public Integer getPosition() {
-        return position;
-    }
-
-    /**
-     * Sets the display order position.
-     *
-     * @param position the position to set
-     */
-    public void setPosition(Integer position) {
-        this.position = position;
-    }
-
-    /**
-     * Gets the tenant ID.
-     *
-     * @return the tenant ID
-     */
-    public UUID getTenantId() {
-        return tenantId;
-    }
-
-    /**
-     * Sets the tenant ID.
-     *
-     * @param tenantId the tenant ID to set
-     */
-    public void setTenantId(UUID tenantId) {
-        this.tenantId = tenantId;
-    }
-
-    /**
-     * Gets the organization ID.
-     *
-     * @return the organization ID
-     */
-    public UUID getOrganizationId() {
-        return organizationId;
-    }
-
-    /**
-     * Sets the organization ID.
-     *
-     * @param organizationId the organization ID to set
-     */
-    public void setOrganizationId(UUID organizationId) {
-        this.organizationId = organizationId;
     }
 }
