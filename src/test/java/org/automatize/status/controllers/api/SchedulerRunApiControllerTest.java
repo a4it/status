@@ -5,14 +5,9 @@ import org.automatize.status.models.scheduler.JobRunStatus;
 import org.automatize.status.models.scheduler.JobTriggerType;
 import org.automatize.status.repositories.SchedulerJobRunRepository;
 import org.automatize.status.security.UserPrincipal;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
@@ -37,34 +32,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code @ResponseStatus}), which propagates out of {@code mockMvc.perform}.
  */
 @WebMvcTest(controllers = SchedulerRunApiController.class)
-class SchedulerRunApiControllerTest extends AbstractApiControllerTest {
+class SchedulerRunApiControllerTest extends AbstractSchedulerApiControllerTest {
 
     private static final String STATUS_SUCCESS = "SUCCESS";
     private static final String RUNS_ID_PATH = "/api/scheduler/runs/{id}";
 
     @MockitoBean
     private SchedulerJobRunRepository runRepository;
-
-    /**
-     * Installs an authenticated ADMIN {@link UserPrincipal} into the {@link SecurityContextHolder}
-     * before each test, since {@code listRuns} reads the current principal from the security context.
-     */
-    @BeforeEach
-    void setUpPrincipal() {
-        UserPrincipal principal = new UserPrincipal(
-                UUID.randomUUID(), "admin", "admin@test.local", "pw", "ADMIN",
-                UUID.randomUUID(), true, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
-    }
-
-    /**
-     * Clears the {@link SecurityContextHolder} after each test to avoid principal leakage between tests.
-     */
-    @AfterEach
-    void clearContext() {
-        SecurityContextHolder.clearContext();
-    }
 
     /**
      * Builds a sample {@link SchedulerJobRun} fixture for stubbing repository calls.

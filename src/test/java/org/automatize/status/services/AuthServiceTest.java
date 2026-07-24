@@ -123,6 +123,32 @@ class AuthServiceTest {
     }
 
     /**
+     * Builds a {@link LoginRequest} for the given username with the standard test password.
+     */
+    private LoginRequest loginRequest(String username) {
+        LoginRequest request = new LoginRequest();
+        request.setUsername(username);
+        request.setPassword(SECRET);
+        return request;
+    }
+
+    /**
+     * Stubs a successful authentication for the given user/username: the authentication
+     * manager returns a principal-backed token and {@link JwtUtils} issues the access and
+     * refresh tokens.
+     *
+     * @return the {@link Authentication} the authentication manager is stubbed to return
+     */
+    private Authentication stubAuthentication(User user, String username) {
+        UserPrincipal principal = UserPrincipal.create(user);
+        Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        when(authenticationManager.authenticate(any())).thenReturn(auth);
+        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
+        when(jwtUtils.generateRefreshToken(username)).thenReturn(REFRESH_PLAIN);
+        return auth;
+    }
+
+    /**
      * Verifies successful authentication returns a Bearer auth response with access and
      * refresh tokens, and persists the refresh token as a hash (never plaintext).
      * Expects a non-context-selection response for a regular user and a save of the user.
@@ -131,16 +157,9 @@ class AuthServiceTest {
     void authenticateUser_validCredentials_returnsAuthResponseAndStoresHashedRefreshToken() {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, USERNAME, "USER");
-        UserPrincipal principal = UserPrincipal.create(user);
-        Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        LoginRequest request = loginRequest(USERNAME);
 
-        LoginRequest request = new LoginRequest();
-        request.setUsername(USERNAME);
-        request.setPassword(SECRET);
-
-        when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn(REFRESH_PLAIN);
+        stubAuthentication(user, USERNAME);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -165,16 +184,9 @@ class AuthServiceTest {
     void authenticateUser_superadmin_setsRequiresContextSelection() {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, "root", "SUPERADMIN");
-        UserPrincipal principal = UserPrincipal.create(user);
-        Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        LoginRequest request = loginRequest("root");
 
-        LoginRequest request = new LoginRequest();
-        request.setUsername("root");
-        request.setPassword(SECRET);
-
-        when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken("root")).thenReturn(REFRESH_PLAIN);
+        stubAuthentication(user, "root");
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -191,16 +203,9 @@ class AuthServiceTest {
     void authenticateUser_userNotFoundAfterAuth_throwsRuntimeException() {
         UUID userId = UUID.randomUUID();
         User user = buildUser(userId, USERNAME, "USER");
-        UserPrincipal principal = UserPrincipal.create(user);
-        Authentication auth = new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
+        LoginRequest request = loginRequest(USERNAME);
 
-        LoginRequest request = new LoginRequest();
-        request.setUsername(USERNAME);
-        request.setPassword(SECRET);
-
-        when(authenticationManager.authenticate(any())).thenReturn(auth);
-        when(jwtUtils.generateJwtToken(auth)).thenReturn(ACCESS_JWT);
-        when(jwtUtils.generateRefreshToken(USERNAME)).thenReturn(REFRESH_PLAIN);
+        stubAuthentication(user, USERNAME);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.authenticateUser(request))

@@ -14,18 +14,12 @@ import org.automatize.status.repositories.StatusComponentRepository;
 import org.automatize.status.repositories.StatusIncidentComponentRepository;
 import org.automatize.status.repositories.StatusIncidentRepository;
 import org.automatize.status.repositories.StatusIncidentUpdateRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -42,8 +36,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link StatusIncidentService}.
  */
-@ExtendWith(MockitoExtension.class)
-class StatusIncidentServiceTest {
+class StatusIncidentServiceTest extends AbstractServiceTest {
 
     @Mock
     private StatusIncidentRepository statusIncidentRepository;
@@ -73,39 +66,6 @@ class StatusIncidentServiceTest {
     private static final String SOURCE_SYSTEM = "system";
 
     private final Pageable pageable = PageRequest.of(0, 10);
-
-    /**
-     * Establishes an authenticated security context before each test so that
-     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
-     */
-    @BeforeEach
-    void setUp() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("tester", null, List.of()));
-    }
-
-    /**
-     * Clears the security context after each test to avoid leaking authentication state between tests.
-     */
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
-    /**
-     * Builds a minimal {@link StatusApp} fixture for use in tests.
-     *
-     * @param id     the identifier to assign to the app
-     * @param status the status value to assign to the app
-     * @return a populated {@link StatusApp} instance
-     */
-    private StatusApp newApp(UUID id, String status) {
-        StatusApp app = new StatusApp();
-        app.setId(id);
-        app.setName("App");
-        app.setStatus(status);
-        return app;
-    }
 
     /**
      * Builds a minimal {@link StatusIncident} fixture linked to the given app.

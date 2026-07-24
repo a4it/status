@@ -12,16 +12,10 @@ import org.automatize.status.repositories.StatusAppRepository;
 import org.automatize.status.repositories.StatusComponentRepository;
 import org.automatize.status.repositories.StatusIncidentComponentRepository;
 import org.automatize.status.repositories.StatusMaintenanceComponentRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,8 +32,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link StatusComponentService}.
  */
-@ExtendWith(MockitoExtension.class)
-class StatusComponentServiceTest {
+class StatusComponentServiceTest extends AbstractServiceTest {
 
     @Mock
     private StatusComponentRepository statusComponentRepository;
@@ -57,39 +50,6 @@ class StatusComponentServiceTest {
     private static final String DATABASE = "Database";
     private static final String MAJOR_OUTAGE = "MAJOR_OUTAGE";
     private static final String DEGRADED = "DEGRADED";
-
-    /**
-     * Establishes an authenticated security context before each test so that
-     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
-     */
-    @BeforeEach
-    void setUp() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("tester", null, List.of()));
-    }
-
-    /**
-     * Clears the security context after each test to avoid leaking authentication state between tests.
-     */
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
-
-    /**
-     * Builds a minimal {@link StatusApp} fixture for use in tests.
-     *
-     * @param id     the identifier to assign to the app
-     * @param status the status value to assign to the app
-     * @return a populated {@link StatusApp} instance
-     */
-    private StatusApp newApp(UUID id, String status) {
-        StatusApp app = new StatusApp();
-        app.setId(id);
-        app.setName("App");
-        app.setStatus(status);
-        return app;
-    }
 
     /**
      * Builds a minimal {@link StatusComponent} fixture linked to the given app.

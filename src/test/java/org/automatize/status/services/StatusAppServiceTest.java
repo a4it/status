@@ -15,19 +15,13 @@ import org.automatize.status.repositories.StatusIncidentRepository;
 import org.automatize.status.repositories.StatusMaintenanceRepository;
 import org.automatize.status.repositories.StatusPlatformRepository;
 import org.automatize.status.repositories.TenantRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,8 +37,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link StatusAppService}.
  */
-@ExtendWith(MockitoExtension.class)
-class StatusAppServiceTest {
+class StatusAppServiceTest extends AbstractServiceTest {
 
     private static final String STATUS_OPERATIONAL = "OPERATIONAL";
     private static final String STATUS_MAJOR_OUTAGE = "MAJOR_OUTAGE";
@@ -69,25 +62,6 @@ class StatusAppServiceTest {
     private StatusAppService statusAppService;
 
     private final Pageable pageable = PageRequest.of(0, 10);
-
-    /**
-     * Establishes an authenticated security context before each test so that
-     * service calls relying on the current principal succeed.
-     */
-    @BeforeEach
-    void setUp() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("tester", null, List.of()));
-    }
-
-    /**
-     * Clears the security context after each test to avoid leaking authentication
-     * state between tests.
-     */
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
 
     /**
      * Builds a public {@link StatusApp} fixture.

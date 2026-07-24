@@ -13,16 +13,11 @@ import org.automatize.status.security.UserPrincipal;
 import org.automatize.status.services.scheduler.CronValidationService;
 import org.automatize.status.services.scheduler.JobDispatcherService;
 import org.automatize.status.services.scheduler.SchedulerJobService;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.time.ZonedDateTime;
@@ -52,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code mockMvc.perform}.
  */
 @WebMvcTest(controllers = SchedulerJobApiController.class)
-class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
+class SchedulerJobApiControllerTest extends AbstractSchedulerApiControllerTest {
 
     private static final String NIGHTLY_BACKUP = "Nightly Backup";
     private static final String JOBS_PATH = "/api/scheduler/jobs";
@@ -75,27 +70,6 @@ class SchedulerJobApiControllerTest extends AbstractApiControllerTest {
 
     @MockitoBean
     private SchedulerJdbcDatasourceRepository datasourceRepository;
-
-    /**
-     * Installs an authenticated ADMIN {@link UserPrincipal} into the {@link SecurityContextHolder}
-     * before each test, since the controller reads the current principal from the security context.
-     */
-    @BeforeEach
-    void setUpPrincipal() {
-        UserPrincipal principal = new UserPrincipal(
-                UUID.randomUUID(), "admin", "admin@test.local", "pw", "ADMIN",
-                UUID.randomUUID(), true, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities()));
-    }
-
-    /**
-     * Clears the {@link SecurityContextHolder} after each test to avoid principal leakage between tests.
-     */
-    @AfterEach
-    void clearContext() {
-        SecurityContextHolder.clearContext();
-    }
 
     /**
      * Builds a sample {@link SchedulerJob} fixture for stubbing service calls.

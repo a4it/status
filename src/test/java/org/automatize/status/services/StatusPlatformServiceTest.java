@@ -9,18 +9,12 @@ import org.automatize.status.repositories.OrganizationRepository;
 import org.automatize.status.repositories.StatusAppRepository;
 import org.automatize.status.repositories.StatusPlatformRepository;
 import org.automatize.status.repositories.TenantRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,8 +30,7 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link StatusPlatformService}.
  */
-@ExtendWith(MockitoExtension.class)
-class StatusPlatformServiceTest {
+class StatusPlatformServiceTest extends AbstractServiceTest {
 
     private static final String SLUG_CLOUD = "cloud";
     private static final String STATUS_OPERATIONAL = "OPERATIONAL";
@@ -55,24 +48,6 @@ class StatusPlatformServiceTest {
     private StatusPlatformService statusPlatformService;
 
     private final Pageable pageable = PageRequest.of(0, 10);
-
-    /**
-     * Establishes an authenticated security context before each test so that
-     * service calls relying on the current principal ("tester") behave as if invoked by a logged-in user.
-     */
-    @BeforeEach
-    void setUp() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken("tester", null, List.of()));
-    }
-
-    /**
-     * Clears the security context after each test to avoid leaking authentication state between tests.
-     */
-    @AfterEach
-    void tearDown() {
-        SecurityContextHolder.clearContext();
-    }
 
     /**
      * Builds a minimal public {@link StatusPlatform} fixture for use in tests.
