@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusMaintenanceComponentRepositoryTest extends AbstractRepositoryTest {
+class StatusMaintenanceComponentRepositoryTest extends AbstractAppScopedRepositoryTest {
 
     private static final String STATUS_SCHEDULED = "SCHEDULED";
     private static final String TITLE_OTHER = "Other";
@@ -39,9 +39,6 @@ class StatusMaintenanceComponentRepositoryTest extends AbstractRepositoryTest {
     @Autowired
     private StatusMaintenanceComponentRepository repository;
 
-    private Tenant tenant;
-    private Organization organization;
-    private StatusApp app;
     private StatusComponent component;
     private StatusMaintenance maintenance;
 
@@ -49,31 +46,8 @@ class StatusMaintenanceComponentRepositoryTest extends AbstractRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        tenant = persistTenant("Tenant A");
-        organization = persistOrganization("Org A", tenant);
-        app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
         maintenance = persistMaintenance("Patch", STATUS_SCHEDULED, app);
-    }
-
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
-    }
-
-    private StatusComponent persistComponent(String name, StatusApp app) {
-        StatusComponent c = new StatusComponent();
-        c.setName(name);
-        c.setApp(app);
-        c.setCreatedBy("test");
-        c.setLastModifiedBy("test");
-        return em.persistAndFlush(c);
     }
 
     private StatusMaintenance persistMaintenance(String title, String status, StatusApp app) {

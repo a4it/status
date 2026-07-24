@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusIncidentUpdateRepositoryTest extends AbstractRepositoryTest {
+class StatusIncidentUpdateRepositoryTest extends AbstractAppScopedRepositoryTest {
 
     private static final String INVESTIGATING = "INVESTIGATING";
     private static final String IDENTIFIED = "IDENTIFIED";
@@ -43,30 +43,13 @@ class StatusIncidentUpdateRepositoryTest extends AbstractRepositoryTest {
     @Autowired
     private StatusIncidentUpdateRepository repository;
 
-    private Tenant tenant;
-    private Organization organization;
-    private StatusApp app;
     private StatusIncident incident;
 
     private final ZonedDateTime now = ZonedDateTime.now();
 
     @BeforeEach
     void setUp() {
-        tenant = persistTenant("Tenant A");
-        organization = persistOrganization("Org A", tenant);
-        app = persistApp("App A", "app-a", tenant, organization);
         incident = persistIncident("Outage", app);
-    }
-
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
     }
 
     private StatusIncident persistIncident(String title, StatusApp app) {

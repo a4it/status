@@ -57,17 +57,6 @@ class StatusAppRepositoryTest extends AbstractRepositoryTest {
         return em.persistAndFlush(p);
     }
 
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
-    }
-
     @Test
     void findBySlug_returnsMatchingApp() {
         persistApp(NAME_PAYMENTS, SLUG_PAYMENTS, tenant, organization);

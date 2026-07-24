@@ -1,10 +1,7 @@
 package org.automatize.status.repositories;
 
-import org.automatize.status.models.Organization;
-import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusComponent;
 import org.automatize.status.models.StatusUptimeHistory;
-import org.automatize.status.models.Tenant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +25,7 @@ import static org.assertj.core.api.Assertions.within;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusUptimeHistoryRepositoryTest extends AbstractRepositoryTest {
+class StatusUptimeHistoryRepositoryTest extends AbstractAppScopedRepositoryTest {
 
     private static final String UPTIME_99 = "99.000";
     private static final String UPTIME_100 = "100.000";
@@ -38,9 +35,6 @@ class StatusUptimeHistoryRepositoryTest extends AbstractRepositoryTest {
     @Autowired
     private StatusUptimeHistoryRepository repository;
 
-    private Tenant tenant;
-    private Organization organization;
-    private StatusApp app;
     private StatusComponent component;
 
     private final LocalDate day1 = LocalDate.of(2026, 1, 1);
@@ -49,30 +43,7 @@ class StatusUptimeHistoryRepositoryTest extends AbstractRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        tenant = persistTenant("Tenant A");
-        organization = persistOrganization("Org A", tenant);
-        app = persistApp("App A", "app-a", tenant, organization);
         component = persistComponent("API", app);
-    }
-
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
-    }
-
-    private StatusComponent persistComponent(String name, StatusApp app) {
-        StatusComponent c = new StatusComponent();
-        c.setName(name);
-        c.setApp(app);
-        c.setCreatedBy("test");
-        c.setLastModifiedBy("test");
-        return em.persistAndFlush(c);
     }
 
     /** Persists an app-level record (component == null). */

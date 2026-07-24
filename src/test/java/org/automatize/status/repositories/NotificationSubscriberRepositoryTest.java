@@ -43,17 +43,6 @@ class NotificationSubscriberRepositoryTest extends AbstractRepositoryTest {
         otherApp = persistApp("App B", "app-b", tenant, org);
     }
 
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
-    }
-
     private NotificationSubscriber persistSubscriber(StatusApp app, String email, String name,
                                                      boolean active, boolean verified, String token) {
         NotificationSubscriber s = new NotificationSubscriber();

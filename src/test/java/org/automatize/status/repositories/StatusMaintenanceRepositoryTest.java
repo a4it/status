@@ -4,7 +4,6 @@ import org.automatize.status.models.Organization;
 import org.automatize.status.models.StatusApp;
 import org.automatize.status.models.StatusMaintenance;
 import org.automatize.status.models.Tenant;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -25,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-class StatusMaintenanceRepositoryTest extends AbstractRepositoryTest {
+class StatusMaintenanceRepositoryTest extends AbstractAppScopedRepositoryTest {
 
     private static final String SCHEDULED = "SCHEDULED";
     private static final String APP_B = "App B";
@@ -41,29 +40,7 @@ class StatusMaintenanceRepositoryTest extends AbstractRepositoryTest {
     @Autowired
     private StatusMaintenanceRepository repository;
 
-    private Tenant tenant;
-    private Organization organization;
-    private StatusApp app;
-
     private final ZonedDateTime now = ZonedDateTime.now();
-
-    @BeforeEach
-    void setUp() {
-        tenant = persistTenant("Tenant A");
-        organization = persistOrganization("Org A", tenant);
-        app = persistApp("App A", "app-a", tenant, organization);
-    }
-
-    private StatusApp persistApp(String name, String slug, Tenant tenant, Organization org) {
-        StatusApp a = new StatusApp();
-        a.setName(name);
-        a.setSlug(slug);
-        a.setTenant(tenant);
-        a.setOrganization(org);
-        a.setCreatedBy("test");
-        a.setLastModifiedBy("test");
-        return em.persistAndFlush(a);
-    }
 
     private StatusMaintenance persistMaintenance(String title, String status,
                                                  ZonedDateTime startsAt, ZonedDateTime endsAt, StatusApp app) {
