@@ -345,7 +345,7 @@ public class SetupService {
         groups.put("Advanced", buildGroup(props, descriptions, sensitive,
                 "logging.level.org.springframework.security",
                 "logging.level.org.automatize.status",
-                "logs.retention.days", "data.initializer.enabled",
+                "logs.retention.days",
                 "spring.jpa.show-sql"));
         return groups;
     }
@@ -493,7 +493,6 @@ public class SetupService {
         d.put("logging.level.org.springframework.security", "Spring Security log level (DEBUG/INFO/WARN)");
         d.put("logging.level.org.automatize.status", "Application log level (DEBUG/INFO/WARN)");
         d.put("logs.retention.days", "Days to retain log entries before auto-deletion");
-        d.put("data.initializer.enabled", "Seed default admin data on startup (disable in production)");
         d.put("spring.jpa.show-sql", "Log all SQL statements to console (true/false)");
         return d;
     }

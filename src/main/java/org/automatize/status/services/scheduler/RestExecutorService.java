@@ -1,6 +1,5 @@
 package org.automatize.status.services.scheduler;
 
-import org.automatize.status.exceptions.SchedulerExecutionException;
 import org.automatize.status.models.SchedulerJobRun;
 import org.automatize.status.models.SchedulerRestConfig;
 import org.automatize.status.models.scheduler.AuthType;
@@ -10,16 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
@@ -44,6 +39,9 @@ public class RestExecutorService {
 
     @Autowired
     private SchedulerEncryptionService encryptionService;
+
+    @Autowired
+    private SchedulerHttpClientFactory httpClientFactory;
 
     /**
      * Executes the REST job defined by {@code config} and writes the result into {@code run}.
@@ -80,23 +78,18 @@ public class RestExecutorService {
     // -------------------------------------------------------------------------
 
     /**
-     * Builds the {@link HttpClient} with configured connect timeout and redirect policy,
-     * installing a trust-all SSL context when certificate verification is disabled.
+     * Resolves the shared {@link HttpClient} matching this job's connect timeout, redirect
+     * policy and certificate-verification setting. Clients are cached by the factory rather
+     * than built per execution, which would leak a selector thread each time.
      *
      * @param config the REST configuration
-     * @return a configured HTTP client
+     * @return a reusable HTTP client for this configuration
      */
     private HttpClient buildClient(SchedulerRestConfig config) {
-        HttpClient.Builder clientBuilder = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
-                .followRedirects(Boolean.TRUE.equals(config.getFollowRedirects())
-                        ? HttpClient.Redirect.NORMAL
-                        : HttpClient.Redirect.NEVER);
-        // SSL verification disabled — install a trust-all context
-        if (!Boolean.TRUE.equals(config.getSslVerify())) {
-            clientBuilder.sslContext(buildTrustAllSslContext());
-        }
-        return clientBuilder.build();
+        return httpClientFactory.getClient(
+                config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000,
+                Boolean.TRUE.equals(config.getFollowRedirects()),
+                Boolean.TRUE.equals(config.getSslVerify()));
     }
 
     /**
@@ -286,26 +279,5 @@ public class RestExecutorService {
             if (body == null || !body.contains(config.getAssertBodyContains())) return false;
         }
         return true;
-    }
-
-    /**
-     * Builds an {@link SSLContext} whose trust manager accepts all certificates.
-     * Intended only for development/self-signed environments.
-     *
-     * @return a trust-all SSL context
-     * @throws SchedulerExecutionException when the context cannot be constructed
-     */
-    private SSLContext buildTrustAllSslContext() {
-        try {
-            SSLContext ctx = SSLContext.getInstance("TLS");
-            ctx.init(null, new TrustManager[]{new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                public void checkClientTrusted(X509Certificate[] c, String a) {}
-                public void checkServerTrusted(X509Certificate[] c, String a) {}
-            }}, null);
-            return ctx;
-        } catch (Exception e) {
-            throw new SchedulerExecutionException("Failed to build trust-all SSL context", e);
-        }
     }
 }

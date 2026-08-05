@@ -66,9 +66,6 @@ app.email.enabled=false
 
 # Disable health check scheduler in tests
 health-check.enabled=false
-
-# Disable data initializer (use test fixtures instead)
-data.initializer.enabled=false
 ```
 
 **Test data:** Create `src/test/resources/db/test-data/` for test-specific seed migrations (e.g., `V901__test_seed_data.sql`).

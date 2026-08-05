@@ -10,15 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
 import java.util.Base64;
 
@@ -42,6 +38,9 @@ public class SoapExecutorService {
 
     @Autowired
     private SchedulerEncryptionService encryptionService;
+
+    @Autowired
+    private SchedulerHttpClientFactory httpClientFactory;
 
     /**
      * Executes the SOAP job defined by {@code config} and writes the result into {@code run}.
@@ -74,21 +73,18 @@ public class SoapExecutorService {
     // -------------------------------------------------------------------------
 
     /**
-     * Builds the {@link HttpClient} with configured connect timeout, installing a trust-all
-     * SSL context when certificate verification is disabled.
+     * Resolves the shared {@link HttpClient} matching this job's connect timeout and
+     * certificate-verification setting. Clients are cached by the factory rather than built
+     * per execution, which would leak a selector thread each time.
      *
      * @param config the SOAP configuration
-     * @return a configured HTTP client
+     * @return a reusable HTTP client for this configuration
      */
     private HttpClient buildHttpClient(SchedulerSoapConfig config) {
-        HttpClient.Builder clientBuilder = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000))
-                .followRedirects(HttpClient.Redirect.NORMAL);
-        // SSL verification disabled — install a trust-all context
-        if (!Boolean.TRUE.equals(config.getSslVerify())) {
-            clientBuilder.sslContext(buildTrustAllSslContext());
-        }
-        return clientBuilder.build();
+        return httpClientFactory.getClient(
+                config.getConnectTimeoutMs() != null ? config.getConnectTimeoutMs() : 5000,
+                true,
+                Boolean.TRUE.equals(config.getSslVerify()));
     }
 
     /** Resolves the SOAP {@code Content-Type} header, which differs between SOAP 1.1 and 1.2. */
@@ -207,27 +203,6 @@ public class SoapExecutorService {
             default -> {
                 // Other auth types not applicable to SOAP
             }
-        }
-    }
-
-    /**
-     * Builds an {@link SSLContext} whose trust manager accepts all certificates.
-     * Intended only for development/self-signed environments.
-     *
-     * @return a trust-all SSL context
-     * @throws IllegalStateException when the context cannot be constructed
-     */
-    private SSLContext buildTrustAllSslContext() {
-        try {
-            SSLContext ctx = SSLContext.getInstance("TLS");
-            ctx.init(null, new TrustManager[]{new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() { return new X509Certificate[0]; }
-                public void checkClientTrusted(X509Certificate[] c, String a) {}
-                public void checkServerTrusted(X509Certificate[] c, String a) {}
-            }}, null);
-            return ctx;
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to build trust-all SSL context", e);
         }
     }
 }

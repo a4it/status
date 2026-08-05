@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusApp;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -195,4 +198,53 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
            "AND a.checkType IS NOT NULL AND a.checkType != 'NONE' " +
            "AND a.checkUrl IS NOT NULL AND a.checkUrl != ''")
     List<StatusApp> findCheckEnabledApps();
+
+    /**
+     * Returns a page of app IDs only.
+     * <p>
+     * Used by batch jobs that must walk every app without ever holding the full
+     * entity set in the persistence context.
+     * </p>
+     *
+     * @param pageable pagination parameters
+     * @return a page of app IDs
+     */
+    @Query("SELECT a.id FROM StatusApp a")
+    Page<UUID> findAllIds(Pageable pageable);
+
+    /**
+     * Returns a page of apps matching the health check status filters, applying
+     * every filter in the database rather than in memory.
+     *
+     * @param platformId optional platform to scope to; {@code null} disables the filter
+     * @param status optional status to match; {@code null} disables the filter
+     * @param checkEnabled optional health check enabled flag; {@code null} disables the filter
+     * @param pageable pagination and sorting parameters
+     * @return a page of matching apps
+     */
+    @EntityGraph(attributePaths = {"platform"})
+    @Query("SELECT a FROM StatusApp a WHERE " +
+           "(:platformId IS NULL OR a.platform.id = :platformId) AND " +
+           "(:status IS NULL OR a.status = :status) AND " +
+           "(:checkEnabled IS NULL OR a.checkEnabled = :checkEnabled)")
+    Page<StatusApp> findForHealthCheckStatus(@Param("platformId") UUID platformId,
+                                            @Param("status") String status,
+                                            @Param("checkEnabled") Boolean checkEnabled,
+                                            Pageable pageable);
+
+    /**
+     * Counts the apps matching the health check status filters.
+     *
+     * @param platformId optional platform to scope to; {@code null} disables the filter
+     * @param status optional status to match; {@code null} disables the filter
+     * @param checkEnabled optional health check enabled flag; {@code null} disables the filter
+     * @return the number of matching apps
+     */
+    @Query("SELECT COUNT(a) FROM StatusApp a WHERE " +
+           "(:platformId IS NULL OR a.platform.id = :platformId) AND " +
+           "(:status IS NULL OR a.status = :status) AND " +
+           "(:checkEnabled IS NULL OR a.checkEnabled = :checkEnabled)")
+    long countForHealthCheckStatus(@Param("platformId") UUID platformId,
+                                   @Param("status") String status,
+                                   @Param("checkEnabled") Boolean checkEnabled);
 }

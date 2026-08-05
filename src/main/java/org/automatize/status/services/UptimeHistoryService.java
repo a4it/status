@@ -13,9 +13,13 @@ import org.automatize.status.repositories.StatusUptimeHistoryRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -23,8 +27,12 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -56,11 +64,18 @@ public class UptimeHistoryService {
     private static final Logger logger = LoggerFactory.getLogger(UptimeHistoryService.class);
     private static final int MINUTES_IN_DAY = 1440;
 
+    /**
+     * Number of apps loaded, calculated and committed per transaction. Bounds both the
+     * persistence context and the transaction duration regardless of how many apps exist.
+     */
+    private static final int APP_BATCH_SIZE = 100;
+
     private final StatusAppRepository statusAppRepository;
     private final StatusComponentRepository statusComponentRepository;
     private final StatusIncidentRepository statusIncidentRepository;
     private final StatusIncidentComponentRepository statusIncidentComponentRepository;
     private final StatusUptimeHistoryRepository statusUptimeHistoryRepository;
+    private final TransactionTemplate transactionTemplate;
 
     @Value("${uptime-history.enabled:true}")
     private boolean enabled;
@@ -73,17 +88,20 @@ public class UptimeHistoryService {
      * @param statusIncidentRepository repository for status incident data access
      * @param statusIncidentComponentRepository repository for incident-component relationship data access
      * @param statusUptimeHistoryRepository repository for uptime history data access
+     * @param transactionManager transaction manager used to scope one transaction per app batch
      */
     public UptimeHistoryService(StatusAppRepository statusAppRepository,
                                  StatusComponentRepository statusComponentRepository,
                                  StatusIncidentRepository statusIncidentRepository,
                                  StatusIncidentComponentRepository statusIncidentComponentRepository,
-                                 StatusUptimeHistoryRepository statusUptimeHistoryRepository) {
+                                 StatusUptimeHistoryRepository statusUptimeHistoryRepository,
+                                 PlatformTransactionManager transactionManager) {
         this.statusAppRepository = statusAppRepository;
         this.statusComponentRepository = statusComponentRepository;
         this.statusIncidentRepository = statusIncidentRepository;
         this.statusIncidentComponentRepository = statusIncidentComponentRepository;
         this.statusUptimeHistoryRepository = statusUptimeHistoryRepository;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -113,14 +131,57 @@ public class UptimeHistoryService {
      * Calculate and store uptime for a specific date.
      * For each app and component, queries public incidents that overlap with the date,
      * calculates outage/degraded minutes, and stores the uptime record.
+     * <p>
+     * Apps are walked in batches of {@value #APP_BATCH_SIZE} ids, and each batch runs in its
+     * own transaction. Neither the persistence context nor the transaction duration grows
+     * with the number of apps, and a batch that fails leaves earlier batches committed.
+     * </p>
      *
      * @param date the date to calculate uptime for
      */
-    @Transactional
     public void calculateUptimeForDate(LocalDate date) {
         logger.debug("Calculating uptime for date: {}", date);
 
-        List<StatusApp> apps = statusAppRepository.findAll();
+        int appsProcessed = 0;
+        int componentsProcessed = 0;
+        int pageNumber = 0;
+        Page<UUID> idPage;
+
+        do {
+            idPage = statusAppRepository.findAllIds(
+                    PageRequest.of(pageNumber, APP_BATCH_SIZE, Sort.by("id")));
+            List<UUID> appIds = idPage.getContent();
+
+            // Skip the round trip entirely when the page came back empty
+            if (!appIds.isEmpty()) {
+                BatchTotals totals = Optional
+                        .ofNullable(transactionTemplate.execute(status -> calculateUptimeForApps(appIds, date)))
+                        .orElse(BatchTotals.NONE);
+                appsProcessed += totals.apps();
+                componentsProcessed += totals.components();
+            }
+
+            pageNumber++;
+        } while (idPage.hasNext());
+
+        logger.debug("Uptime calculation completed for {} apps and {} components on {}",
+                appsProcessed, componentsProcessed, date);
+    }
+
+    /**
+     * Calculates and stores uptime for a single batch of apps within one transaction.
+     * Components for the whole batch are loaded with a single query rather than one per app.
+     *
+     * @param appIds the ids of the apps in this batch
+     * @param date the date to calculate uptime for
+     * @return the number of apps and components successfully processed
+     */
+    private BatchTotals calculateUptimeForApps(List<UUID> appIds, LocalDate date) {
+        List<StatusApp> apps = statusAppRepository.findAllById(appIds);
+        Map<UUID, List<StatusComponent>> componentsByApp = statusComponentRepository
+                .findByAppIdInOrderByPosition(appIds).stream()
+                .collect(Collectors.groupingBy(component -> component.getApp().getId()));
+
         int appsProcessed = 0;
         int componentsProcessed = 0;
 
@@ -129,8 +190,7 @@ public class UptimeHistoryService {
                 calculateAppUptime(app, date);
                 appsProcessed++;
 
-                List<StatusComponent> components = statusComponentRepository.findByAppId(app.getId());
-                for (StatusComponent component : components) {
+                for (StatusComponent component : componentsByApp.getOrDefault(app.getId(), Collections.emptyList())) {
                     try {
                         calculateComponentUptime(app, component, date);
                         componentsProcessed++;
@@ -145,17 +205,31 @@ public class UptimeHistoryService {
             }
         }
 
-        logger.debug("Uptime calculation completed for {} apps and {} components on {}",
-                appsProcessed, componentsProcessed, date);
+        return new BatchTotals(appsProcessed, componentsProcessed);
+    }
+
+    /**
+     * Counts of the entities processed by a single app batch.
+     *
+     * @param apps the number of apps processed
+     * @param components the number of components processed
+     */
+    private record BatchTotals(int apps, int components) {
+
+        /** Totals for a batch that produced no work. */
+        private static final BatchTotals NONE = new BatchTotals(0, 0);
     }
 
     /**
      * Backfill uptime history for a range of days up to today.
+     * <p>
+     * Each date is calculated independently, so a failure on one day leaves the days
+     * already written intact.
+     * </p>
      *
      * @param days the number of days to backfill (counting backwards from today)
      * @return the number of days processed
      */
-    @Transactional
     public int backfillUptimeHistory(int days) {
         logger.info("Starting uptime history backfill for {} days", days);
 

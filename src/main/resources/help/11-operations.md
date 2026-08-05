@@ -77,7 +77,6 @@ In production, sensitive values should be provided via environment variables ins
 | `SPRING_MAIL_USERNAME` | `spring.mail.username` | If email is enabled |
 | `SPRING_MAIL_PASSWORD` | `spring.mail.password` | If email is enabled |
 | `APP_EMAIL_ENABLED` | `app.email.enabled` | Recommended: `true` |
-| `DATA_INITIALIZER_ENABLED` | `data.initializer.enabled` | Set to `false` after setup |
 | `SERVER_PORT` | `server.port` | If not using default 8383 |
 
 Set environment variables in your deployment environment (systemd `EnvironmentFile`, Docker `env_file`, Kubernetes secrets).
@@ -283,7 +282,7 @@ Run through this before starting the application in a new environment:
 - [ ] **Database credentials** are correct in config / environment variables
 - [ ] **JWT secret** is set and is a non-default, randomly generated value
 - [ ] **Flyway migrations** will run cleanly (check version history: `SELECT * FROM flyway_schema_history ORDER BY installed_rank;`)
-- [ ] **DataInitializer flag** is appropriate: `true` for first run, `false` for subsequent runs
+- [ ] **Setup wizard** has been completed (`app.setup.completed=true`) before exposing the app
 - [ ] **Email configuration** is correct if `app.email.enabled=true`
 - [ ] **CORS origins** are restricted to production domains
 - [ ] **Log level** is set to `INFO` or `WARN` (not `DEBUG`) in production

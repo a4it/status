@@ -199,8 +199,6 @@ The codebase enforces a strict architectural split between MVC controllers and R
 StatusApplication
   └── config.*
         ├── SecurityConfig → security.*
-        ├── DataInitializer → services.UserService, services.TenantService, services.OrganizationService
-        ├── ProcessMiningDataInitializer → services.ProcessMiningService
         └── OpenApiConfig, SwaggerConfig, WebConfig, WebMvcConfig
 
 controllers.AdminController → (no service calls; template-only)
@@ -225,7 +223,7 @@ security.CustomUserDetailsService → repositories.UserRepository
 |-------------|-----|------|----------|-------|
 | **Development** | Local PostgreSQL `uptime` | 8383 | (default) | SQL logging DEBUG, email disabled, Swagger API docs enabled |
 | **Staging** | Dedicated PostgreSQL | 8383 or 80 | `staging` | Mirror of prod; used for integration testing |
-| **Production** | Managed PostgreSQL | 80/443 | `prod` | `data.initializer.enabled=false`, email enabled, Swagger UI disabled |
+| **Production** | Managed PostgreSQL | 80/443 | `prod` | Email enabled, Swagger UI disabled |
 
 Profile-specific overrides go in `application-{profile}.properties`. Activate with `--spring.profiles.active=prod` at startup.
 

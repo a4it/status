@@ -311,8 +311,7 @@ To change the BCrypt cost factor, modify the `BCryptPasswordEncoder()` construct
 - [ ] **Replace JWT secret:** Generate a strong random secret: `openssl rand -base64 32`
 - [ ] **Lock CORS origins:** Change `allowedOrigins(["*"])` to your domain in `SecurityConfig`
 - [ ] **Disable Swagger UI:** Confirm `springdoc.swagger-ui.enabled=false` in prod config
-- [ ] **Disable data initializer:** Set `data.initializer.enabled=false` after first setup
-- [ ] **Change default passwords:** `admin`/`admin` and `superadmin`/`superadmin` must be changed immediately
+- [ ] **Complete the setup wizard:** Confirm `app.setup.completed=true` so `/setup` is no longer reachable
 - [ ] **Enable HTTPS:** Configure an SSL certificate (reverse proxy with nginx/Caddy recommended)
 - [ ] **Production logging:** Set `logging.level.org.springframework.security=WARN` to avoid leaking auth details
 - [ ] **Set security headers:** Add `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options` via Spring Security headers config or reverse proxy

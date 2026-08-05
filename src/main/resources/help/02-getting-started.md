@@ -52,7 +52,7 @@ mvn spring-boot:run
 ```
 
 The application starts at **http://localhost:8383**.
-On first run, `DataInitializer` creates the default admin account (see item 15).
+On first run, the `/setup` wizard creates the admin account (see item 15).
 
 ---
 
@@ -129,7 +129,6 @@ All properties are in `src/main/resources/application.properties`. Environment v
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| `data.initializer.enabled` | Boolean | `true` | Creates default admin user on startup |
 | `app.registration.enabled` | Boolean | `true` | Allows self-registration via the register form |
 | `logs.retention.days` | Integer | `30` | Days to keep raw log entries |
 
@@ -178,15 +177,15 @@ Flyway will create all tables on first startup via the migration scripts in `src
 
 ## 15. First-Run Behaviour
 
-On startup, if `data.initializer.enabled=true` (default), `DataInitializer` runs as a `CommandLineRunner` and:
+No data is seeded automatically. While `app.setup.completed=false`, `SetupFilter` redirects every request to the `/setup` wizard, which:
 
-1. **Checks** if the `admin` user already exists — if yes, skips entirely.
-2. **Creates** (or retrieves) a `Tenant` named `"Default Tenant"`.
-3. **Creates** (or retrieves) an `Organization` named `"Default Organization"` under that tenant.
-4. **Creates** user `admin` with password `admin`, email `admin@status.local`, role `ADMIN`, assigned to the default organisation.
-5. **Creates** user `superadmin` with password `superadmin`, email `superadmin@status.local`, role `SUPERADMIN` — not assigned to any organisation (cross-tenant access).
+1. **Tests** the database connection and writes the connection properties.
+2. **Creates** the first `Tenant`.
+3. **Creates** the first `Organization` under that tenant.
+4. **Creates** the initial admin user with the credentials you choose, role `SUPERADMIN`, optionally assigned to that organisation.
+5. **Sets** `app.setup.completed=true`, after which `/setup` is no longer reachable.
 
-**Security note:** Change both default passwords immediately after first login. Set `data.initializer.enabled=false` in production after initial setup.
+**Security note:** There are no default accounts or default passwords — the only credentials that exist are the ones entered in the wizard.
 
 ---
 

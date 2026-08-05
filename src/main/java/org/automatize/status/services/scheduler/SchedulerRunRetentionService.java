@@ -52,7 +52,8 @@ public class SchedulerRunRetentionService {
         logger.info("Starting scheduler run retention cleanup (retention: {} days)...", retentionDays);
         ZonedDateTime cutoff = ZonedDateTime.now().minusDays(retentionDays);
 
-        jobRepository.findAll().forEach(job -> cleanRunsForJob(job.getId(), cutoff));
+        // Only the ids are needed to scope the deletes, so never hydrate the job entities
+        jobRepository.findAllJobIds().forEach(jobId -> cleanRunsForJob(jobId, cutoff));
 
         logger.info("Scheduler run retention cleanup completed");
     }

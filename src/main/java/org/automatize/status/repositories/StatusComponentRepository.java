@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusComponent;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -188,4 +191,43 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return a list of components ordered by position
      */
     List<StatusComponent> findByAppIdInOrderByPosition(List<UUID> appIds);
+
+    /**
+     * Returns a page of components matching the health check status filters, applying
+     * every filter in the database rather than in memory. Components that inherit their
+     * health check from the parent app are never returned.
+     *
+     * @param platformId optional platform to scope to; {@code null} disables the filter
+     * @param status optional status to match; {@code null} disables the filter
+     * @param checkEnabled optional health check enabled flag; {@code null} disables the filter
+     * @param pageable pagination and sorting parameters
+     * @return a page of matching components
+     */
+    @EntityGraph(attributePaths = {"app", "app.platform"})
+    @Query("SELECT c FROM StatusComponent c WHERE " +
+           "(c.checkInheritFromApp IS NULL OR c.checkInheritFromApp = false) AND " +
+           "(:platformId IS NULL OR c.app.platform.id = :platformId) AND " +
+           "(:status IS NULL OR c.status = :status) AND " +
+           "(:checkEnabled IS NULL OR c.checkEnabled = :checkEnabled)")
+    Page<StatusComponent> findForHealthCheckStatus(@Param("platformId") UUID platformId,
+                                                  @Param("status") String status,
+                                                  @Param("checkEnabled") Boolean checkEnabled,
+                                                  Pageable pageable);
+
+    /**
+     * Counts the components matching the health check status filters.
+     *
+     * @param platformId optional platform to scope to; {@code null} disables the filter
+     * @param status optional status to match; {@code null} disables the filter
+     * @param checkEnabled optional health check enabled flag; {@code null} disables the filter
+     * @return the number of matching components
+     */
+    @Query("SELECT COUNT(c) FROM StatusComponent c WHERE " +
+           "(c.checkInheritFromApp IS NULL OR c.checkInheritFromApp = false) AND " +
+           "(:platformId IS NULL OR c.app.platform.id = :platformId) AND " +
+           "(:status IS NULL OR c.status = :status) AND " +
+           "(:checkEnabled IS NULL OR c.checkEnabled = :checkEnabled)")
+    long countForHealthCheckStatus(@Param("platformId") UUID platformId,
+                                   @Param("status") String status,
+                                   @Param("checkEnabled") Boolean checkEnabled);
 }

@@ -98,4 +98,16 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
     Page<SchedulerJob> searchByTenant(@Param("tenantId") UUID tenantId,
                                       @Param("search") String search,
                                       Pageable pageable);
+
+    /**
+     * Returns the id of every job without loading the entities.
+     * <p>
+     * Used by the run retention housekeeping job, which only needs ids to scope its
+     * deletes and would otherwise hydrate the whole job table into the persistence context.
+     * </p>
+     *
+     * @return the ids of all jobs
+     */
+    @Query("SELECT j.id FROM SchedulerJob j")
+    List<UUID> findAllJobIds();
 }
