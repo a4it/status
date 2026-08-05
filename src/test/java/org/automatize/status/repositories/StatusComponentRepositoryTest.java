@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -76,5 +78,54 @@ class StatusComponentRepositoryTest extends AbstractAppScopedRepositoryTest {
         List<StatusComponent> result = repository.searchByAppId(app.getId(), "API");
 
         assertThat(result).extracting(StatusComponent::getName).containsExactly("Payment API");
+    }
+
+    @Test
+    void findForHealthCheckStatus_excludesComponentsInheritingFromApp() {
+        StatusComponent own = persistComponent("Own", app);
+        own.setCheckInheritFromApp(false);
+        em.persistAndFlush(own);
+
+        StatusComponent inherited = persistComponent("Inherited", app);
+        inherited.setCheckInheritFromApp(true);
+        em.persistAndFlush(inherited);
+
+        // A null inherit flag must be treated as "does not inherit"
+        StatusComponent nullFlag = persistComponent("NullFlag", app);
+        nullFlag.setCheckInheritFromApp(null);
+        em.persistAndFlush(nullFlag);
+
+        Page<StatusComponent> page = repository.findForHealthCheckStatus(null, null, null, PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(StatusComponent::getName)
+                .containsExactlyInAnyOrder("Own", "NullFlag");
+        assertThat(repository.countForHealthCheckStatus(null, null, null)).isEqualTo(2);
+    }
+
+    @Test
+    void findForHealthCheckStatus_appliesStatusAndEnabledFilters() {
+        StatusComponent match = persistComponent("Match", app);
+        match.setCheckInheritFromApp(false);
+        match.setStatus("DEGRADED");
+        match.setCheckEnabled(true);
+        em.persistAndFlush(match);
+
+        StatusComponent wrongStatus = persistComponent("WrongStatus", app);
+        wrongStatus.setCheckInheritFromApp(false);
+        wrongStatus.setStatus("OPERATIONAL");
+        wrongStatus.setCheckEnabled(true);
+        em.persistAndFlush(wrongStatus);
+
+        StatusComponent notEnabled = persistComponent("NotEnabled", app);
+        notEnabled.setCheckInheritFromApp(false);
+        notEnabled.setStatus("DEGRADED");
+        notEnabled.setCheckEnabled(false);
+        em.persistAndFlush(notEnabled);
+
+        Page<StatusComponent> page = repository.findForHealthCheckStatus(
+                null, "DEGRADED", true, PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(StatusComponent::getName).containsExactly("Match");
+        assertThat(repository.countForHealthCheckStatus(null, "DEGRADED", true)).isEqualTo(1);
     }
 }

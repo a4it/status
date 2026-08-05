@@ -113,10 +113,12 @@ class JwtUtilsTest {
         // Arrange
         String token = jwtUtils.generateJwtTokenFromUserId(
                 UUID.randomUUID(), "jdoe", JDOE_EMAIL, null, "USER");
-        // Flip the last character of the signature segment
-        char last = token.charAt(token.length() - 1);
-        char replacement = last == 'A' ? 'B' : 'A';
-        String tampered = token.substring(0, token.length() - 1) + replacement;
+        // Flip the first character of the signature segment. The last character only carries
+        // two significant bits, so replacing it often decodes to the same signature bytes.
+        int signatureStart = token.lastIndexOf('.') + 1;
+        char first = token.charAt(signatureStart);
+        char replacement = first == 'A' ? 'B' : 'A';
+        String tampered = token.substring(0, signatureStart) + replacement + token.substring(signatureStart + 1);
 
         // Act & Assert
         assertThat(jwtUtils.validateJwtToken(tampered)).isFalse();

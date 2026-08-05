@@ -9,9 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -261,5 +266,65 @@ class StatusAppRepositoryTest extends AbstractRepositoryTest {
 
         assertThat(repository.findCheckEnabledApps())
                 .extracting(StatusApp::getName).containsExactly("Enabled");
+    }
+
+    @Test
+    void findAllIds_returnsIdsPageByPage() {
+        StatusApp first = persistApp("A1", "a1", tenant, organization);
+        StatusApp second = persistApp("A2", "a2", tenant, organization);
+        StatusApp third = persistApp("A3", "a3", tenant, organization);
+
+        Page<UUID> page = repository.findAllIds(PageRequest.of(0, 2, Sort.by("id")));
+
+        assertThat(page.getTotalElements()).isEqualTo(3);
+        assertThat(page.getContent()).hasSize(2);
+        assertThat(page.hasNext()).isTrue();
+
+        List<UUID> all = new ArrayList<>(page.getContent());
+        all.addAll(repository.findAllIds(PageRequest.of(1, 2, Sort.by("id"))).getContent());
+        assertThat(all).containsExactlyInAnyOrder(first.getId(), second.getId(), third.getId());
+    }
+
+    @Test
+    void findForHealthCheckStatus_noFilters_returnsEveryApp() {
+        persistApp("A1", "a1", tenant, organization);
+        persistApp("A2", "a2", tenant, organization);
+
+        Page<StatusApp> page = repository.findForHealthCheckStatus(null, null, null, PageRequest.of(0, 10));
+
+        assertThat(page.getTotalElements()).isEqualTo(2);
+        assertThat(repository.countForHealthCheckStatus(null, null, null)).isEqualTo(2);
+    }
+
+    @Test
+    void findForHealthCheckStatus_appliesPlatformStatusAndEnabledFilters() {
+        StatusPlatform platform = persistPlatform("Platform", "platform", tenant, organization);
+        StatusApp match = persistApp("Match", "match", tenant, organization);
+        match.setPlatform(platform);
+        match.setStatus(STATUS_DEGRADED);
+        match.setCheckEnabled(true);
+        em.persistAndFlush(match);
+
+        // Same platform and status, but health checking is disabled
+        StatusApp checkDisabled = persistApp("Disabled", "disabled", tenant, organization);
+        checkDisabled.setPlatform(platform);
+        checkDisabled.setStatus(STATUS_DEGRADED);
+        checkDisabled.setCheckEnabled(false);
+        em.persistAndFlush(checkDisabled);
+
+        // Right platform and enabled, but a different status
+        StatusApp otherStatus = persistApp("Other", "other", tenant, organization);
+        otherStatus.setPlatform(platform);
+        otherStatus.setCheckEnabled(true);
+        em.persistAndFlush(otherStatus);
+
+        // No platform at all
+        persistApp("NoPlatform", "no-platform", tenant, organization);
+
+        Page<StatusApp> page = repository.findForHealthCheckStatus(
+                platform.getId(), STATUS_DEGRADED, true, PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(StatusApp::getName).containsExactly("Match");
+        assertThat(repository.countForHealthCheckStatus(platform.getId(), STATUS_DEGRADED, true)).isEqualTo(1);
     }
 }
