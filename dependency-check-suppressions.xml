@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    OWASP Dependency-Check suppressions for status.
+
+    Every entry must carry a <notes> block saying WHY the finding does not apply here and,
+    where the answer is "not yet fixed upstream", what unblocks removing the entry again.
+    An unexplained suppression is indistinguishable from an ignored vulnerability.
+
+    Suppress a false positive by CVE:
+
+        <suppress>
+            <notes>Reason this does not apply. Reviewed 2026-07-29 by &lt;who&gt;.</notes>
+            <packageUrl regex="true">^pkg:maven/com\.example/thing@.*$</packageUrl>
+            <cve>CVE-0000-00000</cve>
+        </suppress>
+
+    Suppress a mis-attributed CPE (the scanner matched the wrong product entirely):
+
+        <suppress>
+            <notes>Matches the unrelated "foo" product, not this library.</notes>
+            <packageUrl regex="true">^pkg:maven/com\.example/thing@.*$</packageUrl>
+            <cpe>cpe:/a:foo:foo</cpe>
+        </suppress>
+
+    Run the scan with:  mvn -Psecurity validate -Dnvd.api.key=$NVD_API_KEY
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+</suppressions>

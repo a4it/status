@@ -27,6 +27,11 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <timestamp>${maven.build.timestamp}</timestamp>
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
+        <!-- OWASP Dependency-Check (profile "security" only, see <profiles> below).
+             failBuildOnCVSS defaults to 11 = report only, never fail, so the report is
+             always written; CI gates with -Ddependency-check.fail-on-cvss=7. -->
+        <dependency-check.version>12.2.2</dependency-check.version>
+        <dependency-check.fail-on-cvss>11</dependency-check.fail-on-cvss>
     </properties>
 
     <dependencies>
@@ -320,5 +325,98 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Dependency vulnerability scan. Opt-in: never part of a normal build, because it
+             pulls the NVD data feed and takes minutes.
+
+                 NVD_API_KEY=xxxxx mvn -Psecurity validate
+
+             Bound to `validate` (the first phase) on purpose: the scan needs the resolved
+             dependency list and nothing else, so it compiles no Java and runs no tests. Any
+             longer goal runs it too, just with everything else.
+
+             Reports land in target/, and the JSON is copied to target/security.json — the
+             stable path tooling reads regardless of the plugin's own report naming.
+
+             The key is read from the NVD_API_KEY environment variable, not a POM property:
+             a key passed as -D leaks into Maven debug logging (GHSA-qqhq-8r2c-c3f5). Without
+             a key the feed update is rate-limited to the point of being unusable on a cold
+             cache. Free key from
+             https://nvd.nist.gov/developers/request-an-api-key. The cache lives in
+             ~/.m2/repository/org/owasp/dependency-check-data and is shared across projects,
+             so only the first run is slow. -->
+        <profile>
+            <id>security</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.owasp</groupId>
+                        <artifactId>dependency-check-maven</artifactId>
+                        <version>${dependency-check.version}</version>
+                        <configuration>
+                            <!-- Env var, not <nvdApiKey>: a literal key in the POM leaks into
+                                 Maven debug logging (GHSA-qqhq-8r2c-c3f5). -->
+                            <nvdApiKeyEnvironmentVariable>NVD_API_KEY</nvdApiKeyEnvironmentVariable>
+                            <prettyPrint>true</prettyPrint>
+                            <formats>
+                                <format>JSON</format>
+                                <format>HTML</format>
+                            </formats>
+                            <failBuildOnCVSS>${dependency-check.fail-on-cvss}</failBuildOnCVSS>
+                            <suppressionFiles>
+                                <suppressionFile>${project.basedir}/dependency-check-suppressions.xml</suppressionFile>
+                            </suppressionFiles>
+                            <!-- Test-only and build-only artifacts never reach production. -->
+                            <skipTestScope>true</skipTestScope>
+                            <skipProvidedScope>true</skipProvidedScope>
+                            <!-- No .NET assemblies here; the analyzer only warns about missing mono. -->
+                            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>dependency-check</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- Declared after dependency-check so it runs after it within the same phase. -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <executions>
+                            <execution>
+                                <id>publish-security-json</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target>
+                                        <!-- A fileset rather than file=/tofile= so that a
+                                             skipped scan (-Ddependency-check.skip=true) copies
+                                             nothing silently, instead of logging an Ant error
+                                             about a file that was never meant to exist. -->
+                                        <copy todir="${project.build.directory}" overwrite="true">
+                                            <fileset dir="${project.build.directory}"
+                                                     includes="dependency-check-report.json"
+                                                     erroronmissingdir="false"/>
+                                            <globmapper from="dependency-check-report.json"
+                                                        to="security.json"/>
+                                        </copy>
+                                        <echo message="Vulnerability report written to ${project.build.directory}/security.json"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
