@@ -1,0 +1,27 @@
+# Build output — the image builds from source inside the build stage.
+target/
+build/
+out/
+!.mvn/wrapper/maven-wrapper.jar
+
+# Not used by this deployment (all configuration is in application.properties),
+# but excluded so a stray local file can never leak into an image.
+.env
+.env.*
+
+# VCS and tooling
+.git/
+.gitignore
+.gitattributes
+.idea/
+.vscode/
+*.iml
+.flattened-pom.xml
+
+# Docs and local scratch
+*.md
+!README.md
+screenshots/
+tasks/
+deploy/
+dependency-check-suppressions.xml

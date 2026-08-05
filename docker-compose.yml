@@ -1,0 +1,69 @@
+# =============================================================================
+# Status Monitoring — decoupled deployment
+# =============================================================================
+#   db  : stateful PostgreSQL engine, all data in the named volume status-db-data
+#   app : stateless application, nothing persisted in the container
+#
+# There is no .env and no environment configuration in this file. Every setting,
+# including the randomly generated database name, user and password, lives in
+# application.properties, which is written once during `docker compose build`
+# (see the "config" stage in the Dockerfile) and only ever read afterwards.
+# Both images ship that same file, which is what keeps them in agreement.
+#
+# The application reaches the database through the compose service name "db"
+# on the private "status-net" network — never through an IP address.
+#
+#   docker compose build      # generates the credentials and writes them into
+#                             # application.properties inside both images
+#   docker compose up -d      # starts both containers, writes no configuration
+# =============================================================================
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: db
+    image: status-db:latest
+    container_name: status-db
+    restart: unless-stopped
+    volumes:
+      # The ONLY persistent state in this deployment. Named volume mounted at the
+      # image's default data path; destroying the containers never touches it.
+      - status-db-data:/var/lib/postgresql/data
+    networks:
+      - status-net
+    # No published port: the database is reachable only from the compose network.
+    # For an external client, add:  ports: ["127.0.0.1:5432:5432"]
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app
+    image: status-app:latest
+    container_name: status-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Container side must match server.port in application.properties.
+      - "8383:8383"
+    networks:
+      - status-net
+    # No volumes: the container writes nothing that has to survive a restart,
+    # so it can be destroyed, rebuilt or scaled at will.
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  status-db-data:
+    name: status-db-data
+
+networks:
+  status-net:
+    name: status-net
+    driver: bridge

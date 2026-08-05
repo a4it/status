@@ -19,7 +19,7 @@
     <description>Status Monitoring Solution</description>
 
     <properties>
-        <revision>0.0.263-SNAPSHOT</revision>
+        <revision>0.0.264-SNAPSHOT</revision>
         <java.version>25</java.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
@@ -287,6 +287,40 @@
                         <goals>
                             <goal>clean</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Copies the build-filtered application.properties next to the jar in
+                 ${project.build.directory}. Spring Boot reads "file:./" as a default
+                 config location, so running the jar from that directory (or from the
+                 Docker image, which copies both) picks up this external file instead of
+                 the one inside the jar. SetupService also writes to the working-directory
+                 copy at runtime, which is only possible when it exists outside the jar. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-external-config</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <!-- Already filtered into target/classes; copy verbatim
+                                         so placeholders are not expanded twice. -->
+                                    <directory>${project.build.outputDirectory}</directory>
+                                    <filtering>false</filtering>
+                                    <includes>
+                                        <include>application.properties</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
