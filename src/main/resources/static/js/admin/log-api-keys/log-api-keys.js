@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadKeys() {
     try {
-        const keys = await API.get('/log-api-keys');
-        renderTable(keys);
+        const response = await API.get('/log-api-keys?size=100');
+        renderTable(response.content || response);
     } catch (e) {
         showError('Failed to load API keys');
     }

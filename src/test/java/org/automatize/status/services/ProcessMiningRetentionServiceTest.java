@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -112,9 +115,10 @@ class ProcessMiningRetentionServiceTest {
     @Test
     void findAll_mapsAllRulesToResponses() {
         ProcessMiningRetentionRule r = rule(UUID.randomUUID(), 30);
-        when(retentionRuleRepository.findAll()).thenReturn(List.of(r));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(retentionRuleRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(r)));
 
-        List<ProcessMiningRetentionResponse> result = service.findAll();
+        List<ProcessMiningRetentionResponse> result = service.findAll(pageable).getContent();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getRetentionDays()).isEqualTo(30);

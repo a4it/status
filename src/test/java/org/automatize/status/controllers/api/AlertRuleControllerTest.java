@@ -10,6 +10,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -79,11 +81,12 @@ class AlertRuleControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void findAll_returnsOk() throws Exception {
-        when(alertRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID())));
+        when(alertRuleService.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleRule(UUID.randomUUID()))));
 
         mockMvc.perform(get(ALERT_RULES_PATH))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value(HIGH_ERROR_RATE));
+                .andExpect(jsonPath("$.content[0].name").value(HIGH_ERROR_RATE));
     }
 
     /**

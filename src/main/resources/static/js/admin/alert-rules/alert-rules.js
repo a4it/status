@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadRules() {
     try {
-        const rules = await API.get('/alert-rules');
-        renderTable(rules);
+        const response = await API.get('/alert-rules?size=100');
+        renderTable(response.content || response);
     } catch (e) {
         showError('Failed to load alert rules');
     }

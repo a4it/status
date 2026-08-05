@@ -1,6 +1,5 @@
 package org.automatize.status.services.scheduler;
 
-import org.automatize.status.models.SchedulerJob;
 import org.automatize.status.repositories.SchedulerJobRepository;
 import org.automatize.status.repositories.SchedulerJobRunRepository;
 import org.junit.jupiter.api.Test;
@@ -42,18 +41,6 @@ class SchedulerRunRetentionServiceTest {
     @InjectMocks private SchedulerRunRetentionService service;
 
     /**
-     * Builds a minimal job carrying only the given id.
-     *
-     * @param id the job id to assign
-     * @return a new {@link SchedulerJob}
-     */
-    private SchedulerJob jobWithId(UUID id) {
-        SchedulerJob job = new SchedulerJob();
-        job.setId(id);
-        return job;
-    }
-
-    /**
      * Verifies each job's old runs are deleted using a cutoff of now minus the retention window.
      * Expected outcome: a delete per job with the captured cutoff within the expected time bounds.
      */
@@ -62,7 +49,7 @@ class SchedulerRunRetentionServiceTest {
         ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
         UUID id1 = UUID.randomUUID();
         UUID id2 = UUID.randomUUID();
-        when(jobRepository.findAll()).thenReturn(List.of(jobWithId(id1), jobWithId(id2)));
+        when(jobRepository.findAllJobIds()).thenReturn(List.of(id1, id2));
 
         ZonedDateTime before = ZonedDateTime.now().minusDays(30);
         service.cleanOldRuns();
@@ -84,7 +71,7 @@ class SchedulerRunRetentionServiceTest {
     void cleanOldRuns_customRetentionDays_appliesConfiguredCutoff() {
         ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 7);
         UUID id = UUID.randomUUID();
-        when(jobRepository.findAll()).thenReturn(List.of(jobWithId(id)));
+        when(jobRepository.findAllJobIds()).thenReturn(List.of(id));
 
         ZonedDateTime before = ZonedDateTime.now().minusDays(7);
         service.cleanOldRuns();
@@ -104,7 +91,7 @@ class SchedulerRunRetentionServiceTest {
         ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
         UUID failing = UUID.randomUUID();
         UUID ok = UUID.randomUUID();
-        when(jobRepository.findAll()).thenReturn(List.of(jobWithId(failing), jobWithId(ok)));
+        when(jobRepository.findAllJobIds()).thenReturn(List.of(failing, ok));
         doThrow(new RuntimeException("db error"))
                 .when(runRepository).deleteByJobIdAndStartedAtBefore(eq(failing), any(ZonedDateTime.class));
 
@@ -121,7 +108,7 @@ class SchedulerRunRetentionServiceTest {
     @Test
     void cleanOldRuns_noJobs_doesNothing() {
         ReflectionTestUtils.setField(service, RETENTION_DAYS_FIELD, 30);
-        when(jobRepository.findAll()).thenReturn(List.of());
+        when(jobRepository.findAllJobIds()).thenReturn(List.of());
 
         service.cleanOldRuns();
 

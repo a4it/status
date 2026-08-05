@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,12 +61,13 @@ class ProcessMiningRetentionControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void findAll_returnsOk() throws Exception {
-        when(service.findAll()).thenReturn(List.of(sampleResponse(UUID.randomUUID())));
+        when(service.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleResponse(UUID.randomUUID()))));
 
         mockMvc.perform(get("/api/process-mining/retention"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].retentionDays").value(30))
-                .andExpect(jsonPath("$[0].enabled").value(true));
+                .andExpect(jsonPath("$.content[0].retentionDays").value(30))
+                .andExpect(jsonPath("$.content[0].enabled").value(true));
     }
 
     /**

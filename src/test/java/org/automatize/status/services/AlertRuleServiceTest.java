@@ -14,6 +14,9 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -81,9 +84,11 @@ class AlertRuleServiceTest {
     @Test
     void findAll_returnsRepositoryResults() {
         List<AlertRule> rules = List.of(rule());
-        when(alertRuleRepository.findAllByOrderByCreatedDateTechnicalDesc()).thenReturn(rules);
+        Pageable pageable = PageRequest.of(0, 20);
+        when(alertRuleRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable))
+                .thenReturn(new PageImpl<>(rules));
 
-        assertThat(alertRuleService.findAll()).isEqualTo(rules);
+        assertThat(alertRuleService.findAll(pageable)).containsExactlyElementsOf(rules);
     }
 
     /**

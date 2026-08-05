@@ -1,12 +1,13 @@
 package org.automatize.status.controllers.api;
 
 import org.automatize.status.api.response.HealthCheckTriggerResponse;
-import org.automatize.status.repositories.StatusAppRepository;
-import org.automatize.status.repositories.StatusComponentRepository;
 import org.automatize.status.services.HealthCheckScheduler;
 import org.automatize.status.services.HealthCheckSettingsService;
+import org.automatize.status.services.HealthCheckStatusService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -23,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * WebMvc slice tests for {@link HealthCheckController}. The controller autowires
- * four beans (settings service, scheduler, two repositories); all are mocked.
+ * three beans (settings service, scheduler, status service); all are mocked.
  * Focus is mapping, JSON contract, and delegation.
  */
 @WebMvcTest(controllers = HealthCheckController.class)
@@ -38,10 +39,7 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
     private HealthCheckScheduler healthCheckScheduler;
 
     @MockitoBean
-    private StatusAppRepository statusAppRepository;
-
-    @MockitoBean
-    private StatusComponentRepository statusComponentRepository;
+    private HealthCheckStatusService healthCheckStatusService;
 
     /**
      * Stubs the mocked {@link HealthCheckSettingsService} with default values
@@ -93,19 +91,19 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
 
     /**
      * Verifies that requesting health-check status with no matching entities
-     * returns {@code 200 OK} with an empty JSON array.
+     * returns {@code 200 OK} with an empty page.
      *
      * @throws Exception if the request cannot be performed
      */
     @Test
-    void getHealthCheckStatus_returnsOkArray() throws Exception {
-        when(statusAppRepository.findAll()).thenReturn(List.of());
-        when(statusComponentRepository.findAll()).thenReturn(List.of());
+    void getHealthCheckStatus_returnsOkPage() throws Exception {
+        when(healthCheckStatusService.getHealthCheckStatus(any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/health-checks/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(0));
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(0));
     }
 
     /**
@@ -117,15 +115,15 @@ class HealthCheckControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getHealthCheckStatus_withFilters_returnsOk() throws Exception {
-        when(statusAppRepository.findAll()).thenReturn(List.of());
-        when(statusComponentRepository.findAll()).thenReturn(List.of());
+        when(healthCheckStatusService.getHealthCheckStatus(any(), any(), any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/health-checks/status")
                         .param("platformId", UUID.randomUUID().toString())
                         .param("status", "OPERATIONAL")
                         .param("checkEnabled", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     /**

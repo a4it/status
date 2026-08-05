@@ -14,6 +14,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,15 +50,17 @@ class LogApiKeyServiceTest {
     // ── findAll / findById ────────────────────────────────────────────────────
 
     /**
-     * Verifies that {@link LogApiKeyService#findAll()} returns exactly the list
+     * Verifies that {@link LogApiKeyService#findAll(Pageable)} returns exactly the list
      * supplied by the repository's ordered-by-creation query.
      */
     @Test
     void findAll_returnsRepositoryOrderedList() {
         LogApiKey k = new LogApiKey();
-        when(logApiKeyRepository.findAllByOrderByCreatedDateTechnicalDesc()).thenReturn(List.of(k));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(logApiKeyRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(k)));
 
-        assertThat(service.findAll()).containsExactly(k);
+        assertThat(service.findAll(pageable)).containsExactly(k);
     }
 
     /**

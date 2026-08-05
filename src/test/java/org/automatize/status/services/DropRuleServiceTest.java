@@ -14,6 +14,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,9 +54,11 @@ class DropRuleServiceTest {
     @Test
     void findAll_returnsOrderedRepositoryList() {
         DropRule r = new DropRule();
-        when(dropRuleRepository.findAllByOrderByCreatedDateTechnicalDesc()).thenReturn(List.of(r));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(dropRuleRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(r)));
 
-        assertThat(service.findAll()).containsExactly(r);
+        assertThat(service.findAll(pageable)).containsExactly(r);
     }
 
     /**

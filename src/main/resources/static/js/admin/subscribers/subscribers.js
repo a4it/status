@@ -55,13 +55,13 @@ async function loadPlatforms() {
 async function loadSubscribers() {
     try {
         const appId = document.getElementById('platformFilter').value;
-        let url = '/notification-subscribers';
+        let url = '/notification-subscribers?size=100';
         if (appId) {
-            url = `/notification-subscribers/by-app/${appId}`;
+            url = `/notification-subscribers/by-app/${appId}?size=100`;
         }
 
-        const subscribers = await API.get(url);
-        displaySubscribers(subscribers);
+        const response = await API.get(url);
+        displaySubscribers(response.content || response);
     } catch (error) {
         console.error('Failed to load subscribers:', error);
         showError('Failed to load subscribers');

@@ -17,8 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadRules() {
     try {
-        const rules = await API.get('/drop-rules');
-        renderTable(rules);
+        const response = await API.get('/drop-rules?size=100');
+        renderTable(response.content || response);
     } catch (e) {
         showError('Failed to load drop rules');
     }

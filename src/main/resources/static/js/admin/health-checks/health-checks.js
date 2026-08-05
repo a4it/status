@@ -118,8 +118,11 @@ async function loadHealthCheckStatus() {
         if (status) params.append('status', status);
         if (enabled) params.append('checkEnabled', enabled);
 
-        const url = '/health-checks/status' + (params.toString() ? '?' + params.toString() : '');
-        healthCheckData = await API.get(url);
+        params.append('size', '200');
+
+        const url = '/health-checks/status?' + params.toString();
+        const response = await API.get(url);
+        healthCheckData = response.content || response;
 
         displayHealthCheckStatus(healthCheckData);
     } catch (error) {

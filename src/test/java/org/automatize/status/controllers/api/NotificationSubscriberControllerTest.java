@@ -11,6 +11,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,7 +37,7 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     private static final String SUBSCRIBER_EMAIL = "sub@example.com";
     private static final String SUBSCRIBERS_PATH = "/api/notification-subscribers";
     private static final String SUBSCRIBER_BY_ID_PATH = "/api/notification-subscribers/{id}";
-    private static final String FIRST_EMAIL_JSON_PATH = "$[0].email";
+    private static final String FIRST_EMAIL_JSON_PATH = "$.content[0].email";
     private static final String APP_ID_JSON_PREFIX = "{\"appId\":\"";
 
     @MockitoBean
@@ -67,7 +69,8 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void getAllSubscribers_noFilter_returnsOk() throws Exception {
-        when(subscriberService.getAllSubscribers()).thenReturn(List.of(sample(UUID.randomUUID())));
+        when(subscriberService.getAllSubscribers(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sample(UUID.randomUUID()))));
 
         mockMvc.perform(get(SUBSCRIBERS_PATH))
                 .andExpect(status().isOk())
@@ -83,13 +86,14 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @Test
     void getAllSubscribers_withAppId_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
-        when(subscriberService.getSubscribersByAppId(appId)).thenReturn(List.of(sample(UUID.randomUUID())));
+        when(subscriberService.getSubscribersByAppId(eq(appId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sample(UUID.randomUUID()))));
 
         mockMvc.perform(get(SUBSCRIBERS_PATH).param("appId", appId.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath(FIRST_EMAIL_JSON_PATH).value(SUBSCRIBER_EMAIL));
 
-        verify(subscriberService).getSubscribersByAppId(appId);
+        verify(subscriberService).getSubscribersByAppId(eq(appId), any(Pageable.class));
     }
 
     /**
@@ -271,7 +275,8 @@ class NotificationSubscriberControllerTest extends AbstractApiControllerTest {
     @Test
     void getSubscribersByApp_returnsOk() throws Exception {
         UUID appId = UUID.randomUUID();
-        when(subscriberService.getSubscribersByAppId(appId)).thenReturn(List.of(sample(UUID.randomUUID())));
+        when(subscriberService.getSubscribersByAppId(eq(appId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sample(UUID.randomUUID()))));
 
         mockMvc.perform(get("/api/notification-subscribers/by-app/{appId}", appId))
                 .andExpect(status().isOk())

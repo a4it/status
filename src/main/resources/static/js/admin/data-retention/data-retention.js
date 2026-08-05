@@ -20,9 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadRules() {
     try {
-        const rules = await API.get('/process-mining/retention');
-        renderTable(rules || []);
-        updateStats(rules || []);
+        const response = await API.get('/process-mining/retention?size=100');
+        const rules = response.content || response || [];
+        renderTable(rules);
+        updateStats(rules);
     } catch (e) {
         console.error('Failed to load retention rules', e);
         showError('Failed to load retention rules');

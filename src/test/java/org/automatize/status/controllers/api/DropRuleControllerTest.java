@@ -10,6 +10,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -62,11 +64,12 @@ class DropRuleControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void findAll_returnsOk() throws Exception {
-        when(dropRuleService.findAll()).thenReturn(List.of(sampleRule(UUID.randomUUID(), DROP_DEBUG)));
+        when(dropRuleService.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleRule(UUID.randomUUID(), DROP_DEBUG))));
 
         mockMvc.perform(get(API_DROP_RULES))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value(DROP_DEBUG));
+                .andExpect(jsonPath("$.content[0].name").value(DROP_DEBUG));
     }
 
     /**

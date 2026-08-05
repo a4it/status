@@ -13,10 +13,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -26,6 +29,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -48,17 +52,39 @@ class UptimeHistoryServiceTest {
     private StatusIncidentComponentRepository statusIncidentComponentRepository;
     @Mock
     private StatusUptimeHistoryRepository statusUptimeHistoryRepository;
+    @Mock
+    private PlatformTransactionManager transactionManager;
 
-    @InjectMocks
     private UptimeHistoryService uptimeHistoryService;
 
     /**
-     * Enables the service before each test by setting its {@code enabled} flag to true
-     * via reflection, since it is normally driven by configuration.
+     * Builds the service with mocked collaborators and enables it by setting its
+     * {@code enabled} flag to true via reflection, since it is normally driven by configuration.
      */
     @BeforeEach
     void enableService() {
+        uptimeHistoryService = new UptimeHistoryService(statusAppRepository, statusComponentRepository,
+                statusIncidentRepository, statusIncidentComponentRepository, statusUptimeHistoryRepository,
+                transactionManager);
         ReflectionTestUtils.setField(uptimeHistoryService, "enabled", true);
+    }
+
+    /**
+     * Stubs the app id page walked by the service so that a single batch containing the
+     * given apps is processed.
+     *
+     * @param apps the apps the batch should resolve to
+     */
+    private void stubSingleBatch(StatusApp... apps) {
+        List<StatusApp> appList = List.of(apps);
+        List<UUID> ids = appList.stream().map(StatusApp::getId).toList();
+        Page<UUID> idPage = new PageImpl<>(ids);
+        when(statusAppRepository.findAllIds(any(Pageable.class))).thenReturn(idPage);
+        // An empty batch is never loaded, so only stub the lookups when there is work to do
+        if (!appList.isEmpty()) {
+            when(statusAppRepository.findAllById(ids)).thenReturn(appList);
+            when(statusComponentRepository.findByAppIdInOrderByPosition(anyList())).thenReturn(List.of());
+        }
     }
 
     /**
@@ -101,7 +127,7 @@ class UptimeHistoryServiceTest {
 
         uptimeHistoryService.calculateDailyUptime();
 
-        verify(statusAppRepository, never()).findAll();
+        verify(statusAppRepository, never()).findAllIds(any(Pageable.class));
     }
 
     /**
@@ -112,9 +138,8 @@ class UptimeHistoryServiceTest {
     void calculateDailyUptime_enabled_processesApps() {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId);
-        when(statusAppRepository.findAll()).thenReturn(List.of(app));
+        stubSingleBatch(app);
         when(statusIncidentRepository.findPublicIncidentsAffectingDate(eq(appId), any(), any())).thenReturn(List.of());
-        when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of());
 
         uptimeHistoryService.calculateDailyUptime();
 
@@ -130,9 +155,8 @@ class UptimeHistoryServiceTest {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId);
         LocalDate date = LocalDate.now().minusDays(1);
-        when(statusAppRepository.findAll()).thenReturn(List.of(app));
+        stubSingleBatch(app);
         when(statusIncidentRepository.findPublicIncidentsAffectingDate(eq(appId), any(), any())).thenReturn(List.of());
-        when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of());
 
         uptimeHistoryService.calculateUptimeForDate(date);
 
@@ -153,10 +177,9 @@ class UptimeHistoryServiceTest {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId);
         LocalDate date = LocalDate.now().minusDays(1);
-        when(statusAppRepository.findAll()).thenReturn(List.of(app));
+        stubSingleBatch(app);
         when(statusIncidentRepository.findPublicIncidentsAffectingDate(eq(appId), any(), any()))
                 .thenReturn(List.of(incidentSpanningDate(date, "CRITICAL")));
-        when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of());
 
         uptimeHistoryService.calculateUptimeForDate(date);
 
@@ -176,10 +199,9 @@ class UptimeHistoryServiceTest {
         UUID appId = UUID.randomUUID();
         StatusApp app = newApp(appId);
         LocalDate date = LocalDate.now().minusDays(1);
-        when(statusAppRepository.findAll()).thenReturn(List.of(app));
+        stubSingleBatch(app);
         when(statusIncidentRepository.findPublicIncidentsAffectingDate(eq(appId), any(), any()))
                 .thenReturn(List.of(incidentSpanningDate(date, "MINOR")));
-        when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of());
 
         uptimeHistoryService.calculateUptimeForDate(date);
 
@@ -205,9 +227,10 @@ class UptimeHistoryServiceTest {
         component.setName("Comp");
         LocalDate date = LocalDate.now().minusDays(1);
 
-        when(statusAppRepository.findAll()).thenReturn(List.of(app));
+        when(statusAppRepository.findAllIds(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(appId)));
+        when(statusAppRepository.findAllById(List.of(appId))).thenReturn(List.of(app));
+        when(statusComponentRepository.findByAppIdInOrderByPosition(List.of(appId))).thenReturn(List.of(component));
         when(statusIncidentRepository.findPublicIncidentsAffectingDate(eq(appId), any(), any())).thenReturn(List.of());
-        when(statusComponentRepository.findByAppId(appId)).thenReturn(List.of(component));
         when(statusIncidentComponentRepository.findPublicIncidentsAffectingComponentOnDate(eq(component.getId()), any(), any()))
                 .thenReturn(List.of());
 
@@ -222,11 +245,11 @@ class UptimeHistoryServiceTest {
      */
     @Test
     void backfillUptimeHistory_processesRequestedNumberOfDays() {
-        when(statusAppRepository.findAll()).thenReturn(List.of());
+        when(statusAppRepository.findAllIds(any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         int processed = uptimeHistoryService.backfillUptimeHistory(3);
 
         assertThat(processed).isEqualTo(3);
-        verify(statusAppRepository, times(3)).findAll();
+        verify(statusAppRepository, times(3)).findAllIds(any(Pageable.class));
     }
 }

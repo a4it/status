@@ -21,6 +21,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -114,10 +117,12 @@ class NotificationSubscriberServiceTest {
     void getSubscribersByAppId_mapsToResponses() {
         UUID appId = UUID.randomUUID();
         StatusApp app = app(appId);
-        when(subscriberRepository.findByAppId(appId))
-                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, EMAIL)));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(subscriberRepository.findByAppId(appId, pageable))
+                .thenReturn(new PageImpl<>(List.of(subscriber(UUID.randomUUID(), app, EMAIL))));
 
-        List<NotificationSubscriberResponse> result = service.getSubscribersByAppId(appId);
+        List<NotificationSubscriberResponse> result =
+                service.getSubscribersByAppId(appId, pageable).getContent();
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getEmail()).isEqualTo(EMAIL);
@@ -132,11 +137,12 @@ class NotificationSubscriberServiceTest {
     @Test
     void getAllSubscribers_mapsToResponses() {
         StatusApp app = app(UUID.randomUUID());
-        when(subscriberRepository.findAll())
-                .thenReturn(List.of(subscriber(UUID.randomUUID(), app, EMAIL),
-                        subscriber(UUID.randomUUID(), app, "b@x.com")));
+        Pageable pageable = PageRequest.of(0, 20);
+        when(subscriberRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(subscriber(UUID.randomUUID(), app, EMAIL),
+                        subscriber(UUID.randomUUID(), app, "b@x.com"))));
 
-        assertThat(service.getAllSubscribers()).hasSize(2);
+        assertThat(service.getAllSubscribers(pageable)).hasSize(2);
     }
 
     /**

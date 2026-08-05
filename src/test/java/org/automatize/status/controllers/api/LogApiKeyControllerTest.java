@@ -9,6 +9,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -59,13 +61,13 @@ class LogApiKeyControllerTest extends AbstractApiControllerTest {
      */
     @Test
     void findAll_returnsOk() throws Exception {
-        when(logApiKeyService.findAll())
-                .thenReturn(List.of(sampleKey(UUID.randomUUID(), PROD_INGEST_NAME)));
+        when(logApiKeyService.findAll(any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(sampleKey(UUID.randomUUID(), PROD_INGEST_NAME))));
 
         mockMvc.perform(get(BASE_URL))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value(PROD_INGEST_NAME))
-                .andExpect(jsonPath("$[0].keyPrefix").value("abcd1234"));
+                .andExpect(jsonPath("$.content[0].name").value(PROD_INGEST_NAME))
+                .andExpect(jsonPath("$.content[0].keyPrefix").value("abcd1234"));
     }
 
     /**
