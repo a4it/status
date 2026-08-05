@@ -4,6 +4,8 @@ import org.automatize.status.models.DropRule;
 import org.automatize.status.repositories.DropRuleRepository;
 import org.automatize.status.repositories.TenantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,13 +26,14 @@ public class DropRuleService {
     private TenantRepository tenantRepository;
 
     /**
-     * Retrieves all drop rules ordered by creation date (newest first).
+     * Retrieves a page of drop rules ordered by creation date (newest first).
      *
-     * @return the list of all persisted drop rules
+     * @param pageable pagination and sorting parameters
+     * @return a page of persisted drop rules
      */
     @Transactional(readOnly = true)
-    public List<DropRule> findAll() {
-        return dropRuleRepository.findAllByOrderByCreatedDateTechnicalDesc();
+    public Page<DropRule> findAll(Pageable pageable) {
+        return dropRuleRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable);
     }
 
     /**

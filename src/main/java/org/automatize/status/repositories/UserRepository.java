@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,6 +44,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param username the username to search for
      * @return an Optional containing the user if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"organization"})
     Optional<User> findByUsername(String username);
 
     /**
@@ -51,6 +53,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param email the email address to search for
      * @return an Optional containing the user if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"organization"})
     Optional<User> findByEmail(String email);
 
     /**
@@ -63,6 +66,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param email the email address to search for
      * @return an Optional containing the user if found by either credential, or empty if not found
      */
+    @EntityGraph(attributePaths = {"organization"})
     Optional<User> findByUsernameOrEmail(String username, String email);
 
     /**
@@ -71,6 +75,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param organizationId the unique identifier of the organization
      * @return a list of users belonging to the specified organization
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByOrganizationId(UUID organizationId);
 
     /**
@@ -79,6 +84,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param enabled true to find enabled users, false to find disabled ones
      * @return a list of users matching the enabled status
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByEnabled(Boolean enabled);
 
     /**
@@ -87,6 +93,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param role the role to filter by (e.g., "ADMIN", "USER", "VIEWER")
      * @return a list of users with the specified role
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByRole(String role);
 
     /**
@@ -95,6 +102,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param status the status to filter by (e.g., "ACTIVE", "INACTIVE", "PENDING")
      * @return a list of users matching the specified status
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByStatus(String status);
 
     /**
@@ -104,6 +112,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param enabled true to find enabled users, false to find disabled ones
      * @return a list of users matching both the organization and enabled criteria
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByOrganizationIdAndEnabled(UUID organizationId, Boolean enabled);
 
     /**
@@ -113,6 +122,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @param role the role to filter by
      * @return a list of users matching both the organization and role criteria
      */
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByOrganizationIdAndRole(UUID organizationId, String role);
 
     /**
@@ -122,6 +132,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return a list of users within the specified tenant
      */
     @Query("SELECT u FROM User u WHERE u.organization.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"organization"})
     List<User> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -132,6 +143,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return a list of users matching the search criteria within the specified organization
      */
     @Query("SELECT u FROM User u WHERE u.organization.id = :organizationId AND (u.username LIKE %:searchTerm% OR u.email LIKE %:searchTerm% OR u.fullName LIKE %:searchTerm%)")
+    @EntityGraph(attributePaths = {"organization"})
     List<User> searchByOrganizationId(@Param("organizationId") UUID organizationId, @Param("searchTerm") String searchTerm);
 
     /**
@@ -141,6 +153,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return a list of users matching the search criteria
      */
     @Query("SELECT u FROM User u WHERE u.username LIKE %:searchTerm% OR u.email LIKE %:searchTerm% OR u.fullName LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"organization"})
     List<User> search(@Param("searchTerm") String searchTerm);
 
     /**

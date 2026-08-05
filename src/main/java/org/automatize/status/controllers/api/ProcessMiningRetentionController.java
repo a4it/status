@@ -4,12 +4,13 @@ import org.automatize.status.api.request.ProcessMiningRetentionRequest;
 import org.automatize.status.api.response.ProcessMiningRetentionResponse;
 import org.automatize.status.services.ProcessMiningRetentionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,16 +43,17 @@ public class ProcessMiningRetentionController {
     private ProcessMiningRetentionService service;
 
     /**
-     * Retrieves all process mining retention policies.
+     * Retrieves a page of process mining retention policies.
      * <p>
      * HTTP GET {@code /api/process-mining/retention}
      * </p>
      *
-     * @return ResponseEntity containing a list of retention policies
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of retention policies
      */
     @GetMapping
-    public ResponseEntity<List<ProcessMiningRetentionResponse>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<Page<ProcessMiningRetentionResponse>> findAll(Pageable pageable) {
+        return ResponseEntity.ok(service.findAll(pageable));
     }
 
     /**

@@ -3,6 +3,7 @@ package org.automatize.status.repositories;
 import org.automatize.status.models.PlatformEvent;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -46,6 +47,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param pageable pagination and sorting parameters
      * @return a page of events for the specified app
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findByAppId(UUID appId, Pageable pageable);
 
     /**
@@ -55,6 +57,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param pageable pagination and sorting parameters
      * @return a page of events for the specified component
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findByComponentId(UUID componentId, Pageable pageable);
 
     /**
@@ -64,6 +67,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param pageable pagination and sorting parameters
      * @return a page of events matching the specified severity
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findBySeverity(String severity, Pageable pageable);
 
     /**
@@ -74,6 +78,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param pageable pagination and sorting parameters
      * @return a page of events matching both the app and severity criteria
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findByAppIdAndSeverity(UUID appId, String severity, Pageable pageable);
 
     /**
@@ -84,6 +89,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param pageable pagination and sorting parameters
      * @return a page of events matching both the app and component criteria
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findByAppIdAndComponentId(UUID appId, UUID componentId, Pageable pageable);
 
     /**
@@ -92,6 +98,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @param appId the unique identifier of the status app
      * @return a list of the app's events, most recent first
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     List<PlatformEvent> findByAppIdOrderByEventTimeDesc(UUID appId);
 
     /**
@@ -104,6 +111,7 @@ public interface PlatformEventRepository extends JpaRepository<PlatformEvent, UU
      * @return a page of events for the app within the specified range
      */
     @Query("SELECT e FROM PlatformEvent e WHERE e.app.id = :appId AND e.eventTime BETWEEN :startDate AND :endDate ORDER BY e.eventTime DESC")
+    @EntityGraph(attributePaths = {"app", "component"})
     Page<PlatformEvent> findByAppIdAndDateRange(
             @Param("appId") UUID appId,
             @Param("startDate") ZonedDateTime startDate,

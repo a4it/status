@@ -7,12 +7,13 @@ import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.models.LogApiKey;
 import org.automatize.status.services.LogApiKeyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,16 +38,17 @@ public class LogApiKeyController {
     private LogApiKeyService logApiKeyService;
 
     /**
-     * Retrieves all log API keys.
+     * Retrieves a page of log API keys.
      * <p>
      * Handles {@code GET /api/log-api-keys}. Only key prefixes are exposed, never the raw key.
      * </p>
      *
-     * @return ResponseEntity containing the list of log API key responses
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of log API key responses
      */
     @GetMapping
-    public ResponseEntity<List<LogApiKeyResponse>> findAll() {
-        return ResponseEntity.ok(logApiKeyService.findAll().stream().map(this::mapToResponse).toList());
+    public ResponseEntity<Page<LogApiKeyResponse>> findAll(Pageable pageable) {
+        return ResponseEntity.ok(logApiKeyService.findAll(pageable).map(this::mapToResponse));
     }
 
     /**

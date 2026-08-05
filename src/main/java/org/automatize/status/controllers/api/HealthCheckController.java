@@ -32,25 +32,21 @@ public class HealthCheckController {
 
     private final HealthCheckSettingsService settingsService;
     private final HealthCheckScheduler healthCheckScheduler;
-    private final StatusAppRepository statusAppRepository;
-    private final StatusComponentRepository statusComponentRepository;
+    private final HealthCheckStatusService healthCheckStatusService;
 
     /**
      * Constructs the controller with its required collaborators.
      *
      * @param settingsService service managing global health check settings
      * @param healthCheckScheduler scheduler used to trigger health checks
-     * @param statusAppRepository repository providing access to status apps
-     * @param statusComponentRepository repository providing access to status components
+     * @param healthCheckStatusService service assembling the health check status overview
      */
     public HealthCheckController(HealthCheckSettingsService settingsService,
                                   HealthCheckScheduler healthCheckScheduler,
-                                  StatusAppRepository statusAppRepository,
-                                  StatusComponentRepository statusComponentRepository) {
+                                  HealthCheckStatusService healthCheckStatusService) {
         this.settingsService = settingsService;
         this.healthCheckScheduler = healthCheckScheduler;
-        this.statusAppRepository = statusAppRepository;
-        this.statusComponentRepository = statusComponentRepository;
+        this.healthCheckStatusService = healthCheckStatusService;
     }
 
     /**

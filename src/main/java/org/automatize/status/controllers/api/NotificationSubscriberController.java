@@ -6,6 +6,8 @@ import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.api.response.NotificationSubscriberResponse;
 import org.automatize.status.services.NotificationSubscriberService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -46,24 +48,26 @@ public class NotificationSubscriberController {
     private NotificationSubscriberService subscriberService;
 
     /**
-     * Retrieves all notification subscribers.
+     * Retrieves a page of notification subscribers.
      * <p>
      * Optionally filter by application ID using the appId query parameter.
      * </p>
      *
      * @param appId optional filter by status application ID
-     * @return ResponseEntity containing a list of subscribers
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of subscribers
      */
     @GetMapping
-    public ResponseEntity<List<NotificationSubscriberResponse>> getAllSubscribers(
-            @RequestParam(required = false) UUID appId) {
-        List<NotificationSubscriberResponse> subscribers;
+    public ResponseEntity<Page<NotificationSubscriberResponse>> getAllSubscribers(
+            @RequestParam(required = false) UUID appId,
+            Pageable pageable) {
+        Page<NotificationSubscriberResponse> subscribers;
         // Filter by application when an appId is supplied
         if (appId != null) {
-            subscribers = subscriberService.getSubscribersByAppId(appId);
+            subscribers = subscriberService.getSubscribersByAppId(appId, pageable);
         // Otherwise return all subscribers
         } else {
-            subscribers = subscriberService.getAllSubscribers();
+            subscribers = subscriberService.getAllSubscribers(pageable);
         }
         return ResponseEntity.ok(subscribers);
     }
@@ -145,13 +149,14 @@ public class NotificationSubscriberController {
      * Retrieves subscribers for a specific application.
      *
      * @param appId the application ID
-     * @return ResponseEntity containing a list of subscribers for the application
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of subscribers for the application
      */
     @GetMapping("/by-app/{appId}")
-    public ResponseEntity<List<NotificationSubscriberResponse>> getSubscribersByApp(
-            @PathVariable UUID appId) {
-        List<NotificationSubscriberResponse> subscribers = subscriberService.getSubscribersByAppId(appId);
-        return ResponseEntity.ok(subscribers);
+    public ResponseEntity<Page<NotificationSubscriberResponse>> getSubscribersByApp(
+            @PathVariable UUID appId,
+            Pageable pageable) {
+        return ResponseEntity.ok(subscriberService.getSubscribersByAppId(appId, pageable));
     }
 
     /**

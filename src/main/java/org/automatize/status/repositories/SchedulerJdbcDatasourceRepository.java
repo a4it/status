@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.SchedulerJdbcDatasource;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -29,6 +30,7 @@ public interface SchedulerJdbcDatasourceRepository extends JpaRepository<Schedul
      * @param enabled  {@code true} to return only enabled datasources
      * @return list of matching datasources
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<SchedulerJdbcDatasource> findByTenantIdAndEnabled(UUID tenantId, boolean enabled);
 
     /**
@@ -38,6 +40,7 @@ public interface SchedulerJdbcDatasourceRepository extends JpaRepository<Schedul
      * @param tenantId the tenant UUID
      * @return an Optional containing the datasource if found and owned by the tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Optional<SchedulerJdbcDatasource> findByIdAndTenantId(UUID id, UUID tenantId);
 
     /**
@@ -46,5 +49,6 @@ public interface SchedulerJdbcDatasourceRepository extends JpaRepository<Schedul
      * @param tenantId the tenant UUID
      * @return list of all datasources in the tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<SchedulerJdbcDatasource> findByTenantId(UUID tenantId);
 }

@@ -6,6 +6,8 @@ import org.automatize.status.repositories.LogApiKeyRepository;
 import org.automatize.status.repositories.TenantRepository;
 import org.automatize.status.util.ApiKeyGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,13 +32,14 @@ public class LogApiKeyService {
     private TenantRepository tenantRepository;
 
     /**
-     * Returns all log API keys ordered by creation date, newest first.
+     * Returns a page of log API keys ordered by creation date, newest first.
      *
-     * @return the list of all {@link LogApiKey} entities
+     * @param pageable pagination and sorting parameters
+     * @return a page of {@link LogApiKey} entities
      */
     @Transactional(readOnly = true)
-    public List<LogApiKey> findAll() {
-        return logApiKeyRepository.findAllByOrderByCreatedDateTechnicalDesc();
+    public Page<LogApiKey> findAll(Pageable pageable) {
+        return logApiKeyRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable);
     }
 
     /**

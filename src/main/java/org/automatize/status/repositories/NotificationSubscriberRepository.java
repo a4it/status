@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.NotificationSubscriber;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +45,7 @@ public interface NotificationSubscriberRepository extends JpaRepository<Notifica
      * @param appId the unique identifier of the status application
      * @return a list of subscribers for the specified application
      */
+    @EntityGraph(attributePaths = {"app"})
     List<NotificationSubscriber> findByAppId(UUID appId);
 
     /**
@@ -123,4 +127,24 @@ public interface NotificationSubscriberRepository extends JpaRepository<Notifica
      * @param appId the unique identifier of the status application
      */
     void deleteByAppId(UUID appId);
+
+    /**
+     * Returns a page of subscribers for a specific application.
+     *
+     * @param appId the unique identifier of the status application
+     * @param pageable pagination and sorting parameters
+     * @return a page of the application's subscribers
+     */
+    @EntityGraph(attributePaths = {"app"})
+    Page<NotificationSubscriber> findByAppId(UUID appId, Pageable pageable);
+
+    /**
+     * Returns a page of subscribers across all applications.
+     *
+     * @param pageable pagination and sorting parameters
+     * @return a page of subscribers
+     */
+    @EntityGraph(attributePaths = {"app"})
+    @Override
+    Page<NotificationSubscriber> findAll(Pageable pageable);
 }

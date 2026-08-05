@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.ProcessMiningRetentionRule;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,6 +27,7 @@ public interface ProcessMiningRetentionRuleRepository extends JpaRepository<Proc
      *
      * @return a list of all enabled retention rules
      */
+    @EntityGraph(attributePaths = {"tenant", "platform"})
     List<ProcessMiningRetentionRule> findByEnabledTrue();
 
     /**
@@ -32,6 +36,17 @@ public interface ProcessMiningRetentionRuleRepository extends JpaRepository<Proc
      * @param tenantId the unique identifier of the tenant
      * @return a list of the tenant's retention rules
      */
+    @EntityGraph(attributePaths = {"tenant", "platform"})
     @Query("SELECT r FROM ProcessMiningRetentionRule r WHERE r.tenant.id = :tenantId")
     List<ProcessMiningRetentionRule> findByTenantId(@Param("tenantId") UUID tenantId);
+
+    /**
+     * Returns a page of retention rules.
+     *
+     * @param pageable pagination and sorting parameters
+     * @return a page of retention rules
+     */
+    @EntityGraph(attributePaths = {"tenant", "platform"})
+    @Override
+    Page<ProcessMiningRetentionRule> findAll(Pageable pageable);
 }

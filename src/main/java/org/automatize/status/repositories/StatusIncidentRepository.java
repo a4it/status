@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusIncident;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -44,6 +45,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param appId the unique identifier of the status app
      * @return a list of incidents belonging to the specified app
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByAppId(UUID appId);
 
     /**
@@ -52,6 +54,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param status the status to filter by (e.g., "INVESTIGATING", "IDENTIFIED", "RESOLVED")
      * @return a list of incidents matching the specified status
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByStatus(String status);
 
     /**
@@ -60,6 +63,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param severity the severity to filter by (e.g., "MINOR", "MAJOR", "CRITICAL")
      * @return a list of incidents matching the specified severity
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findBySeverity(String severity);
 
     /**
@@ -68,6 +72,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param isPublic true to find public incidents, false for private ones
      * @return a list of incidents matching the visibility setting
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByIsPublic(Boolean isPublic);
 
     /**
@@ -77,6 +82,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param status the status to filter by
      * @return a list of incidents matching both the app and status criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByAppIdAndStatus(UUID appId, String status);
 
     /**
@@ -87,6 +93,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param status the status to exclude
      * @return a list of incidents for the app excluding the given status
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByAppIdAndStatusNot(UUID appId, String status);
 
     /**
@@ -97,6 +104,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of active public incidents for the given apps
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id IN :appIds AND i.status != 'RESOLVED' AND i.isPublic = true")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findActivePublicIncidentsByAppIdIn(@Param("appIds") List<UUID> appIds);
 
     /**
@@ -106,6 +114,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param isPublic true to find public incidents, false for private ones
      * @return a list of incidents matching both the app and visibility criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByAppIdAndIsPublic(UUID appId, Boolean isPublic);
 
     /**
@@ -115,6 +124,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @param endDate the end of the date range (inclusive)
      * @return a list of incidents that started within the specified date range
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByStartedAtBetween(ZonedDateTime startDate, ZonedDateTime endDate);
 
     /**
@@ -122,6 +132,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      *
      * @return a list of all unresolved incidents
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByResolvedAtIsNull();
 
     /**
@@ -129,6 +140,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      *
      * @return a list of all resolved incidents
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByResolvedAtIsNotNull();
 
     /**
@@ -138,6 +150,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of incidents within the specified tenant
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -147,6 +160,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of incidents within the specified organization
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -156,6 +170,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of incidents ordered by start time (most recent first)
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId ORDER BY i.startedAt DESC")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findByAppIdOrderByStartedAtDesc(@Param("appId") UUID appId);
 
     /**
@@ -166,6 +181,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of incidents that started on or after the specified date
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.startedAt >= :startDate")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findRecentIncidentsByAppId(@Param("appId") UUID appId, @Param("startDate") ZonedDateTime startDate);
 
     /**
@@ -175,6 +191,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of incidents matching the search criteria
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.title LIKE %:searchTerm% OR i.description LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> search(@Param("searchTerm") String searchTerm);
 
     /**
@@ -213,6 +230,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of active automated incidents
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.createdBy = :createdBy AND i.status != 'RESOLVED'")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findActiveAutomatedIncidents(@Param("appId") UUID appId, @Param("createdBy") String createdBy);
 
     /**
@@ -224,6 +242,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
      * @return a list of public incidents that started on or after the specified date
      */
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.startedAt >= :startDate AND i.isPublic = true")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findRecentPublicIncidentsByAppId(@Param("appId") UUID appId, @Param("startDate") ZonedDateTime startDate);
 
     /**
@@ -238,6 +257,7 @@ public interface StatusIncidentRepository extends JpaRepository<StatusIncident, 
     @Query("SELECT i FROM StatusIncident i WHERE i.app.id = :appId AND i.isPublic = true AND " +
            "((i.startedAt BETWEEN :dayStart AND :dayEnd) OR " +
            "(i.startedAt < :dayStart AND (i.resolvedAt IS NULL OR i.resolvedAt > :dayStart)))")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusIncident> findPublicIncidentsAffectingDate(@Param("appId") UUID appId,
            @Param("dayStart") ZonedDateTime dayStart, @Param("dayEnd") ZonedDateTime dayEnd);
 }

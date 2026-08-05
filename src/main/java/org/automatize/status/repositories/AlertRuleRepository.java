@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.AlertRule;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +24,7 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, UUID> {
      *
      * @return a list of active alert rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<AlertRule> findByIsActiveTrueOrderByCreatedDateTechnicalDesc();
 
     /**
@@ -28,6 +32,7 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, UUID> {
      *
      * @return a list of all alert rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<AlertRule> findAllByOrderByCreatedDateTechnicalDesc();
 
     /**
@@ -36,5 +41,15 @@ public interface AlertRuleRepository extends JpaRepository<AlertRule, UUID> {
      * @param tenantId the unique identifier of the tenant
      * @return a list of the tenant's alert rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<AlertRule> findByTenantIdOrderByCreatedDateTechnicalDesc(UUID tenantId);
+
+    /**
+     * Returns a page of alert rules, newest first.
+     *
+     * @param pageable pagination and sorting parameters
+     * @return a page of alert rules
+     */
+    @EntityGraph(attributePaths = {"tenant"})
+    Page<AlertRule> findAllByOrderByCreatedDateTechnicalDesc(Pageable pageable);
 }

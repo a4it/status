@@ -13,6 +13,8 @@ import org.automatize.status.repositories.TenantRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,14 +68,13 @@ public class ProcessMiningRetentionService {
     // ─── CRUD ─────────────────────────────────────────────────────────────────
 
     /**
-     * Retrieves all configured retention rules.
+     * Retrieves a page of configured retention rules.
      *
-     * @return a list of ProcessMiningRetentionResponse objects for all rules
+     * @param pageable pagination and sorting parameters
+     * @return a page of ProcessMiningRetentionResponse objects
      */
-    public List<ProcessMiningRetentionResponse> findAll() {
-        return retentionRuleRepository.findAll().stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+    public Page<ProcessMiningRetentionResponse> findAll(Pageable pageable) {
+        return retentionRuleRepository.findAll(pageable).map(this::toResponse);
     }
 
     /**

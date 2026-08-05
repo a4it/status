@@ -7,12 +7,13 @@ import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.models.AlertRule;
 import org.automatize.status.services.AlertRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,16 +38,17 @@ public class AlertRuleController {
     private AlertRuleService alertRuleService;
 
     /**
-     * Retrieves all alert rules.
+     * Retrieves a page of alert rules.
      * <p>
      * Handles {@code GET /api/alert-rules}.
      * </p>
      *
-     * @return ResponseEntity containing the list of alert rule responses
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of alert rule responses
      */
     @GetMapping
-    public ResponseEntity<List<AlertRuleResponse>> findAll() {
-        return ResponseEntity.ok(alertRuleService.findAll().stream().map(this::mapToResponse).toList());
+    public ResponseEntity<Page<AlertRuleResponse>> findAll(Pageable pageable) {
+        return ResponseEntity.ok(alertRuleService.findAll(pageable).map(this::mapToResponse));
     }
 
     /**

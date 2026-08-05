@@ -47,6 +47,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param slug the URL-friendly identifier of the status app
      * @return an Optional containing the status app if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     Optional<StatusApp> findBySlug(String slug);
 
     /**
@@ -56,6 +57,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param slug the URL-friendly identifier of the status app
      * @return an Optional containing the status app if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     Optional<StatusApp> findByTenantIdAndSlug(UUID tenantId, String slug);
 
     /**
@@ -64,6 +66,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param tenantId the unique identifier of the tenant
      * @return a list of status apps belonging to the specified tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByTenantId(UUID tenantId);
 
     /**
@@ -72,6 +75,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param organizationId the unique identifier of the organization
      * @return a list of status apps belonging to the specified organization
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByOrganizationId(UUID organizationId);
 
     /**
@@ -80,6 +84,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param platformId the unique identifier of the platform
      * @return a list of status apps belonging to the specified platform
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByPlatformId(UUID platformId);
 
     /**
@@ -88,6 +93,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param status the status to filter by (e.g., "ACTIVE", "INACTIVE")
      * @return a list of status apps matching the specified status
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByStatus(String status);
 
     /**
@@ -96,6 +102,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param isPublic true to find public status apps, false for private ones
      * @return a list of status apps matching the visibility setting
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByIsPublic(Boolean isPublic);
 
     /**
@@ -105,6 +112,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param isPublic true to find public status apps, false for private ones
      * @return a list of status apps matching both the tenant and visibility criteria
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByTenantIdAndIsPublic(UUID tenantId, Boolean isPublic);
 
     /**
@@ -114,6 +122,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @param status the status to filter by
      * @return a list of status apps matching both the organization and status criteria
      */
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findByOrganizationIdAndStatus(UUID organizationId, String status);
 
     /**
@@ -124,6 +133,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @return a list of status apps matching the search criteria within the specified tenant
      */
     @Query("SELECT s FROM StatusApp s WHERE s.tenant.id = :tenantId AND (s.name LIKE %:searchTerm% OR s.description LIKE %:searchTerm% OR s.slug LIKE %:searchTerm%)")
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> searchByTenantId(@Param("tenantId") UUID tenantId, @Param("searchTerm") String searchTerm);
 
     /**
@@ -134,6 +144,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @return a list of status apps matching the search criteria within the specified organization
      */
     @Query("SELECT s FROM StatusApp s WHERE s.organization.id = :organizationId AND (s.name LIKE %:searchTerm% OR s.description LIKE %:searchTerm%)")
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> searchByOrganizationId(@Param("organizationId") UUID organizationId, @Param("searchTerm") String searchTerm);
 
     /**
@@ -143,6 +154,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
      * @return a list of status apps matching the search criteria
      */
     @Query("SELECT s FROM StatusApp s WHERE s.name LIKE %:searchTerm% OR s.description LIKE %:searchTerm% OR s.slug LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> search(@Param("searchTerm") String searchTerm);
 
     /**
@@ -197,6 +209,7 @@ public interface StatusAppRepository extends JpaRepository<StatusApp, UUID> {
     @Query("SELECT a FROM StatusApp a WHERE a.checkEnabled = true " +
            "AND a.checkType IS NOT NULL AND a.checkType != 'NONE' " +
            "AND a.checkUrl IS NOT NULL AND a.checkUrl != ''")
+    @EntityGraph(attributePaths = {"tenant", "organization", "platform"})
     List<StatusApp> findCheckEnabledApps();
 
     /**

@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusUptimeHistory;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -50,6 +51,7 @@ public interface StatusUptimeHistoryRepository extends JpaRepository<StatusUptim
      * @return a list of uptime history records ordered by date ascending
      */
     @Query("SELECT h FROM StatusUptimeHistory h WHERE h.app.id = :appId AND h.component IS NULL AND h.recordDate BETWEEN :startDate AND :endDate ORDER BY h.recordDate ASC")
+    @EntityGraph(attributePaths = {"app", "component"})
     List<StatusUptimeHistory> findAppUptimeHistory(@Param("appId") UUID appId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
@@ -61,6 +63,7 @@ public interface StatusUptimeHistoryRepository extends JpaRepository<StatusUptim
      * @return a list of uptime history records ordered by date ascending
      */
     @Query("SELECT h FROM StatusUptimeHistory h WHERE h.component.id = :componentId AND h.recordDate BETWEEN :startDate AND :endDate ORDER BY h.recordDate ASC")
+    @EntityGraph(attributePaths = {"app", "component"})
     List<StatusUptimeHistory> findComponentUptimeHistory(@Param("componentId") UUID componentId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 
     /**
@@ -145,6 +148,7 @@ public interface StatusUptimeHistoryRepository extends JpaRepository<StatusUptim
      * @param appId the unique identifier of the status app
      * @return a list of uptime history records ordered by date ascending
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     List<StatusUptimeHistory> findByAppIdAndComponentIsNullOrderByRecordDateAsc(UUID appId);
 
     /**
@@ -153,5 +157,6 @@ public interface StatusUptimeHistoryRepository extends JpaRepository<StatusUptim
      * @param componentId the unique identifier of the component
      * @return a list of uptime history records ordered by date ascending
      */
+    @EntityGraph(attributePaths = {"app", "component"})
     List<StatusUptimeHistory> findByComponentIdOrderByRecordDateAsc(UUID componentId);
 }

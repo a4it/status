@@ -10,6 +10,8 @@ import org.automatize.status.repositories.StatusAppRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,27 +58,23 @@ public class NotificationSubscriberService {
      * Retrieves all subscribers for a specific application.
      *
      * @param appId the application ID
-     * @return list of subscriber responses
+     * @param pageable pagination and sorting parameters
+     * @return a page of subscriber responses
      */
     @Transactional(readOnly = true)
-    public List<NotificationSubscriberResponse> getSubscribersByAppId(UUID appId) {
-        List<NotificationSubscriber> subscribers = subscriberRepository.findByAppId(appId);
-        return subscribers.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<NotificationSubscriberResponse> getSubscribersByAppId(UUID appId, Pageable pageable) {
+        return subscriberRepository.findByAppId(appId, pageable).map(this::mapToResponse);
     }
 
     /**
-     * Retrieves all subscribers across all applications.
+     * Retrieves a page of subscribers across all applications.
      *
-     * @return list of all subscriber responses
+     * @param pageable pagination and sorting parameters
+     * @return a page of subscriber responses
      */
     @Transactional(readOnly = true)
-    public List<NotificationSubscriberResponse> getAllSubscribers() {
-        List<NotificationSubscriber> subscribers = subscriberRepository.findAll();
-        return subscribers.stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<NotificationSubscriberResponse> getAllSubscribers(Pageable pageable) {
+        return subscriberRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     /**

@@ -1,6 +1,9 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.DropRule;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -21,6 +24,7 @@ public interface DropRuleRepository extends JpaRepository<DropRule, UUID> {
      *
      * @return a list of active drop rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<DropRule> findByIsActiveTrueOrderByCreatedDateTechnicalDesc();
 
     /**
@@ -28,6 +32,7 @@ public interface DropRuleRepository extends JpaRepository<DropRule, UUID> {
      *
      * @return a list of all drop rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<DropRule> findAllByOrderByCreatedDateTechnicalDesc();
 
     /**
@@ -36,5 +41,15 @@ public interface DropRuleRepository extends JpaRepository<DropRule, UUID> {
      * @param tenantId the unique identifier of the tenant
      * @return a list of the tenant's drop rules, newest first
      */
+    @EntityGraph(attributePaths = {"tenant"})
     List<DropRule> findByTenantIdOrderByCreatedDateTechnicalDesc(UUID tenantId);
+
+    /**
+     * Returns a page of drop rules, newest first.
+     *
+     * @param pageable pagination and sorting parameters
+     * @return a page of drop rules
+     */
+    @EntityGraph(attributePaths = {"tenant"})
+    Page<DropRule> findAllByOrderByCreatedDateTechnicalDesc(Pageable pageable);
 }

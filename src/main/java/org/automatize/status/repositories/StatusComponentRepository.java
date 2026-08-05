@@ -47,6 +47,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param appId the unique identifier of the status app
      * @return a list of components belonging to the specified app
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByAppId(UUID appId);
 
     /**
@@ -56,6 +57,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param name the name of the component
      * @return an Optional containing the component if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"app"})
     Optional<StatusComponent> findByAppIdAndName(UUID appId, String name);
 
     /**
@@ -64,6 +66,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param appId the unique identifier of the status app
      * @return a list of components ordered by position for display purposes
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByAppIdOrderByPosition(UUID appId);
 
     /**
@@ -72,6 +75,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param status the status to filter by (e.g., "OPERATIONAL", "DEGRADED", "OUTAGE")
      * @return a list of components matching the specified status
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByStatus(String status);
 
     /**
@@ -81,6 +85,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param status the status to filter by
      * @return a list of components matching both the app and status criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByAppIdAndStatus(UUID appId, String status);
 
     /**
@@ -89,6 +94,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param groupName the name of the group to filter by
      * @return a list of components belonging to the specified group
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByGroupName(String groupName);
 
     /**
@@ -98,6 +104,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param groupName the name of the group to filter by
      * @return a list of components matching both the app and group criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByAppIdAndGroupName(UUID appId, String groupName);
 
     /**
@@ -107,6 +114,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return a list of components within the specified tenant
      */
     @Query("SELECT c FROM StatusComponent c WHERE c.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -116,6 +124,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return a list of components within the specified organization
      */
     @Query("SELECT c FROM StatusComponent c WHERE c.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -126,6 +135,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return a list of components matching the search criteria within the specified app
      */
     @Query("SELECT c FROM StatusComponent c WHERE c.app.id = :appId AND (c.name LIKE %:searchTerm% OR c.description LIKE %:searchTerm%)")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> searchByAppId(@Param("appId") UUID appId, @Param("searchTerm") String searchTerm);
 
     /**
@@ -135,6 +145,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @return a list of components matching the search criteria
      */
     @Query("SELECT c FROM StatusComponent c WHERE c.name LIKE %:searchTerm% OR c.description LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> search(@Param("searchTerm") String searchTerm);
 
     /**
@@ -181,6 +192,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
     @Query("SELECT c FROM StatusComponent c WHERE (c.checkInheritFromApp IS NULL OR c.checkInheritFromApp = false) " +
            "AND c.checkEnabled = true AND c.checkType IS NOT NULL AND c.checkType != 'NONE' " +
            "AND c.checkUrl IS NOT NULL AND c.checkUrl != ''")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findCheckEnabledComponents();
 
     /**
@@ -190,6 +202,7 @@ public interface StatusComponentRepository extends JpaRepository<StatusComponent
      * @param appIds the list of app IDs to fetch components for
      * @return a list of components ordered by position
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusComponent> findByAppIdInOrderByPosition(List<UUID> appIds);
 
     /**

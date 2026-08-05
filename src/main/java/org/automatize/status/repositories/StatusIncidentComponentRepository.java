@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusIncidentComponent;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -44,6 +45,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @param incidentId the unique identifier of the incident
      * @return a list of incident-component associations for the specified incident
      */
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByIncidentId(UUID incidentId);
 
     /**
@@ -52,6 +54,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @param componentId the unique identifier of the component
      * @return a list of incident-component associations for the specified component
      */
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByComponentId(UUID componentId);
 
     /**
@@ -61,6 +64,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @param componentId the unique identifier of the component
      * @return an Optional containing the association if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"incident", "component"})
     Optional<StatusIncidentComponent> findByIncidentIdAndComponentId(UUID incidentId, UUID componentId);
 
     /**
@@ -69,6 +73,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @param componentStatus the component status to filter by (e.g., "DEGRADED", "OUTAGE")
      * @return a list of associations matching the specified component status
      */
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByComponentStatus(String componentStatus);
 
     /**
@@ -78,6 +83,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @param componentStatus the component status to filter by
      * @return a list of associations matching both the incident and component status criteria
      */
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByIncidentIdAndComponentStatus(UUID incidentId, String componentStatus);
 
     /**
@@ -87,6 +93,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @return a list of incident-component associations within the specified tenant
      */
     @Query("SELECT ic FROM StatusIncidentComponent ic WHERE ic.incident.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -96,6 +103,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @return a list of incident-component associations within the specified organization
      */
     @Query("SELECT ic FROM StatusIncidentComponent ic WHERE ic.incident.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -105,6 +113,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @return a list of incident-component associations for the specified app
      */
     @Query("SELECT ic FROM StatusIncidentComponent ic WHERE ic.incident.app.id = :appId")
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findByAppId(@Param("appId") UUID appId);
 
     /**
@@ -132,6 +141,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
      * @return a list of incident-component associations for active incidents
      */
     @Query("SELECT ic FROM StatusIncidentComponent ic WHERE ic.component.id = :componentId AND ic.incident.status != 'RESOLVED'")
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findActiveIncidentsByComponentId(@Param("componentId") UUID componentId);
 
     /**
@@ -172,6 +182,7 @@ public interface StatusIncidentComponentRepository extends JpaRepository<StatusI
            "AND ic.incident.isPublic = true AND " +
            "((ic.incident.startedAt BETWEEN :dayStart AND :dayEnd) OR " +
            "(ic.incident.startedAt < :dayStart AND (ic.incident.resolvedAt IS NULL OR ic.incident.resolvedAt > :dayStart)))")
+    @EntityGraph(attributePaths = {"incident", "component"})
     List<StatusIncidentComponent> findPublicIncidentsAffectingComponentOnDate(
            @Param("componentId") UUID componentId,
            @Param("dayStart") ZonedDateTime dayStart, @Param("dayEnd") ZonedDateTime dayEnd);

@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusIncidentUpdate;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +43,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @param incidentId the unique identifier of the incident
      * @return a list of updates for the specified incident
      */
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByIncidentId(UUID incidentId);
 
     /**
@@ -50,6 +52,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @param incidentId the unique identifier of the incident
      * @return a list of updates ordered chronologically (oldest first)
      */
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByIncidentIdOrderByUpdateTime(UUID incidentId);
 
     /**
@@ -58,6 +61,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @param incidentId the unique identifier of the incident
      * @return a list of updates ordered chronologically (most recent first)
      */
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByIncidentIdOrderByUpdateTimeDesc(UUID incidentId);
 
     /**
@@ -66,6 +70,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @param status the status to filter by (e.g., "INVESTIGATING", "IDENTIFIED", "MONITORING")
      * @return a list of updates matching the specified status
      */
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByStatus(String status);
 
     /**
@@ -75,6 +80,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @param endDate the end of the date range (inclusive)
      * @return a list of updates that occurred within the specified date range
      */
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByUpdateTimeBetween(ZonedDateTime startDate, ZonedDateTime endDate);
 
     /**
@@ -84,6 +90,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @return a list of incident updates within the specified tenant
      */
     @Query("SELECT u FROM StatusIncidentUpdate u WHERE u.incident.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -93,6 +100,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @return a list of incident updates within the specified organization
      */
     @Query("SELECT u FROM StatusIncidentUpdate u WHERE u.incident.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -102,6 +110,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @return a list of incident updates for the specified app
      */
     @Query("SELECT u FROM StatusIncidentUpdate u WHERE u.incident.app.id = :appId")
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> findByAppId(@Param("appId") UUID appId);
 
     /**
@@ -111,6 +120,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @return a list of updates matching the search criteria
      */
     @Query("SELECT u FROM StatusIncidentUpdate u WHERE u.message LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> search(@Param("searchTerm") String searchTerm);
 
     /**
@@ -121,6 +131,7 @@ public interface StatusIncidentUpdateRepository extends JpaRepository<StatusInci
      * @return a list of updates matching the search criteria within the specified incident
      */
     @Query("SELECT u FROM StatusIncidentUpdate u WHERE u.incident.id = :incidentId AND u.message LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"incident"})
     List<StatusIncidentUpdate> searchByIncidentId(@Param("incidentId") UUID incidentId, @Param("searchTerm") String searchTerm);
 
     /**

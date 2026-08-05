@@ -6,6 +6,7 @@ import org.automatize.status.models.scheduler.JobStatus;
 import org.automatize.status.models.scheduler.JobType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,6 +39,7 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
      * @param pageable pagination and sorting parameters
      * @return a page of matching jobs
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Page<SchedulerJob> findByTenantIdAndStatusIn(UUID tenantId, List<JobStatus> statuses, Pageable pageable);
 
     /**
@@ -47,6 +49,7 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
      * @param status the job status to filter by (typically {@code ACTIVE})
      * @return list of enabled jobs
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<SchedulerJob> findByEnabledTrueAndStatus(JobStatus status);
 
     /**
@@ -56,6 +59,7 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
      * @param tenantId the tenant UUID
      * @return an Optional containing the job if found and owned by the tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Optional<SchedulerJob> findByIdAndTenantId(UUID id, UUID tenantId);
 
     /**
@@ -82,6 +86,7 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
      * @param tenantId the tenant UUID
      * @return list of all jobs in the tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<SchedulerJob> findByTenantId(UUID tenantId);
 
     /**
@@ -95,6 +100,7 @@ public interface SchedulerJobRepository extends JpaRepository<SchedulerJob, UUID
      */
     @Query("SELECT j FROM SchedulerJob j WHERE j.tenant.id = :tenantId AND j.status = 'ACTIVE' " +
            "AND (:search IS NULL OR LOWER(j.name) LIKE LOWER(CONCAT('%', :search, '%')))")
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Page<SchedulerJob> searchByTenant(@Param("tenantId") UUID tenantId,
                                       @Param("search") String search,
                                       Pageable pageable);

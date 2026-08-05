@@ -7,12 +7,13 @@ import org.automatize.status.api.response.MessageResponse;
 import org.automatize.status.models.DropRule;
 import org.automatize.status.services.DropRuleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,16 +38,17 @@ public class DropRuleController {
     private DropRuleService dropRuleService;
 
     /**
-     * Retrieves all drop rules.
+     * Retrieves a page of drop rules.
      * <p>
      * Handles {@code GET /api/drop-rules}.
      * </p>
      *
-     * @return ResponseEntity containing the list of drop rule responses
+     * @param pageable pagination and sorting parameters
+     * @return ResponseEntity containing a page of drop rule responses
      */
     @GetMapping
-    public ResponseEntity<List<DropRuleResponse>> findAll() {
-        return ResponseEntity.ok(dropRuleService.findAll().stream().map(this::mapToResponse).toList());
+    public ResponseEntity<Page<DropRuleResponse>> findAll(Pageable pageable) {
+        return ResponseEntity.ok(dropRuleService.findAll(pageable).map(this::mapToResponse));
     }
 
     /**

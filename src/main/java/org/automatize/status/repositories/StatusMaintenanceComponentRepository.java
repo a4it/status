@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusMaintenanceComponent;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,6 +44,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @param maintenanceId the unique identifier of the maintenance window
      * @return a list of maintenance-component associations for the specified maintenance
      */
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findByMaintenanceId(UUID maintenanceId);
 
     /**
@@ -51,6 +53,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @param componentId the unique identifier of the component
      * @return a list of maintenance-component associations for the specified component
      */
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findByComponentId(UUID componentId);
 
     /**
@@ -60,6 +63,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @param componentId the unique identifier of the component
      * @return an Optional containing the association if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     Optional<StatusMaintenanceComponent> findByMaintenanceIdAndComponentId(UUID maintenanceId, UUID componentId);
 
     /**
@@ -69,6 +73,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @return a list of maintenance-component associations within the specified tenant
      */
     @Query("SELECT mc FROM StatusMaintenanceComponent mc WHERE mc.maintenance.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -78,6 +83,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @return a list of maintenance-component associations within the specified organization
      */
     @Query("SELECT mc FROM StatusMaintenanceComponent mc WHERE mc.maintenance.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -87,6 +93,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @return a list of maintenance-component associations for the specified app
      */
     @Query("SELECT mc FROM StatusMaintenanceComponent mc WHERE mc.maintenance.app.id = :appId")
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findByAppId(@Param("appId") UUID appId);
 
     /**
@@ -114,6 +121,7 @@ public interface StatusMaintenanceComponentRepository extends JpaRepository<Stat
      * @return a list of maintenance-component associations for active maintenance windows
      */
     @Query("SELECT mc FROM StatusMaintenanceComponent mc WHERE mc.component.id = :componentId AND mc.maintenance.status IN ('SCHEDULED', 'IN_PROGRESS')")
+    @EntityGraph(attributePaths = {"maintenance", "component"})
     List<StatusMaintenanceComponent> findActiveMaintenanceByComponentId(@Param("componentId") UUID componentId);
 
     /**

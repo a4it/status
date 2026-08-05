@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusMaintenance;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,6 +44,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param appId the unique identifier of the status app
      * @return a list of maintenance windows belonging to the specified app
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByAppId(UUID appId);
 
     /**
@@ -51,6 +53,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param status the status to filter by (e.g., "SCHEDULED", "IN_PROGRESS", "COMPLETED")
      * @return a list of maintenance windows matching the specified status
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByStatus(String status);
 
     /**
@@ -59,6 +62,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param isPublic true to find public maintenance windows, false for private ones
      * @return a list of maintenance windows matching the visibility setting
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByIsPublic(Boolean isPublic);
 
     /**
@@ -68,6 +72,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param status the status to filter by
      * @return a list of maintenance windows matching both the app and status criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByAppIdAndStatus(UUID appId, String status);
 
     /**
@@ -77,6 +82,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param isPublic true to find public maintenance windows, false for private ones
      * @return a list of maintenance windows matching both the app and visibility criteria
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByAppIdAndIsPublic(UUID appId, Boolean isPublic);
 
     /**
@@ -86,6 +92,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param endDate the end of the date range (inclusive)
      * @return a list of maintenance windows starting within the specified date range
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByStartsAtBetween(ZonedDateTime startDate, ZonedDateTime endDate);
 
     /**
@@ -95,6 +102,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @param endDate the end of the date range (inclusive)
      * @return a list of maintenance windows ending within the specified date range
      */
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByEndsAtBetween(ZonedDateTime startDate, ZonedDateTime endDate);
 
     /**
@@ -104,6 +112,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of maintenance windows within the specified tenant
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.app.tenant.id = :tenantId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByTenantId(@Param("tenantId") UUID tenantId);
 
     /**
@@ -113,6 +122,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of maintenance windows within the specified organization
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.app.organization.id = :organizationId")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByOrganizationId(@Param("organizationId") UUID organizationId);
 
     /**
@@ -122,6 +132,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of maintenance windows ordered by start time (most recent first)
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.app.id = :appId ORDER BY m.startsAt DESC")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findByAppIdOrderByStartsAtDesc(@Param("appId") UUID appId);
 
     /**
@@ -131,6 +142,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of maintenance windows currently in progress
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.startsAt <= :currentTime AND m.endsAt >= :currentTime")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findActiveMaintenance(@Param("currentTime") ZonedDateTime currentTime);
 
     /**
@@ -141,6 +153,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of upcoming maintenance windows
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.app.id = :appId AND m.startsAt >= :startDate")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findUpcomingMaintenanceByAppId(@Param("appId") UUID appId, @Param("startDate") ZonedDateTime startDate);
 
     /**
@@ -150,6 +163,7 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of maintenance windows matching the search criteria
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.title LIKE %:searchTerm% OR m.description LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> search(@Param("searchTerm") String searchTerm);
 
     /**
@@ -188,5 +202,6 @@ public interface StatusMaintenanceRepository extends JpaRepository<StatusMainten
      * @return a list of upcoming public maintenance windows for the given apps, ordered by start time
      */
     @Query("SELECT m FROM StatusMaintenance m WHERE m.app.id IN :appIds AND m.startsAt > :now AND m.isPublic = true ORDER BY m.startsAt")
+    @EntityGraph(attributePaths = {"app"})
     List<StatusMaintenance> findUpcomingMaintenanceByAppIdIn(@Param("appIds") List<UUID> appIds, @Param("now") ZonedDateTime now);
 }

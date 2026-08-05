@@ -1,6 +1,7 @@
 package org.automatize.status.repositories;
 
 import org.automatize.status.models.StatusPlatform;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -42,6 +43,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param slug the URL-friendly identifier of the platform
      * @return an Optional containing the platform if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Optional<StatusPlatform> findBySlug(String slug);
 
     /**
@@ -51,6 +53,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param slug the URL-friendly identifier of the platform
      * @return an Optional containing the platform if found, or empty if not found
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     Optional<StatusPlatform> findByTenantIdAndSlug(UUID tenantId, String slug);
 
     /**
@@ -59,6 +62,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param tenantId the unique identifier of the tenant
      * @return a list of platforms belonging to the specified tenant
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByTenantId(UUID tenantId);
 
     /**
@@ -67,6 +71,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param tenantId the unique identifier of the tenant
      * @return a list of platforms ordered by position
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByTenantIdOrderByPosition(UUID tenantId);
 
     /**
@@ -75,6 +80,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param organizationId the unique identifier of the organization
      * @return a list of platforms belonging to the specified organization
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByOrganizationId(UUID organizationId);
 
     /**
@@ -83,6 +89,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param status the status to filter by (e.g., "OPERATIONAL", "DEGRADED")
      * @return a list of platforms matching the specified status
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByStatus(String status);
 
     /**
@@ -91,6 +98,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param isPublic true to find public platforms, false for private ones
      * @return a list of platforms matching the visibility setting
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByIsPublic(Boolean isPublic);
 
     /**
@@ -100,6 +108,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @param isPublic true to find public platforms, false for private ones
      * @return a list of platforms matching both the tenant and visibility criteria
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByTenantIdAndIsPublic(UUID tenantId, Boolean isPublic);
 
     /**
@@ -107,6 +116,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      *
      * @return a list of public platforms ordered by position
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findByIsPublicTrueOrderByPosition();
 
     /**
@@ -114,6 +124,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      *
      * @return a list of all platforms ordered by position
      */
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> findAllByOrderByPosition();
 
     /**
@@ -124,6 +135,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @return a list of platforms matching the search criteria within the specified tenant
      */
     @Query("SELECT p FROM StatusPlatform p WHERE p.tenant.id = :tenantId AND (p.name LIKE %:searchTerm% OR p.description LIKE %:searchTerm% OR p.slug LIKE %:searchTerm%)")
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> searchByTenantId(@Param("tenantId") UUID tenantId, @Param("searchTerm") String searchTerm);
 
     /**
@@ -133,6 +145,7 @@ public interface StatusPlatformRepository extends JpaRepository<StatusPlatform, 
      * @return a list of platforms matching the search criteria
      */
     @Query("SELECT p FROM StatusPlatform p WHERE p.name LIKE %:searchTerm% OR p.description LIKE %:searchTerm% OR p.slug LIKE %:searchTerm%")
+    @EntityGraph(attributePaths = {"tenant", "organization"})
     List<StatusPlatform> search(@Param("searchTerm") String searchTerm);
 
     /**

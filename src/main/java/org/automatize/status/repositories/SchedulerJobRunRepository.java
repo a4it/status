@@ -4,6 +4,7 @@ import org.automatize.status.models.SchedulerJobRun;
 import org.automatize.status.models.scheduler.JobRunStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -36,6 +37,7 @@ public interface SchedulerJobRunRepository extends JpaRepository<SchedulerJobRun
      * @param pageable pagination parameters
      * @return a page of run records for the job
      */
+    @EntityGraph(attributePaths = {"job"})
     Page<SchedulerJobRun> findByJobIdOrderByStartedAtDesc(UUID jobId, Pageable pageable);
 
     /**
@@ -45,6 +47,7 @@ public interface SchedulerJobRunRepository extends JpaRepository<SchedulerJobRun
      * @param pageable pagination parameters
      * @return a page of run records for the tenant
      */
+    @EntityGraph(attributePaths = {"job"})
     Page<SchedulerJobRun> findByTenantIdOrderByStartedAtDesc(UUID tenantId, Pageable pageable);
 
     /**
@@ -54,6 +57,7 @@ public interface SchedulerJobRunRepository extends JpaRepository<SchedulerJobRun
      * @param status the run status to filter by
      * @return an Optional containing the most recent run with that status
      */
+    @EntityGraph(attributePaths = {"job"})
     Optional<SchedulerJobRun> findTopByJobIdAndStatusOrderByStartedAtDesc(UUID jobId, JobRunStatus status);
 
     /**
@@ -63,6 +67,7 @@ public interface SchedulerJobRunRepository extends JpaRepository<SchedulerJobRun
      * @param status the run status to filter by
      * @return list of matching runs
      */
+    @EntityGraph(attributePaths = {"job"})
     List<SchedulerJobRun> findByJobIdAndStatus(UUID jobId, JobRunStatus status);
 
     /**
@@ -93,5 +98,6 @@ public interface SchedulerJobRunRepository extends JpaRepository<SchedulerJobRun
      * @param jobId the job UUID
      * @return list of up to 100 most recent runs, ordered most recent first
      */
+    @EntityGraph(attributePaths = {"job"})
     List<SchedulerJobRun> findTop100ByJobIdOrderByStartedAtDesc(UUID jobId);
 }

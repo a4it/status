@@ -6,6 +6,8 @@ import org.automatize.status.repositories.TenantRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,13 +46,14 @@ public class AlertRuleService {
     private LogMetricService logMetricService;
 
     /**
-     * Retrieves all alert rules ordered by creation date (newest first).
+     * Retrieves a page of alert rules ordered by creation date (newest first).
      *
-     * @return the list of all persisted alert rules
+     * @param pageable pagination and sorting parameters
+     * @return a page of persisted alert rules
      */
     @Transactional(readOnly = true)
-    public List<AlertRule> findAll() {
-        return alertRuleRepository.findAllByOrderByCreatedDateTechnicalDesc();
+    public Page<AlertRule> findAll(Pageable pageable) {
+        return alertRuleRepository.findAllByOrderByCreatedDateTechnicalDesc(pageable);
     }
 
     /**
